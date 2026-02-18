@@ -116,7 +116,7 @@ export async function ensureDefaultAdmin(): Promise<void> {
   const existing = await getUserByUsername(username);
   if (existing) {
     // Always sync password from env so credential changes take effect on redeploy
-    await updateUserPassword(existing.id, password);
+    await updateUserPassword(existing.username, password);
     console.log(`[auth] Synced admin credentials for: ${username}`);
     return;
   }
