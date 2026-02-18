@@ -8,6 +8,10 @@ import {
   getSessionCookie,
   getSession,
   ensureDefaultAdmin,
+  updateUserPassword,
+  checkRateLimit,
+  recordFailedLogin,
+  resetRateLimit,
 } from "../lib/auth.ts";
 
 interface LoginData {
@@ -37,9 +41,28 @@ export const handler: Handlers<LoginData> = {
       return ctx.render({ error: "Please enter your username and password." });
     }
 
+    // Rate-limit by username (prevents brute-force)
+    const identifier = `login:${username}`;
+    const { blocked } = await checkRateLimit(identifier);
+    if (blocked) {
+      return ctx.render({ error: "Too many failed attempts. Please try again in 15 minutes." });
+    }
+
     const user = await getUserByUsername(username);
-    if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    if (!user) {
+      await recordFailedLogin(identifier);
       return ctx.render({ error: "Invalid username or password." });
+    }
+    const { valid, newHash } = await verifyPassword(password, user.passwordHash);
+    if (!valid) {
+      await recordFailedLogin(identifier);
+      return ctx.render({ error: "Invalid username or password." });
+    }
+    // Successful login: clear rate limit
+    await resetRateLimit(identifier);
+    // Migrate legacy SHA-256 hash to bcrypt on first successful login
+    if (newHash) {
+      await updateUserPassword(user.username, undefined, newHash);
     }
 
     const session = await createSession(user);
@@ -136,7 +159,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
                   />
                   <button
                     type="button"
-                    onclick="togglePassword()"
+                    {...{"onclick": "togglePassword()"}}
                     class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                     aria-label="Toggle password visibility"
                   >

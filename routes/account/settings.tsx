@@ -1,18 +1,31 @@
 // Account settings — any logged-in user can change their own password
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
-import { verifyPassword, updateUserPassword, type Session } from "../../lib/auth.ts";
+import {
+  verifyPassword,
+  updateUserPassword,
+  deleteAllSessionsForUser,
+  createSession,
+  makeSessionCookie,
+  type Session,
+} from "../../lib/auth.ts";
 
 interface AccountData {
   session: Session;
+  csrfToken: string;
   message?: string;
   error?: string;
 }
 
 export const handler: Handlers<AccountData> = {
-  GET(_req, ctx) {
+  GET(req, ctx) {
     const session = ctx.state.session as Session;
-    return ctx.render({ session });
+    const changed = new URL(req.url).searchParams.has("changed");
+    return ctx.render({
+      session,
+      csrfToken: session.csrfToken,
+      message: changed ? "Password updated successfully." : undefined,
+    });
   },
 
   async POST(req, ctx) {
@@ -20,10 +33,17 @@ export const handler: Handlers<AccountData> = {
 
     // Dev bypass sessions don't have a real user in KV
     if (session.id === "local-dev") {
-      return ctx.render({ session, error: "Password changes are not available in local dev mode." });
+      return ctx.render({ session, csrfToken: session.csrfToken, error: "Password changes are not available in local dev mode." });
     }
 
     const form = await req.formData();
+
+    // CSRF validation
+    const csrfToken = form.get("csrf_token") as string;
+    if (!csrfToken || csrfToken !== session.csrfToken) {
+      return ctx.render({ session, csrfToken: session.csrfToken, error: "Invalid request. Please try again." });
+    }
+
     const currentPassword = form.get("currentPassword") as string ?? "";
     const newPassword = form.get("newPassword") as string ?? "";
     const confirmPassword = form.get("confirmPassword") as string ?? "";
@@ -42,20 +62,32 @@ export const handler: Handlers<AccountData> = {
       // Verify current password
       const { getUserByUsername } = await import("../../lib/auth.ts");
       const user = await getUserByUsername(session.username);
-      if (!user || !(await verifyPassword(currentPassword, user.passwordHash))) {
+      const result = user ? await verifyPassword(currentPassword, user.passwordHash) : { valid: false };
+      if (!user || !result.valid) {
         throw new Error("Current password is incorrect.");
       }
 
       await updateUserPassword(session.username, newPassword);
-      return ctx.render({ session, message: "Password updated successfully." });
+      // Invalidate all existing sessions (security: force re-login everywhere)
+      await deleteAllSessionsForUser(user.id);
+      // Re-issue a fresh session for this user so they stay logged in
+      const newSession = await createSession(user);
+      const headers = new Headers({ "set-cookie": makeSessionCookie(newSession.id) });
+      return new Response(
+        null,
+        {
+          status: 303,
+          headers: Object.assign(headers, { location: "/account/settings?changed=1" }),
+        },
+      );
     } catch (err) {
-      return ctx.render({ session, error: (err as Error).message });
+      return ctx.render({ session, csrfToken: session.csrfToken, error: (err as Error).message });
     }
   },
 };
 
 export default function AccountPage({ data }: PageProps<AccountData>) {
-  const { session, message, error } = data;
+  const { session, csrfToken, message, error } = data;
 
   return (
     <Layout title="Account Settings" username={session.username} role={session.role}>
@@ -95,6 +127,7 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
           )}
 
           <form method="POST" class="space-y-4">
+            <input type="hidden" name="csrf_token" value={csrfToken} />
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="currentPassword">
                 Current password

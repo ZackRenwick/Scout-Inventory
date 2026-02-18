@@ -15,6 +15,7 @@ const DEV_SESSION: Session = {
   username: "dev",
   role: "admin",
   expiresAt: new Date(Date.now() + 1e12).toISOString(),
+  csrfToken: "dev-csrf-token",
 };
 
 export async function handler(req: Request, ctx: FreshContext) {

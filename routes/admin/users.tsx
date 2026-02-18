@@ -6,6 +6,8 @@ import {
   createUser,
   deleteUser,
   updateUserPassword,
+  deleteAllSessionsForUser,
+  getUserByUsername,
   type User,
   type Session,
 } from "../../lib/auth.ts";
@@ -13,6 +15,7 @@ import {
 interface UsersPageData {
   users: Omit<User, "passwordHash">[];
   session: Session;
+  csrfToken: string;
   message?: string;
   error?: string;
 }
@@ -24,7 +27,7 @@ export const handler: Handlers<UsersPageData> = {
       return new Response(null, { status: 302, headers: { location: "/" } });
     }
     const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-    return ctx.render({ users, session });
+    return ctx.render({ users, session, csrfToken: session.csrfToken });
   },
 
   async POST(req, ctx) {
@@ -34,6 +37,14 @@ export const handler: Handlers<UsersPageData> = {
     }
 
     const form = await req.formData();
+
+    // CSRF validation
+    const csrfToken = form.get("csrf_token") as string;
+    if (!csrfToken || csrfToken !== session.csrfToken) {
+      const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+      return ctx.render({ users, session, csrfToken: session.csrfToken, error: "Invalid request. Please try again." });
+    }
+
     const action = form.get("action") as string;
 
     try {
@@ -50,15 +61,17 @@ export const handler: Handlers<UsersPageData> = {
 
         await createUser(username, password, role);
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-        return ctx.render({ users, session, message: `User "${username}" created successfully.` });
+        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `User "${username}" created successfully.` });
       }
 
       if (action === "delete") {
         const username = form.get("username") as string;
         if (username === session.username) throw new Error("You cannot delete your own account.");
+        const target = await getUserByUsername(username);
+        if (target) await deleteAllSessionsForUser(target.id);
         await deleteUser(username);
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-        return ctx.render({ users, session, message: `User "${username}" deleted.` });
+        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `User "${username}" deleted.` });
       }
 
       if (action === "change-password") {
@@ -66,21 +79,24 @@ export const handler: Handlers<UsersPageData> = {
         const newPassword = form.get("newPassword") as string ?? "";
         if (newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
         await updateUserPassword(username, newPassword);
+        // Invalidate all active sessions for this user
+        const target = await getUserByUsername(username);
+        if (target) await deleteAllSessionsForUser(target.id);
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-        return ctx.render({ users, session, message: `Password updated for "${username}".` });
+        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Password updated for "${username}". Their active sessions have been invalidated.` });
       }
     } catch (err) {
       const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-      return ctx.render({ users, session, error: (err as Error).message });
+      return ctx.render({ users, session, csrfToken: session.csrfToken, error: (err as Error).message });
     }
 
     const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-    return ctx.render({ users, session });
+    return ctx.render({ users, session, csrfToken: session.csrfToken });
   },
 };
 
 export default function UsersPage({ data }: PageProps<UsersPageData>) {
-  const { users, session, message, error } = data;
+  const { users, session, csrfToken, message, error } = data;
 
   return (
     <Layout title="User Management" username={session.username} role={session.role}>
@@ -134,6 +150,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                     Change password
                   </summary>
                   <form method="POST" class="absolute right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-lg z-10 w-64">
+                    <input type="hidden" name="csrf_token" value={csrfToken} />
                     <input type="hidden" name="action" value="change-password" />
                     <input type="hidden" name="username" value={user.username} />
                     <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New password</label>
@@ -151,7 +168,8 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                   </form>
                 </details>
                 {user.username !== session.username && (
-                  <form method="POST" onSubmit="return confirm('Delete user ' + this.username.value + '?')">
+                  <form method="POST" {...{"onsubmit": "return confirm('Delete ' + this.username.value + '?')"}}>
+                    <input type="hidden" name="csrf_token" value={csrfToken} />
                     <input type="hidden" name="action" value="delete" />
                     <input type="hidden" name="username" value={user.username} />
                     <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline">
@@ -164,13 +182,14 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           ))}
         </div>
       </div>
-      
+
       {/* Create New User */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 class="text-lg font-semibold text-gray-800 dark:text-purple-100">Add New User</h2>
         </div>
         <form method="POST" class="px-6 py-4">
+          <input type="hidden" name="csrf_token" value={csrfToken} />
           <input type="hidden" name="action" value="create" />
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>

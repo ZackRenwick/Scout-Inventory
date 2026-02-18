@@ -24,6 +24,8 @@
   ],
   "imports": {
     "$fresh/": "https://deno.land/x/fresh@1.7.3/",
+    "bcryptjs": "npm:bcryptjs@2.4.3",
+    "@types/bcryptjs": "npm:@types/bcryptjs@2.4.6",
     "tailwindcss": "npm:tailwindcss@3.4.1",
     "tailwindcss/": "npm:/tailwindcss@3.4.1/",
     "tailwindcss/plugin": "npm:/tailwindcss@3.4.1/plugin.js",
