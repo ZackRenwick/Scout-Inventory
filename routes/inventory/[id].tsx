@@ -7,6 +7,7 @@ import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import CategoryIcon from "../../components/CategoryIcon.tsx";
 import { formatDate } from "../../lib/date-utils.ts";
 import type { Session } from "../../lib/auth.ts";
+import { getItemById } from "../../db/kv.ts";
 
 interface ItemDetailData {
   item: InventoryItem | null;
@@ -18,20 +19,10 @@ export const handler: Handlers<ItemDetailData> = {
     const { id } = ctx.params;
     
     try {
-      const response = await fetch(`http://localhost:8000/api/items/${id}`);
-      if (!response.ok) {
+      const item = await getItemById(id);
+      if (!item) {
         return ctx.render({ item: null, session: ctx.state.session as Session });
       }
-      
-      const item = await response.json();
-      
-      // Convert date strings back to Date objects
-      item.addedDate = new Date(item.addedDate);
-      item.lastUpdated = new Date(item.lastUpdated);
-      if (item.expiryDate) {
-        item.expiryDate = new Date(item.expiryDate);
-      }
-      
       return ctx.render({ item, session: ctx.state.session as Session });
     } catch (error) {
       console.error("Failed to fetch item:", error);

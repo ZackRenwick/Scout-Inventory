@@ -6,6 +6,7 @@ import { getDaysUntil } from "../../lib/date-utils.ts";
 import Layout from "../../components/Layout.tsx";
 import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import type { Session } from "../../lib/auth.ts";
+import { getAllItems } from "../../db/kv.ts";
 
 interface ExpiringFoodData {
   expired: FoodItem[];
@@ -17,32 +18,23 @@ interface ExpiringFoodData {
 export const handler: Handlers<ExpiringFoodData> = {
   async GET(_req, ctx) {
     try {
-      const response = await fetch(`http://localhost:8000/api/items?category=food`);
-      const items: InventoryItem[] = await response.json();
-      
-      // Convert date strings and categorize
+      const items = await getAllItems();
+
       const expired: FoodItem[] = [];
       const expiringSoon: FoodItem[] = [];
       const expiringWarning: FoodItem[] = [];
-      
-      // deno-lint-ignore no-explicit-any
-      items.forEach((item: any) => {
+
+      items.forEach((item) => {
         if (isFoodItem(item)) {
-          const foodItem: FoodItem = {
-            ...item,
-            addedDate: new Date(item.addedDate),
-            lastUpdated: new Date(item.lastUpdated),
-            expiryDate: new Date(item.expiryDate),
-          };
           
-          const daysUntil = getDaysUntil(foodItem.expiryDate);
+          const daysUntil = getDaysUntil(item.expiryDate);
           
           if (daysUntil < 0) {
-            expired.push(foodItem);
+            expired.push(item);
           } else if (daysUntil <= 7) {
-            expiringSoon.push(foodItem);
+            expiringSoon.push(item);
           } else if (daysUntil <= 30) {
-            expiringWarning.push(foodItem);
+            expiringWarning.push(item);
           }
         }
       });

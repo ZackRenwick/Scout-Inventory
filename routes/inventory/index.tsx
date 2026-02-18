@@ -4,6 +4,7 @@ import type { InventoryItem } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import InventoryTable from "../../islands/InventoryTable.tsx";
 import type { Session } from "../../lib/auth.ts";
+import { getAllItems } from "../../db/kv.ts";
 
 interface InventoryPageData {
   items: InventoryItem[];
@@ -16,19 +17,9 @@ export const handler: Handlers<InventoryPageData> = {
     const url = new URL(req.url);
     const needsRepair = url.searchParams.get("needsrepair") === "true";
     try {
-      const response = await fetch(`http://localhost:8000/api/items`);
-      const items = await response.json();
-      
-      // Convert date strings back to Date objects
-      // deno-lint-ignore no-explicit-any
-      const processedItems = items.map((item: any) => ({
-        ...item,
-        addedDate: new Date(item.addedDate),
-        lastUpdated: new Date(item.lastUpdated),
-        expiryDate: item.expiryDate ? new Date(item.expiryDate) : undefined,
-      }));
-      
-      return ctx.render({ items: processedItems, session: ctx.state.session as Session, needsRepair });
+      const items = await getAllItems();
+      items.sort((a, b) => a.name.localeCompare(b.name));
+      return ctx.render({ items, session: ctx.state.session as Session, needsRepair });
     } catch (error) {
       console.error("Failed to fetch items:", error);
       return ctx.render({ items: [], session: ctx.state.session as Session, needsRepair });

@@ -3,6 +3,9 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../components/Layout.tsx";
 import StatCard from "../components/StatCard.tsx";
 import type { Session } from "../lib/auth.ts";
+import { getAllItems } from "../db/kv.ts";
+import { isFoodItem } from "../types/inventory.ts";
+import { getDaysUntil } from "../lib/date-utils.ts";
 
 interface DashboardData {
   stats: {
@@ -28,10 +31,35 @@ interface DashboardData {
 export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
     try {
-      const response = await fetch(`http://localhost:8000/api/stats`);
-      const stats = await response.json();
-      
-      return ctx.render({ stats, session: ctx.state.session as Session });
+      const items = await getAllItems();
+      const stats = {
+        totalItems: items.length,
+        totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
+        categoryBreakdown: {
+          tent: { count: 0, quantity: 0 },
+          cooking: { count: 0, quantity: 0 },
+          food: { count: 0, quantity: 0 },
+          "camping-tools": { count: 0, quantity: 0 },
+        } as Record<string, { count: number; quantity: number }>,
+        lowStockItems: 0,
+        needsRepairItems: 0,
+        expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
+      };
+      for (const item of items) {
+        if (item.category in stats.categoryBreakdown) {
+          stats.categoryBreakdown[item.category].count++;
+          stats.categoryBreakdown[item.category].quantity += item.quantity;
+        }
+        if (item.quantity <= item.minThreshold) stats.lowStockItems++;
+        if ("condition" in item && (item as { condition: string }).condition === "needs-repair") stats.needsRepairItems++;
+        if (isFoodItem(item)) {
+          const d = getDaysUntil(item.expiryDate);
+          if (d < 0) stats.expiringFood.expired++;
+          else if (d <= 7) stats.expiringFood.expiringSoon++;
+          else if (d <= 30) stats.expiringFood.expiringWarning++;
+        }
+      }
+      return ctx.render({ stats: stats as DashboardData["stats"], session: ctx.state.session as Session });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       // Return empty stats on error

@@ -4,6 +4,7 @@ import type { InventoryItem } from "../../../types/inventory.ts";
 import Layout from "../../../components/Layout.tsx";
 import ItemForm from "../../../islands/ItemForm.tsx";
 import type { Session } from "../../../lib/auth.ts";
+import { getItemById } from "../../../db/kv.ts";
 
 interface EditItemData {
   item: InventoryItem | null;
@@ -15,27 +16,17 @@ export const handler: Handlers<EditItemData> = {
     const { id } = ctx.params;
     
     try {
-      const response = await fetch(`http://localhost:8000/api/items/${id}`);
-      if (!response.ok) {
-        return ctx.render({ item: null, session: ctx.state.session as Session });
-      }
-      
       const session = ctx.state.session as Session;
       // Viewers cannot edit items
       if (session.role === "viewer") {
         return new Response(null, { status: 302, headers: { location: `/inventory/${id}` } });
       }
 
-      const item = await response.json();
-      
-      // Convert date strings back to Date objects
-      item.addedDate = new Date(item.addedDate);
-      item.lastUpdated = new Date(item.lastUpdated);
-      if (item.expiryDate) {
-        item.expiryDate = new Date(item.expiryDate);
+      const item = await getItemById(id);
+      if (!item) {
+        return ctx.render({ item: null, session });
       }
-      
-      return ctx.render({ item, session: ctx.state.session as Session });
+      return ctx.render({ item, session });
     } catch (error) {
       console.error("Failed to fetch item:", error);
       return ctx.render({ item: null, session: ctx.state.session as Session });
