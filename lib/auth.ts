@@ -2,7 +2,7 @@
 // Authentication helpers: users and sessions stored in Deno KV
 import bcrypt from "bcryptjs";
 
-const SESSION_DURATION_MS = 1000 * 60 * 60 * 8; // 8 hours
+const SESSION_DURATION_MS = 1000 * 60 * 15; // 15 minutes
 const BCRYPT_ROUNDS = 12;
 
 // SHA-256 hashes are 64 lowercase hex chars — used to detect legacy hashes
