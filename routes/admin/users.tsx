@@ -8,6 +8,7 @@ import {
   updateUserPassword,
   deleteAllSessionsForUser,
   getUserByUsername,
+  validatePassword,
   type User,
   type Session,
 } from "../../lib/auth.ts";
@@ -23,18 +24,12 @@ interface UsersPageData {
 export const handler: Handlers<UsersPageData> = {
   async GET(_req, ctx) {
     const session = ctx.state.session as Session;
-    if (session.role !== "admin") {
-      return new Response(null, { status: 302, headers: { location: "/" } });
-    }
     const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
     return ctx.render({ users, session, csrfToken: session.csrfToken });
   },
 
   async POST(req, ctx) {
     const session = ctx.state.session as Session;
-    if (session.role !== "admin") {
-      return new Response(null, { status: 302, headers: { location: "/" } });
-    }
 
     const form = await req.formData();
 
@@ -54,7 +49,8 @@ export const handler: Handlers<UsersPageData> = {
         const role = (form.get("role") as "admin" | "viewer") ?? "viewer";
 
         if (!username || !password) throw new Error("Username and password are required.");
-        if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+        const createErr = validatePassword(password);
+        if (createErr) throw new Error(createErr);
 
         const existing = await getAllUsers();
         if (existing.some((u) => u.username === username)) throw new Error(`User "${username}" already exists.`);
@@ -77,7 +73,8 @@ export const handler: Handlers<UsersPageData> = {
       if (action === "change-password") {
         const username = form.get("username") as string;
         const newPassword = form.get("newPassword") as string ?? "";
-        if (newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
+        const pwErr = validatePassword(newPassword);
+        if (pwErr) throw new Error(pwErr);
         await updateUserPassword(username, newPassword);
         // Invalidate all active sessions for this user
         const target = await getUserByUsername(username);
@@ -154,14 +151,21 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                     <input type="hidden" name="action" value="change-password" />
                     <input type="hidden" name="username" value={user.username} />
                     <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New password</label>
-                    <input
-                      type="password"
-                      name="newPassword"
-                      required
-                      minLength={8}
-                      placeholder="Min 8 characters"
-                      class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded mb-2 focus:ring-1 focus:ring-purple-500"
-                    />
+                    <div class="relative mb-2">
+                      <input
+                        type="password"
+                        id={`npw-${user.id}`}
+                        name="newPassword"
+                        required
+                        minLength={12}
+                        maxLength={128}
+                        placeholder="Min 12 characters"
+                        class="w-full px-2 py-1.5 pr-8 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
+                      />
+                      <button type="button" {...{"onclick": `togglePw('npw-${user.id}','ntog-${user.id}')`}} class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
+                        <span id={`ntog-${user.id}`}>👁</span>
+                      </button>
+                    </div>
                     <button type="submit" class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
                       Update
                     </button>
@@ -203,14 +207,21 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-              <input
-                type="password"
-                name="password"
-                required
-                minLength={8}
-                placeholder="Min 8 characters"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-              />
+              <div class="relative">
+                <input
+                  type="password"
+                  id="createPw"
+                  name="password"
+                  required
+                  minLength={12}
+                  maxLength={128}
+                  placeholder="Min 12 characters"
+                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                />
+                <button type="button" {...{"onclick": "togglePw('createPw','createPwTog')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
+                  <span id="createPwTog">👁</span>
+                </button>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>

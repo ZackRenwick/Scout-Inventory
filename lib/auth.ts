@@ -8,6 +8,37 @@ const BCRYPT_ROUNDS = 12;
 // SHA-256 hashes are 64 lowercase hex chars — used to detect legacy hashes
 const SHA256_RE = /^[0-9a-f]{64}$/;
 
+// ===== PASSWORD POLICY (NIST SP 800-63B) =====
+// - Minimum 12 characters, maximum 128
+// - No mandatory complexity rules (forced symbols/numbers are counterproductive)
+// - Block a list of commonly used passwords
+const PASSWORD_MIN = 12;
+const PASSWORD_MAX = 128;
+const COMMON_PASSWORDS = new Set([
+  "password", "password1", "password12", "password123", "password1234",
+  "123456789012", "12345678901", "1234567890", "123456789", "12345678",
+  "qwerty123456", "qwertyuiop", "letmein123", "iloveyou123",
+  "welcome123", "admin12345", "monkey1234", "dragon1234",
+  "passw0rd123", "p@ssword123", "abc123456789",
+]);
+
+/**
+ * Validates a candidate password against the site policy.
+ * Returns an error message string if invalid, or null if valid.
+ */
+export function validatePassword(password: string): string | null {
+  if (password.length < PASSWORD_MIN) {
+    return `Password must be at least ${PASSWORD_MIN} characters.`;
+  }
+  if (password.length > PASSWORD_MAX) {
+    return `Password must be no more than ${PASSWORD_MAX} characters.`;
+  }
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+    return "That password is too commonly used. Please choose a more unique one.";
+  }
+  return null;
+}
+
 export interface User {
   id: string;
   username: string;

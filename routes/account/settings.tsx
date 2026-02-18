@@ -7,6 +7,7 @@ import {
   deleteAllSessionsForUser,
   createSession,
   makeSessionCookie,
+  validatePassword,
   type Session,
 } from "../../lib/auth.ts";
 
@@ -52,9 +53,8 @@ export const handler: Handlers<AccountData> = {
       if (!currentPassword || !newPassword || !confirmPassword) {
         throw new Error("All fields are required.");
       }
-      if (newPassword.length < 8) {
-        throw new Error("New password must be at least 8 characters.");
-      }
+      const pwErr = validatePassword(newPassword);
+      if (pwErr) throw new Error(pwErr);
       if (newPassword !== confirmPassword) {
         throw new Error("New passwords do not match.");
       }
@@ -132,43 +132,60 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="currentPassword">
                 Current password
               </label>
-              <input
-                id="currentPassword"
-                type="password"
-                name="currentPassword"
-                required
-                autocomplete="current-password"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              <div class="relative">
+                <input
+                  id="currentPassword"
+                  type="password"
+                  name="currentPassword"
+                  required
+                  autocomplete="current-password"
+                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button type="button" {...{"onclick": "togglePw('currentPassword','tog0')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
+                  <span id="tog0">👁</span>
+                </button>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="newPassword">
                 New password
               </label>
-              <input
-                id="newPassword"
-                type="password"
-                name="newPassword"
-                required
-                minLength={8}
-                autocomplete="new-password"
-                placeholder="Min 8 characters"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              <div class="relative">
+                <input
+                  id="newPassword"
+                  type="password"
+                  name="newPassword"
+                  required
+                  minLength={12}
+                  maxLength={128}
+                  autocomplete="new-password"
+                  placeholder="Min 12 characters"
+                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button type="button" {...{"onclick": "togglePw('newPassword','tog1')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
+                  <span id="tog1">👁</span>
+                </button>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="confirmPassword">
                 Confirm new password
               </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                name="confirmPassword"
-                required
-                minLength={8}
-                autocomplete="new-password"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+              <div class="relative">
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  name="confirmPassword"
+                  required
+                  minLength={12}
+                  maxLength={128}
+                  autocomplete="new-password"
+                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+                <button type="button" {...{"onclick": "togglePw('confirmPassword','tog2')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
+                  <span id="tog2">👁</span>
+                </button>
+              </div>
             </div>
             <button
               type="submit"

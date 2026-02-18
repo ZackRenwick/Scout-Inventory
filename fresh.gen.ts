@@ -6,6 +6,7 @@ import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $_middleware from "./routes/_middleware.ts";
 import * as $account_settings from "./routes/account/settings.tsx";
+import * as $admin_middleware from "./routes/admin/_middleware.ts";
 import * as $admin_users from "./routes/admin/users.tsx";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
@@ -21,6 +22,7 @@ import * as $inventory_index from "./routes/inventory/index.tsx";
 import * as $login from "./routes/login.tsx";
 import * as $reports_expiring from "./routes/reports/expiring.tsx";
 import * as $Counter from "./islands/Counter.tsx";
+import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
@@ -34,6 +36,7 @@ const manifest = {
     "./routes/_app.tsx": $_app,
     "./routes/_middleware.ts": $_middleware,
     "./routes/account/settings.tsx": $account_settings,
+    "./routes/admin/_middleware.ts": $admin_middleware,
     "./routes/admin/users.tsx": $admin_users,
     "./routes/api/items/[id].ts": $api_items_id_,
     "./routes/api/items/index.ts": $api_items_index,
@@ -51,6 +54,7 @@ const manifest = {
   },
   islands: {
     "./islands/Counter.tsx": $Counter,
+    "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
     "./islands/MobileNav.tsx": $MobileNav,

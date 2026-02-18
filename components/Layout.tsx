@@ -1,6 +1,7 @@
 // Layout component for consistent page structure
 import { ComponentChildren } from "preact";
 import MobileNav from "../islands/MobileNav.tsx";
+import EasterEgg from "../islands/EasterEgg.tsx";
 
 interface LayoutProps {
   children: ComponentChildren;
@@ -33,11 +34,26 @@ export default function Layout({ children, title, username, role }: LayoutProps)
       
       <footer class="bg-purple-800 dark:bg-gray-950 text-purple-200 mt-16 border-t border-purple-700 dark:border-purple-900">
         <div class="container mx-auto px-4 py-6 text-center">
-          <p class="text-sm">
-            Scout Camp Loft Inventory System · Built with Fresh 🍋
+          <p class="text-sm flex flex-col items-center gap-1">
+            Scout Camp Loft Inventory System · Built with Fresh{" "}
+            <EasterEgg />
           </p>
         </div>
       </footer>
+      <script dangerouslySetInnerHTML={{ __html: `
+        function togglePw(inputId, btnId) {
+          var input = document.getElementById(inputId);
+          var btn = document.getElementById(btnId);
+          if (!input) return;
+          if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '\uD83D\uDE48';
+          } else {
+            input.type = 'password';
+            btn.textContent = '\uD83D\uDC41';
+          }
+        }
+      ` }} />
     </div>
   );
 }
