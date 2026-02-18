@@ -110,16 +110,18 @@ export async function deleteUser(username: string): Promise<boolean> {
 
 // Ensure at least one admin exists from env vars on startup
 export async function ensureDefaultAdmin(): Promise<void> {
-  const kv = await getKv();
-  const entries = kv.list<User>({ prefix: ["auth", "users"] });
-  let hasAdmin = false;
-  for await (const entry of entries) {
-    if (entry.value.role === "admin") { hasAdmin = true; break; }
-  }
-  if (hasAdmin) return;
-
   const username = Deno.env.get("ADMIN_USERNAME") ?? "admin";
   const password = Deno.env.get("ADMIN_PASSWORD") ?? "changeme";
+
+  const existing = await getUserByUsername(username);
+  if (existing) {
+    // Always sync password from env so credential changes take effect on redeploy
+    await updateUserPassword(existing.id, password);
+    console.log(`[auth] Synced admin credentials for: ${username}`);
+    return;
+  }
+
+  // No user with that username — create one
   await createUser(username, password, "admin");
   console.log(`[auth] Created default admin user: ${username}`);
 }
