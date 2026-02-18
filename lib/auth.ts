@@ -1,6 +1,6 @@
 /// <reference lib="deno.unstable" />
 // Authentication helpers: users and sessions stored in Deno KV
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 const SESSION_DURATION_MS = 1000 * 60 * 60 * 8; // 8 hours
 const BCRYPT_ROUNDS = 12;
