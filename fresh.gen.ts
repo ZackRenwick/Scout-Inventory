@@ -24,6 +24,7 @@ import * as $Counter from "./islands/Counter.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
+import * as $PasswordInput from "./islands/PasswordInput.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -53,6 +54,7 @@ const manifest = {
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
     "./islands/MobileNav.tsx": $MobileNav,
+    "./islands/PasswordInput.tsx": $PasswordInput,
     "./islands/ThemeToggle.tsx": $ThemeToggle,
   },
   baseUrl: import.meta.url,

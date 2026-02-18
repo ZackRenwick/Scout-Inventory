@@ -9,6 +9,7 @@ import {
   getSession,
   ensureDefaultAdmin,
 } from "../lib/auth.ts";
+import PasswordInput from "../islands/PasswordInput.tsx";
 
 interface LoginData {
   error?: string;
@@ -112,14 +113,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="password">
                   Password
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  required
-                  autocomplete="current-password"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                />
+                <PasswordInput />
               </div>
 
               <button
