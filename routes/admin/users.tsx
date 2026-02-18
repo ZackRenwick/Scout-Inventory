@@ -1,0 +1,220 @@
+// Admin — manage users (admin role only)
+import { Handlers, PageProps } from "$fresh/server.ts";
+import Layout from "../../components/Layout.tsx";
+import {
+  getAllUsers,
+  createUser,
+  deleteUser,
+  updateUserPassword,
+  type User,
+  type Session,
+} from "../../lib/auth.ts";
+
+interface UsersPageData {
+  users: Omit<User, "passwordHash">[];
+  session: Session;
+  message?: string;
+  error?: string;
+}
+
+export const handler: Handlers<UsersPageData> = {
+  async GET(_req, ctx) {
+    const session = ctx.state.session as Session;
+    if (session.role !== "admin") {
+      return new Response(null, { status: 302, headers: { location: "/" } });
+    }
+    const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+    return ctx.render({ users, session });
+  },
+
+  async POST(req, ctx) {
+    const session = ctx.state.session as Session;
+    if (session.role !== "admin") {
+      return new Response(null, { status: 302, headers: { location: "/" } });
+    }
+
+    const form = await req.formData();
+    const action = form.get("action") as string;
+
+    try {
+      if (action === "create") {
+        const username = (form.get("username") as string ?? "").trim().toLowerCase();
+        const password = form.get("password") as string ?? "";
+        const role = (form.get("role") as "admin" | "viewer") ?? "viewer";
+
+        if (!username || !password) throw new Error("Username and password are required.");
+        if (password.length < 8) throw new Error("Password must be at least 8 characters.");
+
+        const existing = await getAllUsers();
+        if (existing.some((u) => u.username === username)) throw new Error(`User "${username}" already exists.`);
+
+        await createUser(username, password, role);
+        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+        return ctx.render({ users, session, message: `User "${username}" created successfully.` });
+      }
+
+      if (action === "delete") {
+        const username = form.get("username") as string;
+        if (username === session.username) throw new Error("You cannot delete your own account.");
+        await deleteUser(username);
+        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+        return ctx.render({ users, session, message: `User "${username}" deleted.` });
+      }
+
+      if (action === "change-password") {
+        const username = form.get("username") as string;
+        const newPassword = form.get("newPassword") as string ?? "";
+        if (newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
+        await updateUserPassword(username, newPassword);
+        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+        return ctx.render({ users, session, message: `Password updated for "${username}".` });
+      }
+    } catch (err) {
+      const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+      return ctx.render({ users, session, error: (err as Error).message });
+    }
+
+    const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+    return ctx.render({ users, session });
+  },
+};
+
+export default function UsersPage({ data }: PageProps<UsersPageData>) {
+  const { users, session, message, error } = data;
+
+  return (
+    <Layout title="User Management" username={session.username} role={session.role}>
+      <div class="mb-6">
+        <p class="text-gray-600 dark:text-gray-400">Manage who can access the inventory system</p>
+      </div>
+
+      {message && (
+        <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
+          ✅ {message}
+        </div>
+      )}
+      {error && (
+        <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 rounded-lg text-red-800 dark:text-red-200 text-sm">
+          ❌ {error}
+        </div>
+      )}
+
+      {/* Existing Users */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-purple-100">Current Users</h2>
+        </div>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+          {users.map((user) => (
+            <div key={user.id} class="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-gray-800 dark:text-gray-100">👤 {user.username}</span>
+                  <span class={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    user.role === "admin"
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
+                      : user.role === "editor"
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                      : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                  }`}>
+                    {user.role}
+                  </span>
+                  {user.username === session.username && (
+                    <span class="text-xs text-gray-400 dark:text-gray-500">(you)</span>
+                  )}
+                </div>
+                <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  Created {new Date(user.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                {/* Change password inline form */}
+                <details class="relative">
+                  <summary class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer list-none">
+                    Change password
+                  </summary>
+                  <form method="POST" class="absolute right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-lg z-10 w-64">
+                    <input type="hidden" name="action" value="change-password" />
+                    <input type="hidden" name="username" value={user.username} />
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New password</label>
+                    <input
+                      type="password"
+                      name="newPassword"
+                      required
+                      minLength={8}
+                      placeholder="Min 8 characters"
+                      class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded mb-2 focus:ring-1 focus:ring-purple-500"
+                    />
+                    <button type="submit" class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
+                      Update
+                    </button>
+                  </form>
+                </details>
+                {user.username !== session.username && (
+                  <form method="POST" onSubmit="return confirm('Delete user ' + this.username.value + '?')">
+                    <input type="hidden" name="action" value="delete" />
+                    <input type="hidden" name="username" value={user.username} />
+                    <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline">
+                      Delete
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Create New User */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-purple-100">Add New User</h2>
+        </div>
+        <form method="POST" class="px-6 py-4">
+          <input type="hidden" name="action" value="create" />
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+              <input
+                type="text"
+                name="username"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+              <input
+                type="password"
+                name="password"
+                required
+                minLength={8}
+                placeholder="Min 8 characters"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+              <select
+                name="role"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="viewer">Viewer — read only</option>
+                <option value="editor">Editor — manage inventory</option>
+                <option value="admin">Admin — full access</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-4">
+            <button
+              type="submit"
+              class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors text-sm"
+            >
+              ➕ Create User
+            </button>
+          </div>
+        </form>
+      </div>
+    </Layout>
+  );
+}

@@ -1,0 +1,101 @@
+// Base inventory item interface
+export interface BaseInventoryItem {
+  id: string;
+  name: string;
+  category: "tent" | "cooking" | "food" | "camping-tools";
+  quantity: number;
+  minThreshold: number;
+  location: string;
+  notes?: string;
+  addedDate: Date;
+  lastUpdated: Date;
+}
+
+// Tent-specific properties
+export interface TentItem extends BaseInventoryItem {
+  category: "tent";
+  tentType: "dome" | "tunnel" | "patrol" | "ridge" | "bell" | "other";
+  capacity: number; // Number of people
+  size: string; // e.g., "4-person", "8-person"
+  condition: "excellent" | "good" | "fair" | "needs-repair";
+  brand?: string;
+  yearPurchased?: number;
+}
+
+// Cooking equipment properties
+export interface CookingEquipment extends BaseInventoryItem {
+  category: "cooking";
+  equipmentType: "stove" | "pots" | "pans" | "utensils" | "cooler" | "water-container" | "other";
+  material?: string;
+  fuelType?: string; // For stoves
+  capacity?: string; // For pots, coolers, etc.
+  condition: "excellent" | "good" | "fair" | "needs-repair";
+}
+
+// Food item properties with expiry tracking
+export interface FoodItem extends BaseInventoryItem {
+  category: "food";
+  foodType: "canned" | "dried" | "packaged" | "fresh" | "frozen";
+  expiryDate: Date;
+  storageRequirements?: "frozen" | "refrigerated" | "cool-dry" | "room-temp";
+  allergens?: string[];
+  weight?: string;
+  servings?: number;
+}
+
+// Camping tools properties
+export interface CampingToolItem extends BaseInventoryItem {
+  category: "camping-tools";
+  toolType: "axe" | "saw" | "knife" | "shovel" | "rope" | "hammer" | "multi-tool" | "other";
+  condition: "excellent" | "good" | "fair" | "needs-repair";
+  material?: string;
+  brand?: string;
+  yearPurchased?: number;
+}
+
+// Union type for all inventory items
+export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem;
+
+// Helper type guards
+export function isTentItem(item: InventoryItem): item is TentItem {
+  return item.category === "tent";
+}
+
+export function isCookingEquipment(item: InventoryItem): item is CookingEquipment {
+  return item.category === "cooking";
+}
+
+export function isFoodItem(item: InventoryItem): item is FoodItem {
+  return item.category === "food";
+}
+
+export function isCampingToolItem(item: InventoryItem): item is CampingToolItem {
+  return item.category === "camping-tools";
+}
+
+// Expiry status for food items
+export type ExpiryStatus = "expired" | "expiring-soon" | "expiring-warning" | "fresh";
+
+export function getExpiryStatus(expiryDate: Date): ExpiryStatus {
+  const now = new Date();
+  const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (daysUntilExpiry < 0) return "expired";
+  if (daysUntilExpiry <= 7) return "expiring-soon";
+  if (daysUntilExpiry <= 30) return "expiring-warning";
+  return "fresh";
+}
+
+// Check-out tracking
+export interface CheckOut {
+  id: string;
+  itemId: string;
+  itemName: string;
+  borrower: string;
+  quantity: number;
+  checkOutDate: Date;
+  expectedReturnDate: Date;
+  actualReturnDate?: Date;
+  status: "checked-out" | "returned" | "overdue";
+  notes?: string;
+}

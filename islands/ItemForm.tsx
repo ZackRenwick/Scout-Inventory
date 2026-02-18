@@ -1,0 +1,362 @@
+// Form for adding/editing inventory items
+import { Signal, useSignal } from "@preact/signals";
+
+interface ItemFormProps {
+  initialData?: any;
+  isEdit?: boolean;
+}
+
+export default function ItemForm({ initialData, isEdit = false }: ItemFormProps) {
+  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools">(initialData?.category || "tent");
+  const submitting = useSignal(false);
+  const error = useSignal("");
+  const success = useSignal("");
+  
+  const handleSubmit = async (e: Event) => {
+    e.preventDefault();
+    submitting.value = true;
+    error.value = "";
+    
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    const data: any = {
+      name: formData.get("name"),
+      category: category.value,
+      quantity: parseInt(formData.get("quantity") as string),
+      minThreshold: parseInt(formData.get("minThreshold") as string),
+      location: formData.get("location"),
+      notes: formData.get("notes") || undefined,
+    };
+    
+    // Category-specific fields
+    if (category.value === "tent") {
+      data.tentType = formData.get("tentType");
+      data.capacity = parseInt(formData.get("capacity") as string);
+      data.size = formData.get("size");
+      data.condition = formData.get("condition");
+      data.brand = formData.get("brand") || undefined;
+      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+    } else if (category.value === "cooking") {
+      data.equipmentType = formData.get("equipmentType");
+      data.material = formData.get("material") || undefined;
+      data.fuelType = formData.get("fuelType") || undefined;
+      data.capacity = formData.get("capacityField") || undefined;
+      data.condition = formData.get("condition");
+    } else if (category.value === "camping-tools") {
+      data.toolType = formData.get("toolType");
+      data.condition = formData.get("condition");
+      data.material = formData.get("material") || undefined;
+      data.brand = formData.get("brand") || undefined;
+      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+    } else if (category.value === "food") {
+      data.foodType = formData.get("foodType");
+      data.expiryDate = formData.get("expiryDate");
+      data.storageRequirements = formData.get("storageRequirements") || undefined;
+      data.weight = formData.get("weight") || undefined;
+      data.servings = formData.get("servings") ? parseInt(formData.get("servings") as string) : undefined;
+      
+      const allergens = formData.get("allergens") as string;
+      if (allergens) {
+        data.allergens = allergens.split(",").map(a => a.trim());
+      }
+    }
+    
+    try {
+      const url = isEdit ? `/api/items/${initialData.id}` : "/api/items";
+      const method = isEdit ? "PUT" : "POST";
+      
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      
+      if (response.ok) {
+        success.value = isEdit ? "Item updated successfully!" : "Item added successfully!";
+        setTimeout(() => { window.location.href = "/inventory"; }, 1200);
+      } else {
+        const result = await response.json();
+        error.value = result.error || "Failed to save item";
+      }
+    } catch (err) {
+      error.value = "Network error occurred";
+    } finally {
+      submitting.value = false;
+    }
+  };
+  
+  const inputClass = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2";
+
+  return (
+    <form onSubmit={handleSubmit} class="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 w-full max-w-2xl">
+      {success.value && (
+        <div class="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded flex items-center gap-2">
+          <span>✓</span> {success.value}
+        </div>
+      )}
+      {error.value && (
+        <div class="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded">
+          {error.value}
+        </div>
+      )}
+      
+      {/* Category Selection */}
+      <div class="mb-6">
+        <label class={labelClass}>
+          Category *
+        </label>
+        <select
+          value={category.value}
+          onChange={(e) => category.value = (e.target as HTMLSelectElement).value as any}
+          disabled={isEdit}
+          class={inputClass}
+          required
+        >
+          <option value="tent">⛺ Tent</option>
+          <option value="cooking">🍳 Cooking Equipment</option>
+          <option value="food">🥫 Food</option>
+          <option value="camping-tools">🪓 Camping Tools</option>
+        </select>
+      </div>
+      
+      {/* Common Fields */}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div>
+          <label class={labelClass}>
+            Item Name *
+          </label>
+          <input type="text" name="name" defaultValue={initialData?.name} required class={inputClass} />
+        </div>
+        
+        <div>
+          <label class={labelClass}>
+            Location *
+          </label>
+          <input type="text" name="location" defaultValue={initialData?.location} required placeholder="e.g., Storage Shed A - Shelf 1" class={inputClass} />
+        </div>
+        
+        <div>
+          <label class={labelClass}>
+            Quantity *
+          </label>
+          <input type="number" name="quantity" defaultValue={initialData?.quantity || 1} min="0" required class={inputClass} />
+        </div>
+        
+        <div>
+          <label class={labelClass}>
+            Minimum Threshold *
+          </label>
+          <input type="number" name="minThreshold" defaultValue={initialData?.minThreshold || 1} min="0" required class={inputClass} />
+        </div>
+      </div>
+      
+      {/* Tent-specific fields */}
+      {category.value === "tent" && (
+        <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Tent Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Type *</label>
+              <select name="tentType" defaultValue={initialData?.tentType} required class={inputClass}>
+                <option value="dome">Dome</option>
+                <option value="tunnel">Tunnel</option>
+                <option value="patrol">Patrol</option>
+                <option value="ridge">Ridge</option>
+                <option value="bell">Bell</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Capacity (people) *</label>
+              <input type="number" name="capacity" defaultValue={initialData?.capacity} required min="1" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Size Description *</label>
+              <input type="text" name="size" defaultValue={initialData?.size} required placeholder="e.g., 4-person" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Condition *</label>
+              <select name="condition" defaultValue={initialData?.condition} required class={inputClass}>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="needs-repair">Needs Repair</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Brand</label>
+              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Year Purchased</label>
+              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Cooking-specific fields */}
+      {category.value === "cooking" && (
+        <div class="mb-6 p-4 bg-orange-50 dark:bg-orange-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Cooking Equipment Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Equipment Type *</label>
+              <select name="equipmentType" defaultValue={initialData?.equipmentType} required class={inputClass}>
+                <option value="stove">Stove</option>
+                <option value="pots">Pots</option>
+                <option value="pans">Pans</option>
+                <option value="utensils">Utensils</option>
+                <option value="cooler">Cooler</option>
+                <option value="water-container">Water Container</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Condition *</label>
+              <select name="condition" defaultValue={initialData?.condition} required class={inputClass}>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="needs-repair">Needs Repair</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Material</label>
+              <input type="text" name="material" defaultValue={initialData?.material} placeholder="e.g., stainless steel" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Fuel Type</label>
+              <input type="text" name="fuelType" defaultValue={initialData?.fuelType} placeholder="For stoves" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Capacity</label>
+              <input type="text" name="capacityField" defaultValue={initialData?.capacity} placeholder="e.g., 5L, 48 quart" class={inputClass} />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Camping Tools-specific fields */}
+      {category.value === "camping-tools" && (
+        <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Camping Tool Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Tool Type *</label>
+              <select name="toolType" defaultValue={initialData?.toolType} required class={inputClass}>
+                <option value="axe">Axe</option>
+                <option value="saw">Saw</option>
+                <option value="knife">Knife</option>
+                <option value="shovel">Shovel</option>
+                <option value="rope">Rope</option>
+                <option value="hammer">Hammer</option>
+                <option value="multi-tool">Multi-tool</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Condition *</label>
+              <select name="condition" defaultValue={initialData?.condition} required class={inputClass}>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="needs-repair">Needs Repair</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Material</label>
+              <input type="text" name="material" defaultValue={initialData?.material} placeholder="e.g., carbon steel" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Brand</label>
+              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Year Purchased</label>
+              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Food-specific fields */}
+      {category.value === "food" && (
+        <div class="mb-6 p-4 bg-green-50 dark:bg-green-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Food Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Food Type *</label>
+              <select name="foodType" defaultValue={initialData?.foodType} required class={inputClass}>
+                <option value="canned">Canned</option>
+                <option value="dried">Dried</option>
+                <option value="packaged">Packaged</option>
+                <option value="fresh">Fresh</option>
+                <option value="frozen">Frozen</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Expiry Date *</label>
+              <input type="date" name="expiryDate" defaultValue={initialData?.expiryDate ? new Date(initialData.expiryDate).toISOString().split('T')[0] : ''} required class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Storage Requirements</label>
+              <select name="storageRequirements" defaultValue={initialData?.storageRequirements} class={inputClass}>
+                <option value="">Not specified</option>
+                <option value="frozen">Frozen</option>
+                <option value="refrigerated">Refrigerated</option>
+                <option value="cool-dry">Cool & Dry</option>
+                <option value="room-temp">Room Temperature</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Weight</label>
+              <input type="text" name="weight" defaultValue={initialData?.weight} placeholder="e.g., 15oz" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Servings</label>
+              <input type="number" name="servings" defaultValue={initialData?.servings} min="1" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Allergens</label>
+              <input type="text" name="allergens" defaultValue={initialData?.allergens?.join(", ")} placeholder="Comma-separated" class={inputClass} />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Notes */}
+      <div class="mb-6">
+        <label class={labelClass}>
+          Notes
+        </label>
+        <textarea
+          name="notes"
+          defaultValue={initialData?.notes}
+          rows={3}
+          class={inputClass}
+          placeholder="Additional notes or comments..."
+        />
+      </div>
+      
+      {/* Submit Buttons */}
+      <div class="flex gap-3">
+        <button
+          type="submit"
+          disabled={submitting.value}
+          class="px-6 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {submitting.value ? "Saving..." : (isEdit ? "Update Item" : "Add Item")}
+        </button>
+        <a
+          href="/inventory"
+          class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Cancel
+        </a>
+      </div>
+    </form>
+  );
+}
