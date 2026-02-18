@@ -15,6 +15,7 @@ interface DashboardData {
       "camping-tools": { count: number; quantity: number };
     };
     lowStockItems: number;
+    needsRepairItems: number;
     expiringFood: {
       expired: number;
       expiringSoon: number;
@@ -45,6 +46,7 @@ export const handler: Handlers<DashboardData> = {
             "camping-tools": { count: 0, quantity: 0 },
           },
           lowStockItems: 0,
+          needsRepairItems: 0,
           expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
         },
         session: ctx.state.session as Session,
@@ -55,7 +57,7 @@ export const handler: Handlers<DashboardData> = {
 
 export default function Home({ data }: PageProps<DashboardData>) {
   const { stats, session } = data;
-  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon;
+  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.needsRepairItems;
   
   return (
     <Layout username={session?.username} role={session?.role}>
@@ -86,6 +88,9 @@ export default function Home({ data }: PageProps<DashboardData>) {
                   {stats.expiringFood.expiringSoon > 0 && (
                     <li>{stats.expiringFood.expiringSoon} food item{stats.expiringFood.expiringSoon !== 1 ? 's' : ''} expiring within 7 days</li>
                   )}
+                  {stats.needsRepairItems > 0 && (
+                    <li>{stats.needsRepairItems} item{stats.needsRepairItems !== 1 ? 's' : ''} need repair</li>
+                  )}
                 </ul>
               </div>
               <div class="mt-3">
@@ -101,7 +106,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
       {/* Quick Actions */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-4">Quick Actions</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <a
             href="/inventory/add"
             class="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -129,6 +134,13 @@ export default function Home({ data }: PageProps<DashboardData>) {
           >
             <span class="text-xl mr-2">⚠️</span>
             <span class="font-medium">Low Stock</span>
+          </a>
+          <a
+            href="/inventory?needsrepair=true"
+            class="flex items-center justify-center p-4 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+          >
+            <span class="text-xl mr-2">🔧</span>
+            <span class="font-medium">Needs Repair</span>
           </a>
         </div>
       </div>

@@ -2,18 +2,21 @@
 import { Signal, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
 import { isFoodItem } from "../types/inventory.ts";
+import type { ItemCategory } from "../types/inventory.ts";
 import ExpiryBadge from "../components/ExpiryBadge.tsx";
 import CategoryIcon from "../components/CategoryIcon.tsx";
 
 interface InventoryTableProps {
   items: InventoryItem[];
   canEdit?: boolean;
+  initialNeedsRepair?: boolean;
 }
 
-export default function InventoryTable({ items, canEdit = true }: InventoryTableProps) {
+export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false }: InventoryTableProps) {
   const searchQuery = useSignal("");
-  const categoryFilter = useSignal<"all" | "tent" | "cooking" | "food" | "camping-tools">("all");
+  const categoryFilter = useSignal<"all" | ItemCategory>("all");
   const showLowStock = useSignal(false);
+  const showNeedsRepair = useSignal(initialNeedsRepair);
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
   
@@ -35,7 +38,15 @@ export default function InventoryTable({ items, canEdit = true }: InventoryTable
     if (showLowStock.value && item.quantity > item.minThreshold) {
       return false;
     }
-    
+
+    // Needs repair filter
+    if (showNeedsRepair.value) {
+      const hasCondition = "condition" in item;
+      if (!hasCondition || (item as { condition: string }).condition !== "needs-repair") {
+        return false;
+      }
+    }
+
     return true;
   });
   
@@ -108,7 +119,7 @@ export default function InventoryTable({ items, canEdit = true }: InventoryTable
             </select>
           </div>
           
-          <div class="flex items-end">
+          <div class="flex items-end gap-6 flex-wrap">
             <label class="flex items-center space-x-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -117,7 +128,18 @@ export default function InventoryTable({ items, canEdit = true }: InventoryTable
                 class="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
               />
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Show Low Stock Only
+                Low Stock Only
+              </span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showNeedsRepair.value}
+                onChange={(e) => showNeedsRepair.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Needs Repair Only
               </span>
             </label>
           </div>

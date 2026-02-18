@@ -28,6 +28,12 @@ export const handler: Handlers = {
       if (category && (category === "tent" || category === "cooking" || category === "food" || category === "camping-tools")) {
         items = items.filter(item => item.category === category);
       }
+
+      // Apply needs-repair filter
+      const needsRepair = url.searchParams.get("needsrepair");
+      if (needsRepair === "true") {
+        items = items.filter(item => "condition" in item && (item as { condition: string }).condition === "needs-repair");
+      }
       
       // Sort by name
       items.sort((a, b) => a.name.localeCompare(b.name));

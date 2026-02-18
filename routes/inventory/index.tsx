@@ -8,10 +8,13 @@ import type { Session } from "../../lib/auth.ts";
 interface InventoryPageData {
   items: InventoryItem[];
   session?: Session;
+  needsRepair: boolean;
 }
 
 export const handler: Handlers<InventoryPageData> = {
-  async GET(_req, ctx) {
+  async GET(req, ctx) {
+    const url = new URL(req.url);
+    const needsRepair = url.searchParams.get("needsrepair") === "true";
     try {
       const response = await fetch(`http://localhost:8000/api/items`);
       const items = await response.json();
@@ -25,10 +28,10 @@ export const handler: Handlers<InventoryPageData> = {
         expiryDate: item.expiryDate ? new Date(item.expiryDate) : undefined,
       }));
       
-      return ctx.render({ items: processedItems, session: ctx.state.session as Session });
+      return ctx.render({ items: processedItems, session: ctx.state.session as Session, needsRepair });
     } catch (error) {
       console.error("Failed to fetch items:", error);
-      return ctx.render({ items: [], session: ctx.state.session as Session });
+      return ctx.render({ items: [], session: ctx.state.session as Session, needsRepair });
     }
   },
 };
@@ -51,7 +54,7 @@ export default function InventoryPage({ data }: PageProps<InventoryPageData>) {
         </div>
       </div>
       
-      <InventoryTable items={data.items} canEdit={canEdit} />
+      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} />
     </Layout>
   );
 }

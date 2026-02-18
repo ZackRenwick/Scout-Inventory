@@ -14,6 +14,7 @@ interface Stats {
     "camping-tools": { count: number; quantity: number };
   };
   lowStockItems: number;
+  needsRepairItems: number;
   expiringFood: {
     expired: number;
     expiringSoon: number; // Within 7 days
@@ -36,6 +37,7 @@ export const handler: Handlers = {
           "camping-tools": { count: 0, quantity: 0 },
         },
         lowStockItems: 0,
+        needsRepairItems: 0,
         expiringFood: {
           expired: 0,
           expiringSoon: 0,
@@ -54,6 +56,11 @@ export const handler: Handlers = {
         // Low stock items
         if (item.quantity <= item.minThreshold) {
           stats.lowStockItems++;
+        }
+
+        // Needs repair
+        if ("condition" in item && (item as { condition: string }).condition === "needs-repair") {
+          stats.needsRepairItems++;
         }
         
         // Expiring food

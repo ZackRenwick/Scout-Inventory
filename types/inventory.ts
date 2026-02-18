@@ -1,8 +1,10 @@
 // Base inventory item interface
+export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools";
+
 export interface BaseInventoryItem {
   id: string;
   name: string;
-  category: "tent" | "cooking" | "food" | "camping-tools";
+  category: ItemCategory;
   quantity: number;
   minThreshold: number;
   location: string;
