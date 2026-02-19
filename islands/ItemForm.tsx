@@ -1,5 +1,6 @@
 // Form for adding/editing inventory items
 import { Signal, useSignal } from "@preact/signals";
+import { ITEM_LOCATIONS } from "../types/inventory.ts";
 
 interface ItemFormProps {
   initialData?: any;
@@ -11,7 +12,16 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
   const submitting = useSignal(false);
   const error = useSignal("");
   const success = useSignal("");
-  
+
+  // Find the group that contains the initial location value (for edit mode)
+  const initialGroup = initialData?.location
+    ? (ITEM_LOCATIONS.find((g) => g.options.includes(initialData.location))?.group ?? ITEM_LOCATIONS[0].group)
+    : ITEM_LOCATIONS[0].group;
+  const locationGroup = useSignal<string>(initialGroup);
+  const locationValue = useSignal<string>(
+    initialData?.location ?? ITEM_LOCATIONS[0].options[0]
+  );
+
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     submitting.value = true;
@@ -130,11 +140,37 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
           <input type="text" name="name" defaultValue={initialData?.name} required class={inputClass} />
         </div>
         
-        <div>
-          <label class={labelClass}>
-            Location *
-          </label>
-          <input type="text" name="location" defaultValue={initialData?.location} required placeholder="e.g., Storage Shed A - Shelf 1" class={inputClass} />
+        <div class="sm:col-span-2">
+          <label class={labelClass}>Location *</label>
+          <div class="flex gap-2">
+            {/* Step 1: pick a category of storage */}
+            <select
+              class={inputClass}
+              value={locationGroup.value}
+              onChange={(e) => {
+                const group = (e.target as HTMLSelectElement).value;
+                locationGroup.value = group;
+                const firstOption = ITEM_LOCATIONS.find((g) => g.group === group)?.options[0] ?? "N/A";
+                locationValue.value = firstOption;
+              }}
+            >
+              {ITEM_LOCATIONS.map(({ group }) => (
+                <option value={group}>{group}</option>
+              ))}
+            </select>
+            {/* Step 2: pick the specific slot within that category */}
+            <select
+              name="location"
+              required
+              class={inputClass}
+              value={locationValue.value}
+              onChange={(e) => { locationValue.value = (e.target as HTMLSelectElement).value; }}
+            >
+              {ITEM_LOCATIONS.find((g) => g.group === locationGroup.value)?.options.map((loc) => (
+                <option value={loc}>{loc}</option>
+              ))}
+            </select>
+          </div>
         </div>
         
         <div>

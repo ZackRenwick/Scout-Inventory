@@ -1,13 +1,68 @@
 // Base inventory item interface
 export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools";
 
+export type ItemLocation =
+  | "Plastic Shelf 1 - Level 1" | "Plastic Shelf 1 - Level 2" | "Plastic Shelf 1 - Level 3" | "Plastic Shelf 1 - Level 4"
+  | "Plastic Shelf 2 - Level 1" | "Plastic Shelf 2 - Level 2" | "Plastic Shelf 2 - Level 3" | "Plastic Shelf 2 - Level 4"
+  | "Plastic Shelf 3 - Level 1" | "Plastic Shelf 3 - Level 2" | "Plastic Shelf 3 - Level 3" | "Plastic Shelf 3 - Level 4"
+  | "Wooden Shelf 1" | "Wooden Shelf 2" | "Wooden Shelf 3"
+  | "Metal Shelf 1 - Slot 1" | "Metal Shelf 1 - Slot 2" | "Metal Shelf 1 - Slot 3" | "Metal Shelf 1 - Slot 4"
+  | "Metal Shelf 2 - Slot 1" | "Metal Shelf 2 - Slot 2" | "Metal Shelf 2 - Slot 3" | "Metal Shelf 2 - Slot 4"
+  | "Metal Shelf 3 - Slot 1" | "Metal Shelf 3 - Slot 2" | "Metal Shelf 3 - Slot 3" | "Metal Shelf 3 - Slot 4"
+  | "Metal Shelf 4 - Slot 1" | "Metal Shelf 4 - Slot 2" | "Metal Shelf 4 - Slot 3" | "Metal Shelf 4 - Slot 4"
+  | "Filing Cabinet - Drawer 1" | "Filing Cabinet - Drawer 2" | "Filing Cabinet - Drawer 3" | "Filing Cabinet - Drawer 4"
+  | "Blue Box" | "Red Box" | "Green Box" | "Yellow Box"
+  | "Kestrels Box" | "Eagles Box"
+  | "Cubby Hole"
+  | "Axe/Saw Hanging Space"
+  | "On Top of Red Box" | "On Top of Green Box"
+  | "N/A";
+
+export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
+  {
+    group: "Plastic Shelves",
+    options: [
+      "Plastic Shelf 1 - Level 1", "Plastic Shelf 1 - Level 2", "Plastic Shelf 1 - Level 3", "Plastic Shelf 1 - Level 4",
+      "Plastic Shelf 2 - Level 1", "Plastic Shelf 2 - Level 2", "Plastic Shelf 2 - Level 3", "Plastic Shelf 2 - Level 4",
+      "Plastic Shelf 3 - Level 1", "Plastic Shelf 3 - Level 2", "Plastic Shelf 3 - Level 3", "Plastic Shelf 3 - Level 4",
+    ],
+  },
+  {
+    group: "Wooden Shelves",
+    options: ["Wooden Shelf 1", "Wooden Shelf 2", "Wooden Shelf 3"],
+  },
+  {
+    group: "Metal Shelves",
+    options: [
+      "Metal Shelf 1 - Slot 1", "Metal Shelf 1 - Slot 2", "Metal Shelf 1 - Slot 3", "Metal Shelf 1 - Slot 4",
+      "Metal Shelf 2 - Slot 1", "Metal Shelf 2 - Slot 2", "Metal Shelf 2 - Slot 3", "Metal Shelf 2 - Slot 4",
+      "Metal Shelf 3 - Slot 1", "Metal Shelf 3 - Slot 2", "Metal Shelf 3 - Slot 3", "Metal Shelf 3 - Slot 4",
+      "Metal Shelf 4 - Slot 1", "Metal Shelf 4 - Slot 2", "Metal Shelf 4 - Slot 3", "Metal Shelf 4 - Slot 4",
+    ],
+  },
+  {
+    group: "Filing Cabinet",
+    options: [
+      "Filing Cabinet - Drawer 1", "Filing Cabinet - Drawer 2", "Filing Cabinet - Drawer 3", "Filing Cabinet - Drawer 4",
+    ],
+  },
+  {
+    group: "Boxes",
+    options: ["Blue Box", "Red Box", "Green Box", "Yellow Box", "Kestrels Box", "Eagles Box"],
+  },
+  {
+    group: "Other",
+    options: ["Axe/Saw Hanging Space", "On Top of Red Box", "On Top of Green Box", "Cubby Hole", "N/A"],
+  },
+];
+
 export interface BaseInventoryItem {
   id: string;
   name: string;
   category: ItemCategory;
   quantity: number;
   minThreshold: number;
-  location: string;
+  location: ItemLocation;
   notes?: string;
   addedDate: Date;
   lastUpdated: Date;
