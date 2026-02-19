@@ -1,7 +1,7 @@
 // Interactive inventory table with search and filtering
 import { Signal, useComputed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
-import { isFoodItem, isTentItem } from "../types/inventory.ts";
+import { isFoodItem, isTentItem, ITEM_LOCATIONS } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
 import ExpiryBadge from "../components/ExpiryBadge.tsx";
 import CategoryIcon from "../components/CategoryIcon.tsx";
@@ -17,8 +17,19 @@ interface InventoryTableProps {
 export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, initialLowStock = false, csrfToken = "" }: InventoryTableProps) {
   const searchQuery = useSignal("");
   const categoryFilter = useSignal<"all" | ItemCategory>("all");
+  const locationFilter = useSignal<string>("all");
   const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
+
+  const uniqueLocations = [...new Set(items.map((i) => i.location))];
+  const allDefinedLocations = new Set(ITEM_LOCATIONS.flatMap((g) => g.options as string[]));
+  const knownGroups = ITEM_LOCATIONS
+    .map((group) => ({ ...group, options: group.options.filter((o) => uniqueLocations.includes(o as string)) }))
+    .filter((group) => group.options.length > 0);
+  const ungroupedLocations = uniqueLocations.filter((l) => !allDefinedLocations.has(l)).sort();
+  const locationGroups = ungroupedLocations.length > 0
+    ? [...knownGroups, { group: "Other", options: ungroupedLocations }]
+    : knownGroups;
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
   
@@ -37,6 +48,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
       return false;
     }
     
+    // Location filter
+    if (locationFilter.value !== "all" && item.location !== locationFilter.value) {
+      return false;
+    }
+
     // Low stock filter
     if (showLowStock.value && item.quantity > item.minThreshold) {
       return false;
@@ -124,6 +140,24 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               <option value="cooking">🍳 Cooking Equipment</option>
               <option value="food">🥫 Food</option>
               <option value="camping-tools">🪓 Camping Tools</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label htmlFor="location-filter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Location</label>
+            <select
+              id="location-filter"
+              value={locationFilter.value}
+              onChange={(e) => locationFilter.value = (e.target as HTMLSelectElement).value}
+              class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="all">All Locations</option>
+              {locationGroups.map((group) => (
+                <optgroup key={group.group} label={group.group}>
+                  {group.options.map((loc) => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
         </div>
