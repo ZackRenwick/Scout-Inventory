@@ -108,23 +108,18 @@ export default function Home({ data }: PageProps<DashboardData>) {
               <div class="mt-2 text-sm text-red-700 dark:text-red-200">
                 <ul class="list-disc list-inside space-y-1">
                   {stats.lowStockItems > 0 && (
-                    <li>{stats.lowStockItems} item{stats.lowStockItems !== 1 ? 's' : ''} running low on stock</li>
+                    <li><a href="/inventory?lowstock=true" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.lowStockItems} item{stats.lowStockItems !== 1 ? 's' : ''} running low on stock</a></li>
                   )}
                   {stats.expiringFood.expired > 0 && (
-                    <li>{stats.expiringFood.expired} food item{stats.expiringFood.expired !== 1 ? 's' : ''} expired</li>
+                    <li><a href="/reports/expiring" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.expiringFood.expired} food item{stats.expiringFood.expired !== 1 ? 's' : ''} expired</a></li>
                   )}
                   {stats.expiringFood.expiringSoon > 0 && (
-                    <li>{stats.expiringFood.expiringSoon} food item{stats.expiringFood.expiringSoon !== 1 ? 's' : ''} expiring within 7 days</li>
+                    <li><a href="/reports/expiring" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.expiringFood.expiringSoon} food item{stats.expiringFood.expiringSoon !== 1 ? 's' : ''} expiring within 7 days</a></li>
                   )}
                   {stats.needsRepairItems > 0 && (
-                    <li>{stats.needsRepairItems} item{stats.needsRepairItems !== 1 ? 's' : ''} need repair</li>
+                    <li><a href="/inventory" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.needsRepairItems} item{stats.needsRepairItems !== 1 ? 's' : ''} need repair</a></li>
                   )}
                 </ul>
-              </div>
-              <div class="mt-3">
-                <a href="/reports/expiring" class="text-sm font-medium text-red-800 dark:text-red-100 hover:text-red-900 dark:hover:text-red-50 underline">
-                  View expiring food →
-                </a>
               </div>
             </div>
           </div>
