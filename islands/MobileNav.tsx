@@ -28,7 +28,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         <a href="/inventory/add" class="hover:text-purple-200 transition-colors">Add Item</a>
         <a href="/reports/expiring" class="hover:text-purple-200 transition-colors">Expiring Food</a>
         {role === "admin" && (
-          <a href="/admin/users" class="hover:text-purple-200 transition-colors">Users</a>
+          <a href="/admin/admin-panel" class="hover:text-purple-200 transition-colors">Admin</a>
         )}
         <ThemeToggle />
         {username && (
@@ -51,7 +51,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           <a href="/inventory/add" class="block px-6 py-3 hover:bg-purple-800 transition-colors">➕ Add Item</a>
           <a href="/reports/expiring" class="block px-6 py-3 hover:bg-purple-800 transition-colors">⏰ Expiring Food</a>
           {role === "admin" && (
-            <a href="/admin/users" class="block px-6 py-3 hover:bg-purple-800 transition-colors">👥 Users</a>
+            <a href="/admin/admin-panel" class="block px-6 py-3 hover:bg-purple-800 transition-colors">⚙️ Admin</a>
           )}
           {username && (
             <div class="border-t border-purple-700 mt-1">

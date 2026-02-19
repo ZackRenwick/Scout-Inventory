@@ -21,12 +21,14 @@ export const handler: Handlers<AddItemData> = {
 
 export default function AddItemPage({ data }: PageProps<AddItemData>) {
   return (
-    <Layout title="Add New Item" username={data.session?.username} role={data.session?.role}>
-      <div class="mb-6">
-        <p class="text-gray-600 dark:text-gray-400">Fill out the form below to add a new item to the inventory</p>
+    <Layout title="" username={data.session?.username} role={data.session?.role}>
+      <div class="flex flex-col items-center">
+        <div class="w-full max-w-2xl mb-6 text-center">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-1">Add New Item</h2>
+          <p class="text-gray-600 dark:text-gray-400">Fill out the form below to add a new item to the inventory</p>
+        </div>
+        <ItemForm />
       </div>
-      
-      <ItemForm />
     </Layout>
   );
 }

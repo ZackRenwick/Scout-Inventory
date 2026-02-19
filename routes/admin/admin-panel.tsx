@@ -104,12 +104,12 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
       {/* Exports */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">📊 Reports &amp; Exports</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Export the full inventory as a Microsoft Excel file (.xls). Opens directly in Excel, LibreOffice, or Google Sheets. All categories and fields are included.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Export the full inventory as a CSV file. Opens directly in Excel, LibreOffice, or Google Sheets. All categories and fields are included.</p>
         <a
           href="/admin/export"
           class="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg transition-colors"
         >
-          📥 Download Inventory Excel (.xls)
+          📥 Download Inventory CSV
         </a>
       </div>
 

@@ -49,14 +49,16 @@ export default function EditItemPage({ data }: PageProps<EditItemData>) {
   }
   
   return (
-    <Layout title={`Edit: ${data.item.name}`} username={data.session?.username} role={data.session?.role}>
-      <div class="mb-6">
-        <a href={`/inventory/${data.item.id}`} class="text-purple-600 dark:text-purple-400 hover:text-purple-800">
-          ← Back to Item Details
-        </a>
+    <Layout title="" username={data.session?.username} role={data.session?.role}>
+      <div class="flex flex-col items-center">
+        <div class="w-full max-w-2xl mb-6 text-center">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-1">Edit: {data.item.name}</h2>
+          <a href={`/inventory/${data.item.id}`} class="text-purple-600 dark:text-purple-400 hover:text-purple-800 text-sm">
+            ← Back to Item Details
+          </a>
+        </div>
+        <ItemForm initialData={data.item} isEdit />
       </div>
-      
-      <ItemForm initialData={data.item} isEdit />
     </Layout>
   );
 }
