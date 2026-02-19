@@ -185,7 +185,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           <label class={labelClass}>
             Minimum Threshold *
           </label>
-          <input type="number" name="minThreshold" defaultValue={initialData?.minThreshold || 1} min="0" required class={inputClass} />
+          <input type="number" name="minThreshold" defaultValue={initialData?.minThreshold ?? 0} min="0" required class={inputClass} />
         </div>
       </div>
       
