@@ -207,33 +207,29 @@ export default function Home({ data }: PageProps<DashboardData>) {
           <a href="/inventory?category=tent" class="block hover:shadow-lg transition-shadow">
             <StatCard
               title="⛺ Tents"
-              value={stats.categoryBreakdown.tent.count}
+              value={stats.categoryBreakdown.tent.quantity}
               color="blue"
-              subtitle={`${stats.categoryBreakdown.tent.quantity} total units`}
             />
           </a>
           <a href="/inventory?category=cooking" class="block hover:shadow-lg transition-shadow">
             <StatCard
               title="🍳 Cooking Equipment"
-              value={stats.categoryBreakdown.cooking.count}
+              value={stats.categoryBreakdown.cooking.quantity}
               color="purple"
-              subtitle={`${stats.categoryBreakdown.cooking.quantity} total units`}
             />
           </a>
           <a href="/inventory?category=food" class="block hover:shadow-lg transition-shadow">
             <StatCard
               title="🥫 Food Items"
-              value={stats.categoryBreakdown.food.count}
+              value={stats.categoryBreakdown.food.quantity}
               color="green"
-              subtitle={`${stats.categoryBreakdown.food.quantity} total units`}
             />
           </a>
           <a href="/inventory?category=camping-tools" class="block hover:shadow-lg transition-shadow">
             <StatCard
               title="🪓 Camping Tools"
-              value={stats.categoryBreakdown["camping-tools"].count}
+              value={stats.categoryBreakdown["camping-tools"].quantity}
               color="yellow"
-              subtitle={`${stats.categoryBreakdown["camping-tools"].quantity} total units`}
             />
           </a>
         </div>
