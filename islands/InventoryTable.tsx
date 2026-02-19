@@ -220,6 +220,14 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     View
                   </a>
                   {canEdit && (
+                    <a
+                      href={`/inventory/edit/${item.id}`}
+                      class="font-medium text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200"
+                    >
+                      Edit
+                    </a>
+                  )}
+                  {canEdit && (
                     confirmDeleteId.value === item.id ? (
                       <span class="flex items-center gap-2 ml-auto">
                         <span class="text-gray-500 dark:text-gray-400 text-xs">Delete?</span>
@@ -276,7 +284,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               </tr>
             ) : (
               filteredItems.value.map((item) => (
-                <tr key={item.id} class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <tr
+                  key={item.id}
+                  class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                  onClick={() => { globalThis.location.href = `/inventory/${item.id}`; }}
+                >
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
                     {item.notes && (
@@ -315,13 +327,16 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                       )}
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <a
-                      href={`/inventory/${item.id}`}
-                      class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200 mr-3"
-                    >
-                      View
-                    </a>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                    <div class="flex items-center gap-3">
+                    {canEdit && (
+                      <a
+                        href={`/inventory/edit/${item.id}`}
+                        class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200"
+                      >
+                        Edit
+                      </a>
+                    )}
                     {canEdit && (
                       confirmDeleteId.value === item.id ? (
                         <span class="inline-flex items-center gap-2">
@@ -348,6 +363,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                         </button>
                       )
                     )}
+                    </div>
                   </td>
                 </tr>
               ))
