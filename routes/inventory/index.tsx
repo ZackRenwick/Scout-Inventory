@@ -10,19 +10,21 @@ interface InventoryPageData {
   items: InventoryItem[];
   session?: Session;
   needsRepair: boolean;
+  lowStock: boolean;
 }
 
 export const handler: Handlers<InventoryPageData> = {
   async GET(req, ctx) {
     const url = new URL(req.url);
     const needsRepair = url.searchParams.get("needsrepair") === "true";
+    const lowStock = url.searchParams.get("lowstock") === "true";
     try {
       const items = await getAllItems();
       items.sort((a, b) => a.name.localeCompare(b.name));
-      return ctx.render({ items, session: ctx.state.session as Session, needsRepair });
+      return ctx.render({ items, session: ctx.state.session as Session, needsRepair, lowStock });
     } catch (error) {
       console.error("Failed to fetch items:", error);
-      return ctx.render({ items: [], session: ctx.state.session as Session, needsRepair });
+      return ctx.render({ items: [], session: ctx.state.session as Session, needsRepair, lowStock });
     }
   },
 };
@@ -45,7 +47,7 @@ export default function InventoryPage({ data }: PageProps<InventoryPageData>) {
         </div>
       </div>
       
-      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} csrfToken={data.session?.csrfToken} />
+      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} initialLowStock={data.lowStock} csrfToken={data.session?.csrfToken} />
     </Layout>
   );
 }

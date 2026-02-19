@@ -10,13 +10,14 @@ interface InventoryTableProps {
   items: InventoryItem[];
   canEdit?: boolean;
   initialNeedsRepair?: boolean;
+  initialLowStock?: boolean;
   csrfToken?: string;
 }
 
-export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, csrfToken = "" }: InventoryTableProps) {
+export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, initialLowStock = false, csrfToken = "" }: InventoryTableProps) {
   const searchQuery = useSignal("");
   const categoryFilter = useSignal<"all" | ItemCategory>("all");
-  const showLowStock = useSignal(false);
+  const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
