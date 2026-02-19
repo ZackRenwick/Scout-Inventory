@@ -24,50 +24,16 @@ function buildRow(item: InventoryItem): string {
   // deno-lint-ignore no-explicit-any
   const i = item as any;
   const cols = [
-    item.id,
     item.name,
     item.category,
     item.quantity,
-    item.minThreshold,
     item.location,
-    item.notes ?? "",
-    item.addedDate,
-    item.lastUpdated,
-    // Shared optional fields
-    i.condition ?? "",
-    i.brand ?? "",
     i.yearPurchased ?? "",
-    i.material ?? "",
-    // Tent
-    i.tentType ?? "",
-    i.capacity !== undefined && item.category === "tent" ? i.capacity : "",
-    i.size ?? "",
-    // Cooking
-    i.equipmentType ?? "",
-    i.fuelType ?? "",
-    i.capacity !== undefined && item.category === "cooking" ? i.capacity : "",
-    // Food
-    i.foodType ?? "",
-    i.expiryDate ? (i.expiryDate instanceof Date ? i.expiryDate : new Date(i.expiryDate)) : "",
-    i.storageRequirements ?? "",
-    Array.isArray(i.allergens) ? i.allergens.join("; ") : (i.allergens ?? ""),
-    i.weight ?? "",
-    i.servings ?? "",
-    // Camping tools
-    i.toolType ?? "",
   ];
   return cols.map(csvCell).join(",");
 }
 
-const HEADERS = [
-  "ID", "Name", "Category", "Quantity", "Min Threshold", "Location", "Notes",
-  "Added Date", "Last Updated",
-  "Condition", "Brand", "Year Purchased", "Material",
-  "Tent Type", "Tent Capacity", "Tent Size",
-  "Equipment Type", "Fuel Type", "Cooking Capacity",
-  "Food Type", "Expiry Date", "Storage Requirements", "Allergens", "Weight", "Servings",
-  "Tool Type",
-];
+const HEADERS = ["Name", "Category", "Quantity", "Location", "Year Purchased"];
 
 export const handler: Handlers = {
   async GET(_req, _ctx) {
