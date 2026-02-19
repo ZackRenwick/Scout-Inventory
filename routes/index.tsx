@@ -132,7 +132,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <a
             href="/inventory/add"
-            class="flex items-center justify-center p-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            class="flex items-center justify-center p-4 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
           >
             <span class="text-xl mr-2">➕</span>
             <span class="font-medium">Add Item</span>
@@ -146,7 +146,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
           </a>
           <a
             href="/reports/expiring"
-            class="flex items-center justify-center p-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            class="flex items-center justify-center p-4 bg-orange-700 text-white rounded-lg hover:bg-orange-800 transition-colors"
           >
             <span class="text-xl mr-2">⏰</span>
             <span class="font-medium">Expiring Food</span>
@@ -160,7 +160,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
           </a>
           <a
             href="/inventory?needsrepair=true"
-            class="flex items-center justify-center p-4 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            class="flex items-center justify-center p-4 bg-yellow-500 text-gray-900 rounded-lg hover:bg-yellow-600 transition-colors"
           >
             <span class="text-xl mr-2">🔧</span>
             <span class="font-medium">Needs Repair</span>

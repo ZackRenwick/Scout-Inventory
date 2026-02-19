@@ -170,7 +170,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     <span class="text-red-600 font-semibold text-xs">⚠️ LOW</span>
                   )}
                   {"condition" in item && (item as { condition: string }).condition === "needs-repair" && (
-                    <span class="text-yellow-600 font-semibold text-xs">🔧 REPAIR</span>
+                    <span class="text-yellow-700 dark:text-yellow-500 font-semibold text-xs">🔧 REPAIR</span>
                   )}
                 </div>
               </div>
