@@ -1,220 +1,181 @@
-# 🏕️ Scout Camp Loft Inventory System
+# 🏕️ Scout Inventory
 
-A comprehensive inventory management system for scout camp lofts, built with Fresh (Deno's next-generation web framework). Track tents, cooking equipment, and food items with expiry date monitoring.
+A web-based inventory management system for a scout troop store, built with [Fresh](https://fresh.deno.dev/) on [Deno](https://deno.land/). Track equipment, food, and supplies across a structured set of physical storage locations, with role-based access control for wardens and leaders.
+
+**Live:** https://scout-inventory.zackrenwick.deno.net
+
+---
 
 ## Features
 
 ### 📦 Inventory Management
-- **Three Main Categories:**
-  - ⛺ **Tents** - Track capacity, type, condition, and purchase details
-  - 🍳 **Cooking Equipment** - Manage stoves, pots, coolers, and utensils
-  - 🥫 **Food Items** - Monitor expiry dates, storage requirements, and allergens
+Four item categories, each with their own tracked fields:
 
-### 🎯 Key Functionality
-- ✅ Add, edit, view, and delete inventory items
-- 🔍 Search and filter by category, name, location
-- ⚠️ Low stock alerts (configurable minimum thresholds)
-- ⏰ Food expiry tracking with multi-tier warnings
-- 📊 Real-time dashboard with statistics
-- 📋 Detailed expiry reports for food items
-- 🏷️ Category-specific fields for specialized tracking
+| Category | Extra Fields |
+|---|---|
+| ⛺ **Tents** | Type, capacity, size, condition, brand, year purchased |
+| 🍳 **Cooking Equipment** | Equipment type, material, fuel type, capacity, condition |
+| 🥫 **Food** | Food type, expiry date, storage requirements, allergens, weight, servings |
+| 🪓 **Camping Tools** | Tool type, condition, material, brand, year purchased |
 
-### 🔔 Smart Alerts
-- **Expired items** - Items past expiry date
-- **Expiring soon** - Items expiring within 7 days
-- **Expiring warning** - Items expiring within 30 days
-- **Low stock** - Items at or below minimum threshold
+### 🔍 Search & Filtering
+- Full-text search across name, location, and notes
+- Filter by category
+- Toggle low-stock-only view
+- Toggle needs-repair-only view
+- Clickable table rows for quick item access
+
+### ⚠️ Alerts
+- **Low stock** — items at or below their minimum threshold
+- **Needs repair** — items with `condition: needs-repair`
+- **Food expiry** — four tiers: expired, expiring soon (≤7 days), expiring warning (≤30 days), fresh
+
+### 📍 Structured Storage Locations
+Items are assigned to a specific physical location via a two-step cascading dropdown:
+
+- **Plastic Shelves** 1–3, Levels 1–4 (plus top surface on shelves 2 & 3)
+- **Wooden Shelves** 1–3
+- **Metal Shelves** 1–4, Slots 1–4
+- **Filing Cabinet** — Drawers 1–4
+- **Boxes** — Blue, Red, Green, Yellow, Kestrels, Eagles
+- **Other** — Axe/Saw Hanging Space, On Top of Red/Green Box, Cubby Hole, N/A
+
+### 🔐 Authentication & Roles
+All routes are protected. Three roles:
+
+| Role | Permissions |
+|---|---|
+| **Admin** | Full access — manage items, manage users, export data |
+| **Editor** | Add, edit, and delete items |
+| **Viewer** | Read-only access to inventory and reports |
+
+Sessions expire after 15 minutes of inactivity. Passwords are hashed with bcrypt (12 rounds). CSRF tokens are validated on all mutating API calls.
+
+### 🛠️ Admin Panel
+- Create, edit, and delete user accounts
+- Assign roles
+- CSV export of full inventory
+
+### 📋 Reports
+- **Expiring Food** — items grouped by expiry tier with days-remaining display
+
+---
 
 ## Tech Stack
 
-- **Framework**: [Fresh](https://fresh.deno.dev/) - Deno's web framework
-- **Runtime**: [Deno](https://deno.land/) - Modern, secure TypeScript runtime
-- **Database**: Deno KV - Built-in key-value database (no setup required!)
-- **Styling**: Tailwind CSS
-- **UI**: Preact with Islands Architecture
+| | |
+|---|---|
+| **Framework** | [Fresh 1.7](https://fresh.deno.dev/) — file-based routing, islands architecture |
+| **Runtime** | [Deno](https://deno.land/) — TypeScript-native, secure by default |
+| **Database** | [Deno KV](https://deno.com/kv) — built-in key-value store, no setup required |
+| **Styling** | Tailwind CSS 3 |
+| **UI** | Preact with signals — islands for interactive components |
+| **Auth** | Custom session-based auth with bcrypt password hashing |
+| **Deployment** | [Deno Deploy](https://deno.com/deploy) |
+
+---
 
 ## Getting Started
 
 ### Prerequisites
-- Install [Deno](https://deno.land/) (v1.37 or later)
+- [Deno](https://deno.land/) v1.37+
 
-### Installation & Setup
+### Setup
 
-1. **Navigate to the project directory:**
-   ```bash
-   cd /Users/zr/dev/workspace/scout-inventory
-   ```
+```bash
+# Start the development server (hot reload enabled)
+deno task start
+```
 
-2. **Seed the database with sample data:**
-   ```bash
-   deno task seed
-   ```
-   This will populate your inventory with sample tents, cooking equipment, and food items.
+The app will be available at `http://localhost:8000`.
 
-3. **Start the development server:**
-   ```bash
-   deno task start
-   ```
-   The app will be available at `http://localhost:8000`
+In development, authentication is bypassed when `DEV_BYPASS=true` is set in your `.env` file. You are automatically signed in as an admin.
+
+```bash
+# Optionally seed the database with sample data
+deno task seed
+```
 
 ### Available Commands
 
 ```bash
-deno task start      # Start development server with hot reload
-deno task seed       # Populate database with sample data
+deno task start      # Start dev server with hot reload
+deno task seed       # Populate database with sample items
 deno task build      # Build for production
 deno task preview    # Preview production build
-deno task check      # Run type checking and linting
+deno task check      # Type check, lint, and format check
 ```
+
+---
 
 ## Project Structure
 
 ```
 scout-inventory/
-├── components/          # Reusable UI components
-│   ├── Layout.tsx      # Page layout with navigation
-│   ├── StatCard.tsx    # Dashboard statistics cards
-│   ├── ExpiryBadge.tsx # Food expiry status badges
-│   └── CategoryIcon.tsx # Category icons
-├── db/                 # Database layer
-│   ├── kv.ts          # Deno KV operations (CRUD)
-│   └── seed.ts        # Sample data seeding
-├── islands/            # Interactive components (client-side)
-│   ├── InventoryTable.tsx  # Interactive inventory table
-│   └── ItemForm.tsx        # Add/edit item form
-├── lib/                # Utility functions
-│   ├── date-utils.ts   # Date formatting and calculations
-│   └── validation.ts   # Input validation helpers
-├── routes/             # File-based routing
-│   ├── index.tsx       # Dashboard
+├── components/              # Server-rendered UI components
+│   ├── Layout.tsx           # Page shell with nav, theme toggle
+│   ├── StatCard.tsx         # Dashboard stat cards
+│   ├── ExpiryBadge.tsx      # Food expiry status badge
+│   └── CategoryIcon.tsx     # Category emoji icons
+├── db/
+│   ├── kv.ts                # All Deno KV operations (with in-memory cache)
+│   └── seed.ts              # Sample data seeder
+├── islands/                 # Client-side interactive components
+│   ├── InventoryTable.tsx   # Searchable, filterable inventory list
+│   ├── ItemForm.tsx         # Add/edit item form with cascading location picker
+│   ├── MobileNav.tsx        # Mobile navigation drawer
+│   ├── ThemeToggle.tsx      # Dark/light mode toggle
+│   └── PasswordInput.tsx    # Password field with show/hide toggle
+├── lib/
+│   ├── auth.ts              # Session management, bcrypt hashing, user CRUD
+│   ├── date-utils.ts        # Date formatting and expiry calculations
+│   └── validation.ts        # Input validation helpers
+├── routes/
+│   ├── _app.tsx             # HTML shell (lang, meta description)
+│   ├── _middleware.ts       # Auth guard + cache headers for static assets
+│   ├── index.tsx            # Dashboard
+│   ├── login.tsx            # Login page
 │   ├── inventory/
-│   │   ├── index.tsx   # Inventory list
-│   │   ├── add.tsx     # Add new item
-│   │   ├── [id].tsx    # Item details
-│   │   └── edit/[id].tsx # Edit item
+│   │   ├── index.tsx        # Inventory list
+│   │   ├── add.tsx          # Add item
+│   │   ├── [id].tsx         # Item detail view
+│   │   └── edit/[id].tsx    # Edit item
 │   ├── reports/
-│   │   └── expiring.tsx # Expiring food report
-│   └── api/            # REST API endpoints
+│   │   └── expiring.tsx     # Expiring food report
+│   ├── admin/
+│   │   ├── admin-panel.tsx  # Admin overview
+│   │   ├── users.tsx        # User management
+│   │   └── export.ts        # CSV export
+│   ├── account/
+│   │   └── settings.tsx     # Change password
+│   └── api/
 │       ├── items/
-│       │   ├── index.ts    # GET all, POST new
-│       │   └── [id].ts     # GET, PUT, DELETE by ID
-│       └── stats.ts        # Dashboard statistics
-├── types/              # TypeScript type definitions
-│   └── inventory.ts    # Inventory item types
-└── static/             # Static assets
-    └── styles.css      # Global styles
+│       │   ├── index.ts     # GET all / POST new item
+│       │   └── [id].ts      # GET / PUT / DELETE item by ID
+│       ├── stats.ts         # Dashboard statistics
+│       ├── logout.ts        # Session logout
+│       └── ping.ts          # Health check (used by warmup cron)
+├── types/
+│   └── inventory.ts         # Item types, ItemLocation enum, ITEM_LOCATIONS
+└── static/
+    └── styles.css           # Global styles
 ```
-
-## Usage Guide
-
-### Dashboard
-- View overview statistics for all inventory
-- See alerts for low stock and expiring food
-- Quick access to category breakdowns
-- One-click navigation to common tasks
-
-### Managing Inventory
-
-**Adding Items:**
-1. Click "Add Item" from dashboard or navigation
-2. Select category (Tent, Cooking, or Food)
-3. Fill in required fields (name, quantity, location, threshold)
-4. Add category-specific details
-5. Save to inventory
-
-**Viewing Items:**
-- Browse all items in the Inventory page
-- Use search to find items by name, location, or notes
-- Filter by category or show only low stock items
-- Click "View" to see full item details
-
-**Editing Items:**
-- Open item details page
-- Click "Edit" button
-- Update any fields (category cannot be changed)
-- Save changes
-
-**Deleting Items:**
-- From inventory list, click "Delete" on any item
-- Confirm deletion
-
-### Food Expiry Monitoring
-- Navigate to "Expiring Food" from dashboard or navigation
-- Items are organized into three categories:
-  - **Expired** (red) - Remove immediately
-  - **Expiring Soon** (orange) - Within 7 days
-  - **Expiring Warning** (yellow) - Within 30 days
-
-### Category-Specific Features
-
-**Tents:**
-- Type (dome, tunnel, patrol, ridge, bell)
-- Capacity and size
-- Condition tracking
-- Brand and purchase year
-
-**Cooking Equipment:**
-- Equipment type (stove, pots, cooler, etc.)
-- Material and fuel type
-- Capacity specifications
-- Condition tracking
-
-**Food Items:**
-- Food type (canned, dried, packaged, fresh, frozen)
-- Expiry date with visual indicators
-- Storage requirements
-- Allergen tracking
-- Weight and serving information
-
-## Data Persistence
-
-The app uses **Deno KV**, a built-in key-value database that:
-- Requires no external database setup
-- Stores data locally in development
-- Automatically handles serialization
-- Provides fast, simple key-value storage
-
-Data persists between server restarts automatically.
-
-## Customization
-
-### Adding New Categories
-1. Update `types/inventory.ts` with new category type
-2. Add category-specific interface
-3. Update form in `islands/ItemForm.tsx`
-4. Add display logic in detail pages
-
-### Modifying Expiry Thresholds
-Edit the logic in `types/inventory.ts`:
-```typescript
-export function getExpiryStatus(expiryDate: Date): ExpiryStatus {
-  const daysUntilExpiry = Math.floor(...);
-  if (daysUntilExpiry < 0) return "expired";
-  if (daysUntilExpiry <= 7) return "expiring-soon";    // Change these
-  if (daysUntilExpiry <= 30) return "expiring-warning"; // thresholds
-  return "fresh";
-}
-```
-
-## Future Enhancement Ideas
-
-- 📤 Export inventory to CSV/Excel
-- 📧 Email notifications for expiring items
-- 🔄 Check-out/check-in system for borrowed equipment
-- 📱 Mobile-responsive improvements
-- 📷 Photo uploads for items
-- 📈 Historical tracking and analytics
-- 🔐 User authentication and roles
-- 📦 Barcode/QR code scanning
-
-## License
-
-MIT License - Feel free to use and modify for your scout troop!
-
-## Contributing
-
-Contributions welcome! This is a community project designed to help scout organizations manage their equipment more effectively.
 
 ---
 
-Built with ❤️ for scout troops everywhere using Fresh and Deno 🦕
+## Deployment
+
+The app is deployed to Deno Deploy via GitHub. Push to `main` to trigger a deploy.
+
+A `Deno.cron` job runs every 5 minutes to self-ping the app and keep the isolate warm, reducing cold-start latency. The target URL is read from the `APP_URL` environment variable (set in the Deno Deploy dashboard).
+
+---
+
+## Security Notes
+
+- No SQL — uses Deno KV (key-value), immune to SQL injection
+- Passwords hashed with bcrypt (12 rounds); legacy SHA-256 hashes are auto-migrated on next login
+- CSRF tokens validated on all state-mutating API calls (`POST`, `PUT`, `DELETE`)
+- Session cookies are `HttpOnly` and `SameSite=Strict`
+- All routes except `/login`, `/styles.css`, and `/api/ping` require an authenticated session
+
