@@ -164,9 +164,14 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                   <CategoryIcon category={item.category} size="sm" />
                   <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{item.name}</span>
                 </div>
-                {item.quantity <= item.minThreshold && (
-                  <span class="text-red-600 font-semibold text-xs shrink-0">⚠️ LOW</span>
-                )}
+                <div class="flex flex-col items-end gap-1 shrink-0">
+                  {item.quantity <= item.minThreshold && (
+                    <span class="text-red-600 font-semibold text-xs">⚠️ LOW</span>
+                  )}
+                  {"condition" in item && (item as { condition: string }).condition === "needs-repair" && (
+                    <span class="text-yellow-600 font-semibold text-xs">🔧 REPAIR</span>
+                  )}
+                </div>
               </div>
               {item.notes && (
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{item.notes}</p>
@@ -283,9 +288,16 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     <div class="text-sm text-gray-900 dark:text-gray-100">{item.location}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    {isFoodItem(item) && (
-                      <ExpiryBadge expiryDate={item.expiryDate} />
-                    )}
+                    <div class="flex flex-col items-start gap-1">
+                      {isFoodItem(item) && (
+                        <ExpiryBadge expiryDate={item.expiryDate} />
+                      )}
+                      {"condition" in item && (item as { condition: string }).condition === "needs-repair" && (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                          🔧 Needs Repair
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <a

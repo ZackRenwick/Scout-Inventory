@@ -159,13 +159,13 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Type *</label>
-              <select name="tentType" defaultValue={initialData?.tentType} required class={inputClass}>
-                <option value="dome">Dome</option>
-                <option value="tunnel">Tunnel</option>
-                <option value="patrol">Patrol</option>
-                <option value="ridge">Ridge</option>
-                <option value="bell">Bell</option>
-                <option value="other">Other</option>
+              <select name="tentType" required class={inputClass}>
+                <option value="dome" selected={initialData?.tentType === "dome"}>Dome</option>
+                <option value="tunnel" selected={initialData?.tentType === "tunnel"}>Tunnel</option>
+                <option value="patrol" selected={initialData?.tentType === "patrol"}>Patrol</option>
+                <option value="ridge" selected={initialData?.tentType === "ridge"}>Ridge</option>
+                <option value="bell" selected={initialData?.tentType === "bell"}>Bell</option>
+                <option value="other" selected={initialData?.tentType === "other"}>Other</option>
               </select>
             </div>
             <div>
@@ -178,11 +178,11 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
-              <select name="condition" defaultValue={initialData?.condition} required class={inputClass}>
-                <option value="excellent">Excellent</option>
-                <option value="good">Good</option>
-                <option value="fair">Fair</option>
-                <option value="needs-repair">Needs Repair</option>
+              <select name="condition" required class={inputClass}>
+                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
+                <option value="good" selected={initialData?.condition === "good"}>Good</option>
+                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
+                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
               </select>
             </div>
             <div>
@@ -204,23 +204,23 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Equipment Type *</label>
-              <select name="equipmentType" defaultValue={initialData?.equipmentType} required class={inputClass}>
-                <option value="stove">Stove</option>
-                <option value="pots">Pots</option>
-                <option value="pans">Pans</option>
-                <option value="utensils">Utensils</option>
-                <option value="cooler">Cooler</option>
-                <option value="water-container">Water Container</option>
-                <option value="other">Other</option>
+              <select name="equipmentType" required class={inputClass}>
+                <option value="stove" selected={initialData?.equipmentType === "stove"}>Stove</option>
+                <option value="pots" selected={initialData?.equipmentType === "pots"}>Pots</option>
+                <option value="pans" selected={initialData?.equipmentType === "pans"}>Pans</option>
+                <option value="utensils" selected={initialData?.equipmentType === "utensils"}>Utensils</option>
+                <option value="cooler" selected={initialData?.equipmentType === "cooler"}>Cooler</option>
+                <option value="water-container" selected={initialData?.equipmentType === "water-container"}>Water Container</option>
+                <option value="other" selected={initialData?.equipmentType === "other"}>Other</option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
-              <select name="condition" defaultValue={initialData?.condition} required class={inputClass}>
-                <option value="excellent">Excellent</option>
-                <option value="good">Good</option>
-                <option value="fair">Fair</option>
-                <option value="needs-repair">Needs Repair</option>
+              <select name="condition" required class={inputClass}>
+                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
+                <option value="good" selected={initialData?.condition === "good"}>Good</option>
+                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
+                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
               </select>
             </div>
             <div>
@@ -246,24 +246,24 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Tool Type *</label>
-              <select name="toolType" defaultValue={initialData?.toolType} required class={inputClass}>
-                <option value="axe">Axe</option>
-                <option value="saw">Saw</option>
-                <option value="knife">Knife</option>
-                <option value="shovel">Shovel</option>
-                <option value="rope">Rope</option>
-                <option value="hammer">Hammer</option>
-                <option value="multi-tool">Multi-tool</option>
-                <option value="other">Other</option>
+              <select name="toolType" required class={inputClass}>
+                <option value="axe" selected={initialData?.toolType === "axe"}>Axe</option>
+                <option value="saw" selected={initialData?.toolType === "saw"}>Saw</option>
+                <option value="knife" selected={initialData?.toolType === "knife"}>Knife</option>
+                <option value="shovel" selected={initialData?.toolType === "shovel"}>Shovel</option>
+                <option value="rope" selected={initialData?.toolType === "rope"}>Rope</option>
+                <option value="hammer" selected={initialData?.toolType === "hammer"}>Hammer</option>
+                <option value="multi-tool" selected={initialData?.toolType === "multi-tool"}>Multi-tool</option>
+                <option value="other" selected={initialData?.toolType === "other"}>Other</option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
-              <select name="condition" defaultValue={initialData?.condition} required class={inputClass}>
-                <option value="excellent">Excellent</option>
-                <option value="good">Good</option>
-                <option value="fair">Fair</option>
-                <option value="needs-repair">Needs Repair</option>
+              <select name="condition" required class={inputClass}>
+                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
+                <option value="good" selected={initialData?.condition === "good"}>Good</option>
+                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
+                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
               </select>
             </div>
             <div>
@@ -289,12 +289,12 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Food Type *</label>
-              <select name="foodType" defaultValue={initialData?.foodType} required class={inputClass}>
-                <option value="canned">Canned</option>
-                <option value="dried">Dried</option>
-                <option value="packaged">Packaged</option>
-                <option value="fresh">Fresh</option>
-                <option value="frozen">Frozen</option>
+              <select name="foodType" required class={inputClass}>
+                <option value="canned" selected={initialData?.foodType === "canned"}>Canned</option>
+                <option value="dried" selected={initialData?.foodType === "dried"}>Dried</option>
+                <option value="packaged" selected={initialData?.foodType === "packaged"}>Packaged</option>
+                <option value="fresh" selected={initialData?.foodType === "fresh"}>Fresh</option>
+                <option value="frozen" selected={initialData?.foodType === "frozen"}>Frozen</option>
               </select>
             </div>
             <div>
@@ -303,12 +303,12 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
             </div>
             <div>
               <label class={labelClass}>Storage Requirements</label>
-              <select name="storageRequirements" defaultValue={initialData?.storageRequirements} class={inputClass}>
-                <option value="">Not specified</option>
-                <option value="frozen">Frozen</option>
-                <option value="refrigerated">Refrigerated</option>
-                <option value="cool-dry">Cool & Dry</option>
-                <option value="room-temp">Room Temperature</option>
+              <select name="storageRequirements" class={inputClass}>
+                <option value="" selected={!initialData?.storageRequirements}>Not specified</option>
+                <option value="frozen" selected={initialData?.storageRequirements === "frozen"}>Frozen</option>
+                <option value="refrigerated" selected={initialData?.storageRequirements === "refrigerated"}>Refrigerated</option>
+                <option value="cool-dry" selected={initialData?.storageRequirements === "cool-dry"}>Cool & Dry</option>
+                <option value="room-temp" selected={initialData?.storageRequirements === "room-temp"}>Room Temperature</option>
               </select>
             </div>
             <div>
