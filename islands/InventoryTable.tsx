@@ -1,7 +1,7 @@
 // Interactive inventory table with search and filtering
 import { Signal, useComputed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
-import { isFoodItem } from "../types/inventory.ts";
+import { isFoodItem, isTentItem } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
 import ExpiryBadge from "../components/ExpiryBadge.tsx";
 import CategoryIcon from "../components/CategoryIcon.tsx";
@@ -189,6 +189,16 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     <span class="text-xs text-gray-500 dark:text-gray-400 block">Location</span>
                     <span class="text-gray-900 dark:text-gray-100 truncate block">{item.location}</span>
                   </div>
+                  {isTentItem(item) && (
+                    <div class="col-span-2 pt-1 flex items-center gap-3">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                        👤 {item.capacity} per tent
+                      </span>
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+                        🏕️ {item.capacity * item.quantity} total
+                      </span>
+                    </div>
+                  )}
                   {isFoodItem(item) && (
                     <div class="col-span-2 pt-1">
                       <ExpiryBadge expiryDate={item.expiryDate} />
@@ -289,6 +299,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex flex-col items-start gap-1">
+                      {isTentItem(item) && (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                          👤 {item.capacity}/tent · 🏕️ {item.capacity * item.quantity} total
+                        </span>
+                      )}
                       {isFoodItem(item) && (
                         <ExpiryBadge expiryDate={item.expiryDate} />
                       )}
