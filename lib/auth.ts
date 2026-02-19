@@ -205,9 +205,12 @@ export async function ensureDefaultAdmin(): Promise<void> {
 
   const existing = await getUserByUsername(username);
   if (existing) {
-    // Always sync password from env so credential changes take effect on redeploy
-    await updateUserPassword(existing.username, password);
-    console.log(`[auth] Synced admin credentials for: ${username}`);
+    // Only migrate legacy SHA-256 hashes — don't overwrite bcrypt passwords
+    // set via the admin UI (those changes would otherwise be lost on redeploy)
+    if (SHA256_RE.test(existing.passwordHash)) {
+      await updateUserPassword(existing.username, password);
+      console.log(`[auth] Migrated legacy hash for admin: ${username}`);
+    }
     return;
   }
 

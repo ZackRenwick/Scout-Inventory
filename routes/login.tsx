@@ -66,7 +66,35 @@ export const handler: Handlers<LoginData> = {
     }
 
     const session = await createSession(user);
-    const redirectTo = new URL(req.url).searchParams.get("redirect") ?? "/";
+    const requestUrl = new URL(req.url);
+    const rawRedirect = requestUrl.searchParams.get("redirect") ?? "/";
+
+    // Known route prefixes — covers static and dynamic segments (e.g. /inventory/[id])
+    const ALLOWED_PREFIXES = [
+      "/",
+      "/inventory",
+      "/reports",
+      "/account",
+      "/admin",
+      "/api",
+      "/greet",
+    ];
+
+    // Resolve against origin first to neutralise //evil.com and /\evil.com tricks,
+    // then confirm it stays on the same origin and matches a known route prefix.
+    let redirectTo = "/";
+    try {
+      const resolved = new URL(rawRedirect, requestUrl.origin);
+      const onSameOrigin = resolved.origin === requestUrl.origin;
+      const knownRoute = ALLOWED_PREFIXES.some(
+        (p) => resolved.pathname === p || resolved.pathname.startsWith(p === "/" ? p : p + "/"),
+      );
+      if (onSameOrigin && knownRoute) {
+        redirectTo = resolved.pathname + resolved.search + resolved.hash;
+      }
+    } catch {
+      // Unparseable input — fall back to "/"
+    }
 
     return new Response(null, {
       status: 302,
