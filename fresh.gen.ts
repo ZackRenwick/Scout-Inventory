@@ -14,6 +14,7 @@ import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
 import * as $api_logout from "./routes/api/logout.ts";
+import * as $api_ping from "./routes/api/ping.ts";
 import * as $api_stats from "./routes/api/stats.ts";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
@@ -46,6 +47,7 @@ const manifest = {
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
     "./routes/api/logout.ts": $api_logout,
+    "./routes/api/ping.ts": $api_ping,
     "./routes/api/stats.ts": $api_stats,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,

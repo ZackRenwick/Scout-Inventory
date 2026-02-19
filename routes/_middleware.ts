@@ -3,7 +3,7 @@ import { FreshContext } from "$fresh/server.ts";
 import { getSessionCookie, getSession, ensureDefaultAdmin, type Session } from "../lib/auth.ts";
 
 // Routes that don't require authentication
-const PUBLIC_PATHS = ["/login", "/styles.css", "/api/joke"];
+const PUBLIC_PATHS = ["/login", "/styles.css", "/api/joke", "/api/ping"];
 
 // True when running on Deno Deploy
 const IS_DEPLOYED = !!Deno.env.get("DENO_DEPLOYMENT_ID");
@@ -22,13 +22,21 @@ export async function handler(req: Request, ctx: FreshContext) {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // Allow public paths and static assets
+  // Allow public paths and static assets — add long-lived cache headers for immutable assets
   if (
     PUBLIC_PATHS.includes(path) ||
     path.startsWith("/_fresh/") ||
     path.startsWith("/static/")
   ) {
-    return ctx.next();
+    const res = await ctx.next();
+    if (path.startsWith("/_fresh/")) {
+      // Versioned chunks — immutable for 1 year
+      res.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    } else if (path === "/styles.css" || path.startsWith("/static/")) {
+      // Static assets — cache for 1 day, revalidate
+      res.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    }
+    return res;
   }
 
   // Local dev bypass — only when DEV_BYPASS=true AND request is from localhost

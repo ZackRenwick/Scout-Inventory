@@ -109,8 +109,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
             />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
+            <label htmlFor="category-filter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
             <select
+              id="category-filter"
               value={categoryFilter.value}
               onChange={(e) => categoryFilter.value = (e.target as HTMLSelectElement).value as any}
               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -183,7 +184,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                   <div>
                     <span class="text-xs text-gray-500 dark:text-gray-400 block">Quantity</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">{item.quantity}</span>
-                    <span class="text-gray-400 dark:text-gray-500 text-xs"> / {item.minThreshold} min</span>
+                    <span class="text-gray-300 dark:text-gray-400 text-xs"> / {item.minThreshold} min</span>
                   </div>
                   <div>
                     <span class="text-xs text-gray-500 dark:text-gray-400 block">Location</span>
