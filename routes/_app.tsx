@@ -7,7 +7,6 @@ export default function App({ Component }: PageProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>scout-inventory</title>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <link rel="alternate icon" href="/favicon.ico" />
         <link rel="stylesheet" href="/styles.css" />
         <script
           dangerouslySetInnerHTML={{
