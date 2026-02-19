@@ -170,34 +170,42 @@ export default function Home({ data }: PageProps<DashboardData>) {
       
       {/* Overview Stats */}
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard
-          title="Total Items"
-          value={stats.totalItems}
-          icon="📦"
-          color="blue"
-          subtitle="Unique items"
-        />
-        <StatCard
-          title="Total Quantity"
-          value={stats.totalQuantity}
-          icon="🔢"
-          color="green"
-          subtitle="Individual units"
-        />
-        <StatCard
-          title="Low Stock"
-          value={stats.lowStockItems}
-          icon="⚠️"
-          color={stats.lowStockItems > 0 ? "red" : "green"}
-          subtitle="Need restocking"
-        />
-        <StatCard
-          title="Expiring Soon"
-          value={stats.expiringFood.expiringSoon + stats.expiringFood.expired}
-          icon="⏰"
-          color={stats.expiringFood.expiringSoon + stats.expiringFood.expired > 0 ? "yellow" : "green"}
-          subtitle="Food items"
-        />
+        <a href="/inventory" class="block hover:shadow-lg transition-shadow">
+          <StatCard
+            title="Total Items"
+            value={stats.totalItems}
+            icon="📦"
+            color="blue"
+            subtitle="Unique items"
+          />
+        </a>
+        <a href="/inventory" class="block hover:shadow-lg transition-shadow">
+          <StatCard
+            title="Total Quantity"
+            value={stats.totalQuantity}
+            icon="🔢"
+            color="green"
+            subtitle="Individual units"
+          />
+        </a>
+        <a href="/inventory?lowstock=true" class="block hover:shadow-lg transition-shadow">
+          <StatCard
+            title="Low Stock"
+            value={stats.lowStockItems}
+            icon="⚠️"
+            color={stats.lowStockItems > 0 ? "red" : "green"}
+            subtitle="Need restocking"
+          />
+        </a>
+        <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
+          <StatCard
+            title="Expiring Soon"
+            value={stats.expiringFood.expiringSoon + stats.expiringFood.expired}
+            icon="⏰"
+            color={stats.expiringFood.expiringSoon + stats.expiringFood.expired > 0 ? "yellow" : "green"}
+            subtitle="Food items"
+          />
+        </a>
       </div>
       
       {/* Category Breakdown */}

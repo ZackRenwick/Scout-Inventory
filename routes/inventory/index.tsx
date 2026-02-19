@@ -11,6 +11,7 @@ interface InventoryPageData {
   session?: Session;
   needsRepair: boolean;
   lowStock: boolean;
+  initialCategory: string;
 }
 
 export const handler: Handlers<InventoryPageData> = {
@@ -18,10 +19,11 @@ export const handler: Handlers<InventoryPageData> = {
     const url = new URL(req.url);
     const needsRepair = url.searchParams.get("needsrepair") === "true";
     const lowStock = url.searchParams.get("lowstock") === "true";
+    const initialCategory = url.searchParams.get("category") ?? "all";
     try {
       const items = await getAllItems();
       items.sort((a, b) => a.name.localeCompare(b.name));
-      return ctx.render({ items, session: ctx.state.session as Session, needsRepair, lowStock });
+      return ctx.render({ items, session: ctx.state.session as Session, needsRepair, lowStock, initialCategory });
     } catch (error) {
       console.error("Failed to fetch items:", error);
       return ctx.render({ items: [], session: ctx.state.session as Session, needsRepair, lowStock });
@@ -47,7 +49,7 @@ export default function InventoryPage({ data }: PageProps<InventoryPageData>) {
         </div>
       </div>
       
-      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} initialLowStock={data.lowStock} csrfToken={data.session?.csrfToken} />
+      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} initialLowStock={data.lowStock} initialCategory={data.initialCategory} csrfToken={data.session?.csrfToken} />
     </Layout>
   );
 }
