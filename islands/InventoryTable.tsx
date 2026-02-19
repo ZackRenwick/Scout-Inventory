@@ -1,5 +1,5 @@
 // Interactive inventory table with search and filtering
-import { Signal, useSignal } from "@preact/signals";
+import { Signal, computed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
 import { isFoodItem } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
@@ -20,8 +20,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
   
-  // Filter items based on search and filters
-  const filteredItems = items.filter((item) => {
+  // Filter items based on search and filters — computed() memoises the result
+  // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
+  const filteredItems = computed(() => items.filter((item) => {
     // Search filter
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.location.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -48,7 +49,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     }
 
     return true;
-  });
+  }));
   
   const showToast = (message: string, type: "success" | "error") => {
     toast.value = { message, type };
@@ -146,18 +147,18 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
         </div>
         
         <div class="mt-3 text-sm text-gray-600 dark:text-gray-400">
-          Showing {filteredItems.length} of {items.length} items
+          Showing {filteredItems.value.length} of {items.length} items
         </div>
       </div>
       
       {/* Mobile card list — visible only on small screens */}
       <div class="block md:hidden space-y-3">
-        {filteredItems.length === 0 ? (
+        {filteredItems.value.length === 0 ? (
           <div class="bg-white dark:bg-gray-900 rounded-lg shadow p-8 text-center text-gray-500 dark:text-gray-400">
             No items found
           </div>
         ) : (
-          filteredItems.map((item) => (
+          filteredItems.value.map((item) => (
             <div key={item.id} class="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
               <div class="flex items-start justify-between mb-2">
                 <div class="flex items-center gap-2 min-w-0 mr-2">
@@ -257,14 +258,14 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredItems.length === 0 ? (
+            {filteredItems.value.length === 0 ? (
               <tr>
                 <td colSpan={6} class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   No items found
                 </td>
               </tr>
             ) : (
-              filteredItems.map((item) => (
+              filteredItems.value.map((item) => (
                 <tr key={item.id} class="hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>

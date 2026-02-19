@@ -19,9 +19,21 @@ const KEYS = {
   stats: ["inventory", "stats"],
 };
 
+// ===== IN-MEMORY CACHE =====
+const CACHE_TTL_MS = 60_000; // 60 seconds
+let itemsCache: { items: InventoryItem[]; expiresAt: number } | null = null;
+
+function invalidateItemsCache(): void {
+  itemsCache = null;
+}
+
 // ===== INVENTORY ITEMS OPERATIONS =====
 
 export async function getAllItems(): Promise<InventoryItem[]> {
+  if (itemsCache && Date.now() < itemsCache.expiresAt) {
+    return itemsCache.items;
+  }
+
   const db = await initKv();
   const items: InventoryItem[] = [];
   
@@ -31,7 +43,8 @@ export async function getAllItems(): Promise<InventoryItem[]> {
     const item = deserializeItem(entry.value);
     items.push(item);
   }
-  
+
+  itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
   return items;
 }
 
@@ -50,6 +63,7 @@ export async function createItem(item: InventoryItem): Promise<InventoryItem> {
   const db = await initKv();
   const serializedItem = serializeItem(item);
   await db.set([...KEYS.items, item.id], serializedItem);
+  invalidateItemsCache();
   return item;
 }
 
@@ -68,6 +82,7 @@ export async function updateItem(id: string, updates: Partial<InventoryItem>): P
   
   const serializedItem = serializeItem(updated);
   await db.set([...KEYS.items, id], serializedItem);
+  invalidateItemsCache();
   return updated;
 }
 
@@ -78,6 +93,7 @@ export async function deleteItem(id: string): Promise<boolean> {
   if (!existing) return false;
   
   await db.delete([...KEYS.items, id]);
+  invalidateItemsCache();
   return true;
 }
 

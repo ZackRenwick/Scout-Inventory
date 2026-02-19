@@ -3,7 +3,7 @@ import { FreshContext } from "$fresh/server.ts";
 import { getSessionCookie, getSession, ensureDefaultAdmin, type Session } from "../lib/auth.ts";
 
 // Routes that don't require authentication
-const PUBLIC_PATHS = ["/login", "/styles.css"];
+const PUBLIC_PATHS = ["/login", "/styles.css", "/api/joke"];
 
 // True when running on Deno Deploy
 const IS_DEPLOYED = !!Deno.env.get("DENO_DEPLOYMENT_ID");
