@@ -180,6 +180,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     {needsRepair && (
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">🔧 Repair</span>
                     )}
+                    {"condition" in item && !needsRepair && !isLowStock && (
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">✅ All Good</span>
+                    )}
                   </div>
                 </div>
                 {/* Meta grid */}
@@ -326,6 +329,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                       {"condition" in item && (item as { condition: string }).condition === "needs-repair" && (
                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
                           🔧 Needs Repair
+                        </span>
+                      )}
+                      {"condition" in item && (item as { condition: string }).condition !== "needs-repair" && (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                          ✅ All Good
                         </span>
                       )}
                     </div>
