@@ -5,9 +5,10 @@ import { ITEM_LOCATIONS } from "../types/inventory.ts";
 interface ItemFormProps {
   initialData?: any;
   isEdit?: boolean;
+  csrfToken?: string;
 }
 
-export default function ItemForm({ initialData, isEdit = false }: ItemFormProps) {
+export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
   const category = useSignal<"tent" | "cooking" | "food" | "camping-tools">(initialData?.category || "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
@@ -78,7 +79,7 @@ export default function ItemForm({ initialData, isEdit = false }: ItemFormProps)
       
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
         body: JSON.stringify(data),
       });
       

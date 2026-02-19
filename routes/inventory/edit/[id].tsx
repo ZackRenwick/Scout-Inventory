@@ -57,7 +57,7 @@ export default function EditItemPage({ data }: PageProps<EditItemData>) {
             ← Back to Item Details
           </a>
         </div>
-        <ItemForm initialData={data.item} isEdit />
+        <ItemForm initialData={data.item} isEdit csrfToken={data.session?.csrfToken} />
       </div>
     </Layout>
   );

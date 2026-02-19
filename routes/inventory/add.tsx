@@ -27,7 +27,7 @@ export default function AddItemPage({ data }: PageProps<AddItemData>) {
           <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-1">Add New Item</h2>
           <p class="text-gray-600 dark:text-gray-400">Fill out the form below to add a new item to the inventory</p>
         </div>
-        <ItemForm />
+        <ItemForm csrfToken={data.session?.csrfToken} />
       </div>
     </Layout>
   );

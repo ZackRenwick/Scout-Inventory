@@ -45,7 +45,7 @@ export default function InventoryPage({ data }: PageProps<InventoryPageData>) {
         </div>
       </div>
       
-      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} />
+      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} csrfToken={data.session?.csrfToken} />
     </Layout>
   );
 }

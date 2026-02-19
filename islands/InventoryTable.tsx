@@ -10,9 +10,10 @@ interface InventoryTableProps {
   items: InventoryItem[];
   canEdit?: boolean;
   initialNeedsRepair?: boolean;
+  csrfToken?: string;
 }
 
-export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false }: InventoryTableProps) {
+export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, csrfToken = "" }: InventoryTableProps) {
   const searchQuery = useSignal("");
   const categoryFilter = useSignal<"all" | ItemCategory>("all");
   const showLowStock = useSignal(false);
@@ -60,6 +61,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     try {
       const response = await fetch(`/api/items/${id}`, {
         method: "DELETE",
+        headers: { "X-CSRF-Token": csrfToken },
       });
 
       if (response.ok) {

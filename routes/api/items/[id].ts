@@ -38,6 +38,13 @@ export const handler: Handlers = {
   async PUT(req, ctx) {
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") return FORBIDDEN;
+    const csrfHeader = req.headers.get("X-CSRF-Token");
+    if (!csrfHeader || csrfHeader !== session.csrfToken) {
+      return new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const { id } = ctx.params;
     
     try {
@@ -69,9 +76,16 @@ export const handler: Handlers = {
   },
   
   // DELETE /api/items/[id] - Delete an item
-  async DELETE(_req, ctx) {
+  async DELETE(req, ctx) {
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") return FORBIDDEN;
+    const csrfHeader = req.headers.get("X-CSRF-Token");
+    if (!csrfHeader || csrfHeader !== session.csrfToken) {
+      return new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const { id } = ctx.params;
     
     try {

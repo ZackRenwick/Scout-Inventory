@@ -53,6 +53,13 @@ export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") return FORBIDDEN;
+    const csrfHeader = req.headers.get("X-CSRF-Token");
+    if (!csrfHeader || csrfHeader !== session.csrfToken) {
+      return new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     try {
       const body = await req.json();
       
