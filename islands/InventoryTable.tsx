@@ -1,5 +1,5 @@
 // Interactive inventory table with search and filtering
-import { Signal, computed, useSignal } from "@preact/signals";
+import { Signal, useComputed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
 import { isFoodItem } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
@@ -20,9 +20,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
   
-  // Filter items based on search and filters — computed() memoises the result
+  // Filter items based on search and filters — useComputed() memoises the result
   // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
-  const filteredItems = computed(() => items.filter((item) => {
+  const filteredItems = useComputed(() => items.filter((item) => {
     // Search filter
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.location.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
