@@ -7,7 +7,7 @@ export default function EasterEgg() {
 
   async function handleClick() {
     clicks.value++;
-    if (clicks.value < 3) return;
+    if (clicks.value < 2) return;
 
     loading.value = true;
     joke.value = null;
