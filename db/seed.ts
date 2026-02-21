@@ -1,6 +1,6 @@
 // Seed data for development and testing
 import type { InventoryItem } from "../types/inventory.ts";
-import { createItem } from "./kv.ts";
+import { createItem, rebuildIndexes } from "./kv.ts";
 
 const CAMP_STORE = "camp-store" as const;
 
@@ -234,6 +234,9 @@ export async function seedDatabase() {
 // Run this file directly to seed the database
 if (import.meta.main) {
   await seedDatabase();
+  console.log("\nRebuilding indexes and precomputed stats...");
+  await rebuildIndexes();
+  console.log("✓ Indexes rebuilt.");
   console.log("Seeding complete. You can now start the app.");
   Deno.exit(0);
 }

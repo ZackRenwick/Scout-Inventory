@@ -6,8 +6,7 @@ import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import NeckerCounter from "../islands/NeckerCounter.tsx";
 import NeckerAlert from "../islands/NeckerAlert.tsx";
 import type { Session } from "../lib/auth.ts";
-import { getAllItems } from "../db/kv.ts";
-import { isFoodItem } from "../types/inventory.ts";
+import { getComputedStats, getFoodItemsSortedByExpiry } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
 interface DashboardData {
@@ -39,43 +38,31 @@ interface DashboardData {
 export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
     try {
-      const items = await getAllItems();
-      const stats = {
-        totalItems: items.length,
-        totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
-        categoryBreakdown: {
-          tent: { count: 0, quantity: 0 },
-          cooking: { count: 0, quantity: 0 },
-          food: { count: 0, quantity: 0 },
-          "camping-tools": { count: 0, quantity: 0 },
-          games: { count: 0, quantity: 0 },
-        } as Record<string, { count: number; quantity: number }>,
-        spaceBreakdown: {
-          "camp-store": { count: 0, quantity: 0 },
-          "scout-post-loft": { count: 0, quantity: 0 },
-        } as Record<string, { count: number; quantity: number }>,
-        lowStockItems: 0,
-        needsRepairItems: 0,
-        expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
-      };
-      for (const item of items) {
-        if (item.category in stats.categoryBreakdown) {
-          stats.categoryBreakdown[item.category].count++;
-          stats.categoryBreakdown[item.category].quantity += item.quantity;
-        }
-        const itemSpace = (item as { space?: string }).space ?? "camp-store";
-        stats.spaceBreakdown[itemSpace].count++;
-        stats.spaceBreakdown[itemSpace].quantity += item.quantity;
-        if (item.quantity <= item.minThreshold) stats.lowStockItems++;
-        if ("condition" in item && (item as { condition: string }).condition === "needs-repair") stats.needsRepairItems++;
-        if (isFoodItem(item)) {
-          const d = getDaysUntil(item.expiryDate);
-          if (d < 0) stats.expiringFood.expired++;
-          else if (d <= 7) stats.expiringFood.expiringSoon++;
-          else if (d <= 30) stats.expiringFood.expiringWarning++;
-        }
+      // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
+      // Both run concurrently — no full inventory scan needed for the dashboard.
+      const [computed, foodItems] = await Promise.all([
+        getComputedStats(),
+        getFoodItemsSortedByExpiry(),
+      ]);
+
+      const expiringFood = { expired: 0, expiringSoon: 0, expiringWarning: 0 };
+      for (const item of foodItems) {
+        const d = getDaysUntil(item.expiryDate);
+        if (d < 0)       expiringFood.expired++;
+        else if (d <= 7)  expiringFood.expiringSoon++;
+        else if (d <= 30) expiringFood.expiringWarning++;
       }
-      return ctx.render({ stats: stats as DashboardData["stats"], session: ctx.state.session as Session });
+
+      const stats: DashboardData["stats"] = {
+        totalItems:        computed.totalItems,
+        totalQuantity:     computed.totalQuantity,
+        categoryBreakdown: computed.categoryBreakdown,
+        spaceBreakdown:    computed.spaceBreakdown,
+        lowStockItems:     computed.lowStockItems,
+        needsRepairItems:  computed.needsRepairItems,
+        expiringFood,
+      };
+      return ctx.render({ stats, session: ctx.state.session as Session });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       // Return empty stats on error

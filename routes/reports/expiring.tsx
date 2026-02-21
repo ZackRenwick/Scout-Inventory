@@ -1,12 +1,11 @@
 // Expiring food report page
 import { Handlers, PageProps } from "$fresh/server.ts";
-import type { InventoryItem, FoodItem } from "../../types/inventory.ts";
-import { isFoodItem } from "../../types/inventory.ts";
+import type { FoodItem } from "../../types/inventory.ts";
 import { getDaysUntil } from "../../lib/date-utils.ts";
 import Layout from "../../components/Layout.tsx";
 import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import type { Session } from "../../lib/auth.ts";
-import { getAllItems } from "../../db/kv.ts";
+import { getFoodItemsSortedByExpiry } from "../../db/kv.ts";
 
 interface ExpiringFoodData {
   expired: FoodItem[];
@@ -19,38 +18,23 @@ interface ExpiringFoodData {
 export const handler: Handlers<ExpiringFoodData> = {
   async GET(_req, ctx) {
     try {
-      const items = await getAllItems();
+      // getFoodItemsSortedByExpiry uses the expiry index — returns only food items,
+      // already ordered chronologically, without scanning all inventory.
+      const foodItems = await getFoodItemsSortedByExpiry();
 
       const expired: FoodItem[] = [];
       const expiringSoon: FoodItem[] = [];
       const expiringWarning: FoodItem[] = [];
       const fresh: FoodItem[] = [];
 
-      items.forEach((item) => {
-        if (isFoodItem(item)) {
-          
-          const daysUntil = getDaysUntil(item.expiryDate);
-          
-          if (daysUntil < 0) {
-            expired.push(item);
-          } else if (daysUntil <= 7) {
-            expiringSoon.push(item);
-          } else if (daysUntil <= 30) {
-            expiringWarning.push(item);
-          } else {
-            fresh.push(item);
-          }
-        }
-      });
-      
-      // Sort by expiry date (soonest first)
-      const sortByExpiry = (a: FoodItem, b: FoodItem) => 
-        a.expiryDate.getTime() - b.expiryDate.getTime();
-      
-      expired.sort(sortByExpiry);
-      expiringSoon.sort(sortByExpiry);
-      expiringWarning.sort(sortByExpiry);
-      fresh.sort(sortByExpiry);
+      for (const item of foodItems) {
+        const daysUntil = getDaysUntil(item.expiryDate);
+        if (daysUntil < 0)       expired.push(item);
+        else if (daysUntil <= 7)  expiringSoon.push(item);
+        else if (daysUntil <= 30) expiringWarning.push(item);
+        else                      fresh.push(item);
+      }
+      // Items are already sorted by expiry date from the index scan
       
       return ctx.render({ expired, expiringSoon, expiringWarning, fresh, session: ctx.state.session as Session });
     } catch (error) {
