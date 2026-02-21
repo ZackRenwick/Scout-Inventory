@@ -1,5 +1,7 @@
 // Base inventory item interface
-export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools";
+export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "first-aid";
+
+export type ItemSpace = "camp-store" | "scout-post-loft";
 
 export type ItemLocation =
   | "Plastic Shelf 1 - Level 1" | "Plastic Shelf 1 - Level 2" | "Plastic Shelf 1 - Level 3" | "Plastic Shelf 1 - Level 4"
@@ -60,6 +62,7 @@ export interface BaseInventoryItem {
   id: string;
   name: string;
   category: ItemCategory;
+  space?: ItemSpace;
   quantity: number;
   minThreshold: number;
   location: ItemLocation;
@@ -110,8 +113,26 @@ export interface CampingToolItem extends BaseInventoryItem {
   yearPurchased?: number;
 }
 
+// Games equipment properties
+export interface GamesItem extends BaseInventoryItem {
+  category: "games";
+  gameType: "board-game" | "card-game" | "outdoor-game" | "sports" | "puzzle" | "other";
+  condition: "excellent" | "good" | "fair" | "needs-repair";
+  playerCount?: string;
+  ageRange?: string;
+  brand?: string;
+  yearPurchased?: number;
+}
+
+// First aid item properties
+export interface FirstAidItem extends BaseInventoryItem {
+  category: "first-aid";
+  itemType: "bandages" | "medication" | "equipment" | "kit" | "other";
+  expiryDate?: Date;
+}
+
 // Union type for all inventory items
-export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem;
+export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | FirstAidItem;
 
 // Helper type guards
 export function isTentItem(item: InventoryItem): item is TentItem {
@@ -128,6 +149,14 @@ export function isFoodItem(item: InventoryItem): item is FoodItem {
 
 export function isCampingToolItem(item: InventoryItem): item is CampingToolItem {
   return item.category === "camping-tools";
+}
+
+export function isGamesItem(item: InventoryItem): item is GamesItem {
+  return item.category === "games";
+}
+
+export function isFirstAidItem(item: InventoryItem): item is FirstAidItem {
+  return item.category === "first-aid";
 }
 
 // Expiry status for food items

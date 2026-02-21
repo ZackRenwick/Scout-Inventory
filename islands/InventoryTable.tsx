@@ -18,6 +18,7 @@ interface InventoryTableProps {
 export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, initialLowStock = false, initialCategory = "all", csrfToken = "" }: InventoryTableProps) {
   const searchQuery = useSignal("");
   const categoryFilter = useSignal<"all" | ItemCategory>(initialCategory as "all" | ItemCategory);
+  const spaceFilter = useSignal<"all" | "camp-store" | "scout-post-loft">("all");
   const locationFilter = useSignal<string>("all");
   const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
@@ -47,6 +48,12 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     // Category filter
     if (categoryFilter.value !== "all" && item.category !== categoryFilter.value) {
       return false;
+    }
+
+    // Space filter (items without a space field default to camp-store)
+    if (spaceFilter.value !== "all") {
+      const itemSpace = (item as { space?: string }).space ?? "camp-store";
+      if (itemSpace !== spaceFilter.value) return false;
     }
     
     // Location filter
@@ -116,6 +123,26 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
             {filteredItems.value.length} / {items.length} items
           </span>
         </div>
+        {/* Space toggle */}
+        <div class="flex items-center gap-2 px-4 pt-3">
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Space</span>
+          <div class="flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600 text-xs font-medium">
+            {(["all", "camp-store", "scout-post-loft"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => { spaceFilter.value = s; categoryFilter.value = "all"; }}
+                class={`px-3 py-1.5 transition-colors ${
+                  spaceFilter.value === s
+                    ? "bg-purple-600 text-white"
+                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                {s === "all" ? "All" : s === "camp-store" ? "🏪 Camp Store" : "🏠 Scout Post Loft"}
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Inputs */}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 pb-3">
           <div>
@@ -137,10 +164,16 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Categories</option>
-              <option value="tent">⛺ Tents</option>
-              <option value="cooking">🍳 Cooking Equipment</option>
-              <option value="food">🥫 Food</option>
-              <option value="camping-tools">🪓 Camping Tools</option>
+              <optgroup label="🏪 Camp Store">
+                <option value="tent">⛺ Tents</option>
+                <option value="cooking">🍳 Cooking Equipment</option>
+                <option value="food">🥫 Food</option>
+                <option value="camping-tools">🪓 Camping Tools</option>
+              </optgroup>
+              <optgroup label="🏠 Scout Post Loft">
+                <option value="games">🎮 Games</option>
+                <option value="first-aid">🩹 First Aid</option>
+              </optgroup>
             </select>
           </div>
           <div class="sm:col-span-2">

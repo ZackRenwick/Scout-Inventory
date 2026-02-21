@@ -2,6 +2,8 @@
 import type { InventoryItem } from "../types/inventory.ts";
 import { createItem } from "./kv.ts";
 
+const CAMP_STORE = "camp-store" as const;
+
 export async function seedDatabase() {
   const sampleItems: InventoryItem[] = [
     // Tents
@@ -9,6 +11,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Coleman Sundome 4-Person Tent",
       category: "tent",
+      space: CAMP_STORE,
       tentType: "dome",
       capacity: 4,
       size: "4-person",
@@ -26,6 +29,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Patrol Scout Tent 8-Person",
       category: "tent",
+      space: CAMP_STORE,
       tentType: "patrol",
       capacity: 8,
       size: "8-person",
@@ -42,6 +46,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Bell Tent Canvas 5m",
       category: "tent",
+      space: CAMP_STORE,
       tentType: "bell",
       capacity: 10,
       size: "5-meter diameter",
@@ -60,6 +65,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Camp Stove - 2 Burner",
       category: "cooking",
+      space: CAMP_STORE,
       equipmentType: "stove",
       fuelType: "propane",
       condition: "excellent",
@@ -74,6 +80,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Large Cooking Pot Set",
       category: "cooking",
+      space: CAMP_STORE,
       equipmentType: "pots",
       material: "stainless steel",
       capacity: "5L, 8L, 12L",
@@ -89,6 +96,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Cooler - 48 Quart",
       category: "cooking",
+      space: CAMP_STORE,
       equipmentType: "cooler",
       capacity: "48 quart",
       condition: "good",
@@ -102,6 +110,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Water Container - 5 Gallon",
       category: "cooking",
+      space: CAMP_STORE,
       equipmentType: "water-container",
       capacity: "5 gallon",
       condition: "excellent",
@@ -117,6 +126,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Canned Beans - Variety Pack",
       category: "food",
+      space: CAMP_STORE,
       foodType: "canned",
       expiryDate: new Date("2027-08-15"),
       storageRequirements: "cool-dry",
@@ -132,6 +142,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Instant Oatmeal Packets",
       category: "food",
+      space: CAMP_STORE,
       foodType: "packaged",
       expiryDate: new Date("2026-12-01"),
       storageRequirements: "cool-dry",
@@ -147,6 +158,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Trail Mix - Bulk",
       category: "food",
+      space: CAMP_STORE,
       foodType: "packaged",
       expiryDate: new Date("2026-06-30"),
       storageRequirements: "cool-dry",
@@ -162,6 +174,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Freeze-Dried Camping Meals",
       category: "food",
+      space: CAMP_STORE,
       foodType: "dried",
       expiryDate: new Date("2028-03-15"),
       storageRequirements: "cool-dry",
@@ -177,6 +190,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Fresh Apples",
       category: "food",
+      space: CAMP_STORE,
       foodType: "fresh",
       expiryDate: new Date("2026-02-25"), // Soon!
       storageRequirements: "cool-dry",
@@ -193,6 +207,7 @@ export async function seedDatabase() {
       id: crypto.randomUUID(),
       name: "Hot Chocolate Mix",
       category: "food",
+      space: CAMP_STORE,
       foodType: "packaged",
       expiryDate: new Date("2026-03-01"), // Expiring soon!
       storageRequirements: "cool-dry",

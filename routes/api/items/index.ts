@@ -25,7 +25,8 @@ export const handler: Handlers = {
       }
       
       // Apply category filter
-      if (category && (category === "tent" || category === "cooking" || category === "food" || category === "camping-tools")) {
+      const validCategories = ["tent", "cooking", "food", "camping-tools", "games", "first-aid"];
+      if (category && validCategories.includes(category)) {
         items = items.filter(item => item.category === category);
       }
 

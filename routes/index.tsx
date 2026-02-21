@@ -2,6 +2,7 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../components/Layout.tsx";
 import StatCard from "../components/StatCard.tsx";
+import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import type { Session } from "../lib/auth.ts";
 import { getAllItems } from "../db/kv.ts";
 import { isFoodItem } from "../types/inventory.ts";
@@ -16,6 +17,12 @@ interface DashboardData {
       cooking: { count: number; quantity: number };
       food: { count: number; quantity: number };
       "camping-tools": { count: number; quantity: number };
+      games: { count: number; quantity: number };
+      "first-aid": { count: number; quantity: number };
+    };
+    spaceBreakdown: {
+      "camp-store": { count: number; quantity: number };
+      "scout-post-loft": { count: number; quantity: number };
     };
     lowStockItems: number;
     needsRepairItems: number;
@@ -40,6 +47,12 @@ export const handler: Handlers<DashboardData> = {
           cooking: { count: 0, quantity: 0 },
           food: { count: 0, quantity: 0 },
           "camping-tools": { count: 0, quantity: 0 },
+          games: { count: 0, quantity: 0 },
+          "first-aid": { count: 0, quantity: 0 },
+        } as Record<string, { count: number; quantity: number }>,
+        spaceBreakdown: {
+          "camp-store": { count: 0, quantity: 0 },
+          "scout-post-loft": { count: 0, quantity: 0 },
         } as Record<string, { count: number; quantity: number }>,
         lowStockItems: 0,
         needsRepairItems: 0,
@@ -50,6 +63,9 @@ export const handler: Handlers<DashboardData> = {
           stats.categoryBreakdown[item.category].count++;
           stats.categoryBreakdown[item.category].quantity += item.quantity;
         }
+        const itemSpace = (item as { space?: string }).space ?? "camp-store";
+        stats.spaceBreakdown[itemSpace].count++;
+        stats.spaceBreakdown[itemSpace].quantity += item.quantity;
         if (item.quantity <= item.minThreshold) stats.lowStockItems++;
         if ("condition" in item && (item as { condition: string }).condition === "needs-repair") stats.needsRepairItems++;
         if (isFoodItem(item)) {
@@ -72,6 +88,12 @@ export const handler: Handlers<DashboardData> = {
             cooking: { count: 0, quantity: 0 },
             food: { count: 0, quantity: 0 },
             "camping-tools": { count: 0, quantity: 0 },
+            games: { count: 0, quantity: 0 },
+            "first-aid": { count: 0, quantity: 0 },
+          },
+          spaceBreakdown: {
+            "camp-store": { count: 0, quantity: 0 },
+            "scout-post-loft": { count: 0, quantity: 0 },
           },
           lowStockItems: 0,
           needsRepairItems: 0,
@@ -208,70 +230,8 @@ export default function Home({ data }: PageProps<DashboardData>) {
         </a>
       </div>
       
-      {/* Category Breakdown */}
-      <div class="mb-8">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-4">Inventory by Category</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <a href="/inventory?category=tent" class="block hover:shadow-lg transition-shadow">
-            <StatCard
-              title="⛺ Tents"
-              value={stats.categoryBreakdown.tent.quantity}
-              color="blue"
-            />
-          </a>
-          <a href="/inventory?category=cooking" class="block hover:shadow-lg transition-shadow">
-            <StatCard
-              title="🍳 Cooking Equipment"
-              value={stats.categoryBreakdown.cooking.quantity}
-              color="purple"
-            />
-          </a>
-          <a href="/inventory?category=food" class="block hover:shadow-lg transition-shadow">
-            <StatCard
-              title="🥫 Food Items"
-              value={stats.categoryBreakdown.food.quantity}
-              color="green"
-            />
-          </a>
-          <a href="/inventory?category=camping-tools" class="block hover:shadow-lg transition-shadow">
-            <StatCard
-              title="🪓 Camping Tools"
-              value={stats.categoryBreakdown["camping-tools"].quantity}
-              color="yellow"
-            />
-          </a>
-        </div>
-      </div>
+      <SpaceDashboard categoryBreakdown={stats.categoryBreakdown} spaceBreakdown={stats.spaceBreakdown} expiringFood={stats.expiringFood} />
       
-      {/* Expiry Status Breakdown */}
-      {(stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning) > 0 && (
-        <div class="mb-8">
-          <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-4">Food Expiry Status</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Expired"
-              value={stats.expiringFood.expired}
-              icon="❌"
-              color="red"
-              subtitle="Remove from inventory"
-            />
-            <StatCard
-              title="Expiring Soon"
-              value={stats.expiringFood.expiringSoon}
-              icon="🔴"
-              color="yellow"
-              subtitle="Within 7 days"
-            />
-            <StatCard
-              title="Expiring Warning"
-              value={stats.expiringFood.expiringWarning}
-              icon="🟡"
-              color="yellow"
-              subtitle="Within 30 days"
-            />
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }

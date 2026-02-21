@@ -9,7 +9,9 @@ interface ItemFormProps {
 }
 
 export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
-  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools">(initialData?.category || "tent");
+  const initialSpace = initialData?.space ?? ((initialData?.category === "games" || initialData?.category === "first-aid") ? "scout-post-loft" : "camp-store");
+  const space = useSignal<"camp-store" | "scout-post-loft">(initialSpace);
+  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games" | "first-aid">(initialData?.category || "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
   const success = useSignal("");
@@ -34,6 +36,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
     const data: any = {
       name: formData.get("name"),
       category: category.value,
+      space: space.value,
       quantity: parseInt(formData.get("quantity") as string),
       minThreshold: parseInt(formData.get("minThreshold") as string),
       location: formData.get("location"),
@@ -60,6 +63,17 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.material = formData.get("material") || undefined;
       data.brand = formData.get("brand") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+    } else if (category.value === "games") {
+      data.gameType = formData.get("gameType");
+      data.condition = formData.get("condition");
+      data.playerCount = formData.get("playerCount") || undefined;
+      data.ageRange = formData.get("ageRange") || undefined;
+      data.brand = formData.get("brand") || undefined;
+      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+    } else if (category.value === "first-aid") {
+      data.itemType = formData.get("itemType");
+      const expiryDate = formData.get("expiryDate") as string;
+      if (expiryDate) data.expiryDate = expiryDate;
     } else if (category.value === "food") {
       data.foodType = formData.get("foodType");
       data.expiryDate = formData.get("expiryDate");
@@ -113,6 +127,37 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
         </div>
       )}
       
+      {/* Space Selection */}
+      <div class="mb-4">
+        <label class={labelClass}>Space *</label>
+        <div class="flex gap-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="spaceRadio"
+              value="camp-store"
+              checked={space.value === "camp-store"}
+              onChange={() => { space.value = "camp-store"; if (!isEdit) category.value = "tent"; }}
+              disabled={isEdit}
+              class="text-purple-600"
+            />
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🏪 Camp Store</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="spaceRadio"
+              value="scout-post-loft"
+              checked={space.value === "scout-post-loft"}
+              onChange={() => { space.value = "scout-post-loft"; if (!isEdit) category.value = "games"; }}
+              disabled={isEdit}
+              class="text-purple-600"
+            />
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🏠 Scout Post Loft</span>
+          </label>
+        </div>
+      </div>
+
       {/* Category Selection */}
       <div class="mb-6">
         <label class={labelClass}>
@@ -125,10 +170,19 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           class={inputClass}
           required
         >
-          <option value="tent">⛺ Tent</option>
-          <option value="cooking">🍳 Cooking Equipment</option>
-          <option value="food">🥫 Food</option>
-          <option value="camping-tools">🪓 Camping Tools</option>
+          {space.value === "camp-store" ? (
+            <>
+              <option value="tent">⛺ Tent</option>
+              <option value="cooking">🍳 Cooking Equipment</option>
+              <option value="food">🥫 Food</option>
+              <option value="camping-tools">🪓 Camping Tools</option>
+            </>
+          ) : (
+            <>
+              <option value="games">🎮 Games Equipment</option>
+              <option value="first-aid">🩹 First Aid</option>
+            </>
+          )}
         </select>
       </div>
       
@@ -364,6 +418,74 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
         </div>
       )}
       
+      {/* Games-specific fields */}
+      {category.value === "games" && (
+        <div class="mb-6 p-4 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Games Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Game Type *</label>
+              <select name="gameType" required class={inputClass}>
+                <option value="board-game" selected={initialData?.gameType === "board-game"}>Board Game</option>
+                <option value="card-game" selected={initialData?.gameType === "card-game"}>Card Game</option>
+                <option value="outdoor-game" selected={initialData?.gameType === "outdoor-game"}>Outdoor Game</option>
+                <option value="sports" selected={initialData?.gameType === "sports"}>Sports Equipment</option>
+                <option value="puzzle" selected={initialData?.gameType === "puzzle"}>Puzzle</option>
+                <option value="other" selected={initialData?.gameType === "other"}>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Condition *</label>
+              <select name="condition" required class={inputClass}>
+                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
+                <option value="good" selected={initialData?.condition === "good"}>Good</option>
+                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
+                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Player Count</label>
+              <input type="text" name="playerCount" defaultValue={initialData?.playerCount} placeholder="e.g. 2-4" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Age Range</label>
+              <input type="text" name="ageRange" defaultValue={initialData?.ageRange} placeholder="e.g. 8+" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Brand</label>
+              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Year Purchased</label>
+              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* First Aid-specific fields */}
+      {category.value === "first-aid" && (
+        <div class="mb-6 p-4 bg-red-50 dark:bg-red-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">First Aid Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Item Type *</label>
+              <select name="itemType" required class={inputClass}>
+                <option value="bandages" selected={initialData?.itemType === "bandages"}>Bandages / Dressings</option>
+                <option value="medication" selected={initialData?.itemType === "medication"}>Medication</option>
+                <option value="equipment" selected={initialData?.itemType === "equipment"}>Equipment</option>
+                <option value="kit" selected={initialData?.itemType === "kit"}>Kit</option>
+                <option value="other" selected={initialData?.itemType === "other"}>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Expiry Date</label>
+              <input type="date" name="expiryDate" defaultValue={initialData?.expiryDate ? new Date(initialData.expiryDate).toISOString().split('T')[0] : ''} class={inputClass} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Notes */}
       <div class="mb-6">
         <label class={labelClass}>
