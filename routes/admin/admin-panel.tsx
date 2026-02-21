@@ -113,6 +113,50 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         </a>
       </div>
 
+      {/* Database Maintenance */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">🛠️ Database Maintenance</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Rebuilds all KV secondary indexes and precomputed stats from the primary item data.
+          Only needed after a manual data migration or if stats appear incorrect.
+        </p>
+        <button
+          type="button"
+          id="rebuildBtn"
+          onclick={`(async () => {
+            const btn = document.getElementById('rebuildBtn');
+            const status = document.getElementById('rebuildStatus');
+            btn.disabled = true;
+            btn.textContent = '⏳ Rebuilding…';
+            status.textContent = '';
+            try {
+              const res = await fetch('/admin/rebuild-indexes', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': '${csrfToken}' },
+              });
+              const json = await res.json();
+              if (res.ok) {
+                status.textContent = '✅ ' + json.message;
+                status.className = 'mt-3 text-sm text-green-700 dark:text-green-400';
+              } else {
+                status.textContent = '❌ ' + json.error;
+                status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
+              }
+            } catch {
+              status.textContent = '❌ Request failed.';
+              status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
+            } finally {
+              btn.disabled = false;
+              btn.textContent = '🔄 Rebuild Indexes';
+            }
+          })()`}
+          class="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          🔄 Rebuild Indexes
+        </button>
+        <p id="rebuildStatus" class="mt-3 text-sm"></p>
+      </div>
+
       {message && (
         <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
           ✅ {message}
