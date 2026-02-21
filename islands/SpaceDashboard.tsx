@@ -116,9 +116,11 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
         })}
       </div>
 
+      <div class="flex flex-col gap-10">
+
       {/* Camp Store categories */}
       {(space.value === "all" || space.value === "camp-store") && (
-        <div class="mb-6">
+        <div>
           <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🏪 Camp Store — Categories</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <CategoryCard title="⛺ Tents"         value={c.tent.quantity}             color="blue"   href="/inventory?category=tent" />
@@ -129,20 +131,10 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
         </div>
       )}
 
-      {/* Scout Post Loft categories */}
-      {(space.value === "all" || space.value === "scout-post-loft") && (
-        <div class="mb-6">
-          <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🏠 Scout Post Loft — Categories</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <CategoryCard title="🎮 Games"      value={c.games.quantity}        color="indigo" href="/inventory?category=games" />
-          </div>
-        </div>
-      )}
-
       {/* Food Expiry — Camp Store only */}
       {(space.value === "all" || space.value === "camp-store") &&
         (expiringFood.expired + expiringFood.expiringSoon + expiringFood.expiringWarning) > 0 && (
-        <div class="mt-6">
+        <div>
           <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🏪 Camp Store — Food Expiry</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             {expiringFood.expired > 0 && (
@@ -175,6 +167,18 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
           </div>
         </div>
       )}
+
+      {/* Scout Post Loft categories */}
+      {(space.value === "all" || space.value === "scout-post-loft") && (
+        <div>
+          <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🏠 Scout Post Loft — Categories</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <CategoryCard title="🎮 Games" value={c.games.quantity} color="indigo" href="/inventory?category=games" />
+          </div>
+        </div>
+      )}
+
+      </div>
     </div>
   );
 }
