@@ -35,13 +35,27 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
   
+  // Human-readable labels for category slugs so "camping tools" or "first aid" match
+  const categoryLabels: Record<string, string> = {
+    "tent": "tents",
+    "cooking": "cooking",
+    "food": "food",
+    "camping-tools": "camping tools",
+    "games": "games",
+    "first-aid": "first aid",
+  };
+
   // Filter items based on search and filters — useComputed() memoises the result
   // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
   const filteredItems = useComputed(() => items.filter((item) => {
     // Search filter
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.notes?.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const q = searchQuery.value.toLowerCase();
+    const categoryLabel = categoryLabels[item.category] ?? item.category;
+    const matchesSearch = item.name.toLowerCase().includes(q) ||
+      item.location.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      categoryLabel.includes(q) ||
+      item.notes?.toLowerCase().includes(q);
     
     if (!matchesSearch) return false;
     

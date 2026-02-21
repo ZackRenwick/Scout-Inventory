@@ -1,6 +1,6 @@
 // Root middleware — protects all routes except /login and public assets
 import { FreshContext } from "$fresh/server.ts";
-import { getSessionCookie, getSession, ensureDefaultAdmin, type Session } from "../lib/auth.ts";
+import { getSessionCookie, getSession, extendSession, ensureDefaultAdmin, makeSessionCookie, type Session } from "../lib/auth.ts";
 
 // Routes that don't require authentication
 const PUBLIC_PATHS = ["/login", "/styles.css", "/api/joke", "/api/ping"];
@@ -62,5 +62,15 @@ export async function handler(req: Request, ctx: FreshContext) {
   // Attach session to state so handlers/pages can read it
   ctx.state.session = session;
 
-  return ctx.next();
+  // Rolling session — extend expiry on every authenticated request so
+  // any activity (navigation, API call, form submission) resets the idle timer.
+  const [res] = await Promise.all([
+    ctx.next(),
+    extendSession(sessionId!),
+  ]);
+
+  // Re-issue the cookie so the browser Max-Age counter also resets.
+  res.headers.append("Set-Cookie", makeSessionCookie(sessionId!));
+
+  return res;
 }

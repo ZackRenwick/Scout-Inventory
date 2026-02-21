@@ -253,6 +253,20 @@ export async function getSession(sessionId: string): Promise<Session | null> {
   return result.value;
 }
 
+// Slide the session expiry forward by SESSION_DURATION_MS from now (rolling session).
+// Returns the updated session, or null if it no longer exists.
+export async function extendSession(sessionId: string): Promise<Session | null> {
+  const kv = await getKv();
+  const result = await kv.get<Session>(["auth", "sessions", sessionId]);
+  if (!result.value) return null;
+  const session = result.value;
+  session.expiresAt = new Date(Date.now() + SESSION_DURATION_MS).toISOString();
+  await kv.set(["auth", "sessions", sessionId], session, { expireIn: SESSION_DURATION_MS });
+  // Keep the secondary user→session index TTL in sync
+  await kv.set(["auth", "user_sessions", session.userId, sessionId], true, { expireIn: SESSION_DURATION_MS });
+  return session;
+}
+
 export async function deleteSession(sessionId: string): Promise<void> {
   const kv = await getKv();
   // Also remove the secondary index entry
