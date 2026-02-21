@@ -196,23 +196,23 @@ export default function Home({ data }: PageProps<DashboardData>) {
       </div>
       
       {/* Overview Stats */}
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-        <a href="/inventory" class="block hover:shadow-lg transition-shadow">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
           <StatCard
-            title="Total Items"
-            value={stats.totalItems}
-            icon="📦"
-            color="blue"
-            subtitle="Unique items"
+            title="Expired Food"
+            value={stats.expiringFood.expired}
+            icon="🚫"
+            color={stats.expiringFood.expired > 0 ? "red" : "green"}
+            subtitle="Remove from stock"
           />
         </a>
-        <a href="/inventory" class="block hover:shadow-lg transition-shadow">
+        <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
           <StatCard
-            title="Total Quantity"
-            value={stats.totalQuantity}
-            icon="🔢"
-            color="green"
-            subtitle="Individual units"
+            title="Expiring Soon"
+            value={stats.expiringFood.expiringSoon}
+            icon="⏰"
+            color={stats.expiringFood.expiringSoon > 0 ? "yellow" : "green"}
+            subtitle="Within 7 days"
           />
         </a>
         <a href="/inventory?lowstock=true" class="block hover:shadow-lg transition-shadow">
@@ -222,15 +222,6 @@ export default function Home({ data }: PageProps<DashboardData>) {
             icon="⚠️"
             color={stats.lowStockItems > 0 ? "red" : "green"}
             subtitle="Need restocking"
-          />
-        </a>
-        <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
-          <StatCard
-            title="Expiring Soon"
-            value={stats.expiringFood.expiringSoon + stats.expiringFood.expired}
-            icon="⏰"
-            color={stats.expiringFood.expiringSoon + stats.expiringFood.expired > 0 ? "yellow" : "green"}
-            subtitle="Food items"
           />
         </a>
         <NeckerCounter
