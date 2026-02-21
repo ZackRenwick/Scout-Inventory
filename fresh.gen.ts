@@ -14,6 +14,7 @@ import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
 import * as $api_logout from "./routes/api/logout.ts";
+import * as $api_neckers from "./routes/api/neckers.ts";
 import * as $api_ping from "./routes/api/ping.ts";
 import * as $api_stats from "./routes/api/stats.ts";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
@@ -29,6 +30,7 @@ import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
+import * as $NeckerCounter from "./islands/NeckerCounter.tsx";
 import * as $PasswordInput from "./islands/PasswordInput.tsx";
 import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
@@ -48,6 +50,7 @@ const manifest = {
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
     "./routes/api/logout.ts": $api_logout,
+    "./routes/api/neckers.ts": $api_neckers,
     "./routes/api/ping.ts": $api_ping,
     "./routes/api/stats.ts": $api_stats,
     "./routes/greet/[name].tsx": $greet_name_,
@@ -65,6 +68,7 @@ const manifest = {
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
     "./islands/MobileNav.tsx": $MobileNav,
+    "./islands/NeckerCounter.tsx": $NeckerCounter,
     "./islands/PasswordInput.tsx": $PasswordInput,
     "./islands/SpaceDashboard.tsx": $SpaceDashboard,
     "./islands/ThemeToggle.tsx": $ThemeToggle,

@@ -17,6 +17,7 @@ const KEYS = {
   items: ["inventory", "items"],
   checkouts: ["inventory", "checkouts"],
   stats: ["inventory", "stats"],
+  neckers: ["inventory", "neckers", "count"],
 };
 
 // ===== IN-MEMORY CACHE =====
@@ -167,6 +168,31 @@ export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   }
   
   return updated;
+}
+
+// ===== NECKER COUNT =====
+
+export async function getNeckerCount(): Promise<number> {
+  const db = await initKv();
+  const result = await db.get<number>(KEYS.neckers);
+  return result.value ?? 0;
+}
+
+/** Adjust the necker count by `delta` (positive or negative). Returns the new total. */
+export async function adjustNeckerCount(delta: number): Promise<number> {
+  const db = await initKv();
+  const current = (await db.get<number>(KEYS.neckers)).value ?? 0;
+  const next = Math.max(0, current + delta);
+  await db.set(KEYS.neckers, next);
+  return next;
+}
+
+/** Set the necker count to an absolute value. Returns the new total. */
+export async function setNeckerCount(value: number): Promise<number> {
+  const db = await initKv();
+  const next = Math.max(0, value);
+  await db.set(KEYS.neckers, next);
+  return next;
 }
 
 // ===== SERIALIZATION HELPERS =====

@@ -493,11 +493,10 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
         </label>
         <textarea
           name="notes"
-          defaultValue={initialData?.notes}
           rows={3}
           class={inputClass}
           placeholder="Additional notes or comments..."
-        />
+        >{initialData?.notes ?? ""}</textarea>
       </div>
       
       {/* Submit Buttons */}

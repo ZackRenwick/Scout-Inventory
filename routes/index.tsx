@@ -3,8 +3,9 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../components/Layout.tsx";
 import StatCard from "../components/StatCard.tsx";
 import SpaceDashboard from "../islands/SpaceDashboard.tsx";
+import NeckerCounter from "../islands/NeckerCounter.tsx";
 import type { Session } from "../lib/auth.ts";
-import { getAllItems } from "../db/kv.ts";
+import { getAllItems, getNeckerCount } from "../db/kv.ts";
 import { isFoodItem } from "../types/inventory.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
@@ -32,13 +33,17 @@ interface DashboardData {
       expiringWarning: number;
     };
   };
+  neckerCount: number;
   session?: Session;
 }
 
 export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
     try {
-      const items = await getAllItems();
+      const [items, neckerCount] = await Promise.all([
+        getAllItems(),
+        getNeckerCount(),
+      ]);
       const stats = {
         totalItems: items.length,
         totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
@@ -75,7 +80,7 @@ export const handler: Handlers<DashboardData> = {
           else if (d <= 30) stats.expiringFood.expiringWarning++;
         }
       }
-      return ctx.render({ stats: stats as DashboardData["stats"], session: ctx.state.session as Session });
+      return ctx.render({ stats: stats as DashboardData["stats"], neckerCount, session: ctx.state.session as Session });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       // Return empty stats on error
@@ -99,6 +104,7 @@ export const handler: Handlers<DashboardData> = {
           needsRepairItems: 0,
           expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
         },
+        neckerCount: 0,
         session: ctx.state.session as Session,
       });
     }
@@ -106,8 +112,8 @@ export const handler: Handlers<DashboardData> = {
 };
 
 export default function Home({ data }: PageProps<DashboardData>) {
-  const { stats, session } = data;
-  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.needsRepairItems;
+  const { stats, neckerCount, session } = data;
+  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.needsRepairItems + (neckerCount < 10 ? 1 : 0);
   
   return (
     <Layout username={session?.username} role={session?.role}>
@@ -140,6 +146,9 @@ export default function Home({ data }: PageProps<DashboardData>) {
                   )}
                   {stats.needsRepairItems > 0 && (
                     <li><a href="/inventory?needsrepair=true" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.needsRepairItems} item{stats.needsRepairItems !== 1 ? 's' : ''} need repair</a></li>
+                  )}
+                  {neckerCount < 10 && (
+                    <li>Only {neckerCount} necker{neckerCount !== 1 ? 's' : ''} in stock — running low</li>
                   )}
                 </ul>
               </div>
@@ -191,7 +200,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
       </div>
       
       {/* Overview Stats */}
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
         <a href="/inventory" class="block hover:shadow-lg transition-shadow">
           <StatCard
             title="Total Items"
@@ -228,6 +237,11 @@ export default function Home({ data }: PageProps<DashboardData>) {
             subtitle="Food items"
           />
         </a>
+        <NeckerCounter
+          initialCount={neckerCount}
+          csrfToken={session?.csrfToken ?? ""}
+          canEdit={session?.role !== "viewer"}
+        />
       </div>
       
       <SpaceDashboard categoryBreakdown={stats.categoryBreakdown} spaceBreakdown={stats.spaceBreakdown} expiringFood={stats.expiringFood} />
