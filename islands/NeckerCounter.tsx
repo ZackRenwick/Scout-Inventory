@@ -1,21 +1,31 @@
-// Interactive necker counter — quick +/- widget for the dashboard
+// Interactive necker counter — fetches live data on mount, no SSR prop needed
 import { useSignal } from "@preact/signals";
+import { useEffect } from "preact/hooks";
+import { neckerCount } from "../lib/neckerSignal.ts";
 
 interface NeckerCounterProps {
-  initialCount: number;
   csrfToken: string;
   canEdit?: boolean;
 }
 
-export default function NeckerCounter({ initialCount, csrfToken, canEdit = true }: NeckerCounterProps) {
-  const count = useSignal(initialCount);
+export default function NeckerCounter({ csrfToken, canEdit = true }: NeckerCounterProps) {
+  // Use the shared signal so NeckerAlert reacts to every change
+  const count = neckerCount;
   const saving = useSignal(false);
   const error = useSignal<string | null>(null);
 
+  // Fetch the live count from the API on mount
+  useEffect(() => {
+    fetch("/api/neckers")
+      .then((r) => r.json())
+      .then((d) => { count.value = d.count; })
+      .catch(() => { error.value = "Failed to load"; });
+  }, []);
+
   async function adjust(delta: number) {
-    if (saving.value) return;
-    // Optimistic update — clamp to 0
-    const next = Math.max(0, count.value + delta);
+    if (saving.value || count.value === null) return;
+    const prev = count.value;
+    const next = Math.max(0, prev + delta);
     count.value = next;
     saving.value = true;
     error.value = null;
@@ -32,17 +42,18 @@ export default function NeckerCounter({ initialCount, csrfToken, canEdit = true 
       const data = await res.json();
       count.value = data.count;
     } catch {
-      // Roll back on failure
-      count.value = count.value - delta;
+      count.value = prev;
       error.value = "Failed to save — try again";
     } finally {
       saving.value = false;
     }
   }
 
+  const isLow = count.value !== null && count.value < 10;
+
   return (
     <div class={`border-2 rounded-lg p-6 transition-colors ${
-      count.value < 10
+      isLow
         ? "border-orange-400 bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-100 dark:border-orange-500"
         : "border-purple-400 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 dark:border-purple-500"
     }`}>
@@ -54,24 +65,26 @@ export default function NeckerCounter({ initialCount, csrfToken, canEdit = true 
               <button
                 type="button"
                 aria-label="Remove one necker"
-                disabled={saving.value || count.value === 0}
+                disabled={saving.value || count.value === null || count.value === 0}
                 onClick={() => adjust(-1)}
                 class={`w-7 h-7 flex items-center justify-center rounded text-base font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
-                  count.value < 10
+                  isLow
                     ? "bg-orange-200 dark:bg-orange-800 hover:bg-red-200 dark:hover:bg-red-900/60"
                     : "bg-purple-200 dark:bg-purple-800 hover:bg-red-200 dark:hover:bg-red-900/60"
                 }`}
               >−</button>
             )}
-            <p class="text-3xl font-bold tabular-nums">{count}</p>
+            <p class="text-3xl font-bold tabular-nums">
+              {count.value === null ? "…" : count.value}
+            </p>
             {canEdit && (
               <button
                 type="button"
                 aria-label="Add one necker"
-                disabled={saving.value}
+                disabled={saving.value || count.value === null}
                 onClick={() => adjust(1)}
                 class={`w-7 h-7 flex items-center justify-center rounded text-base font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
-                  count.value < 10
+                  isLow
                     ? "bg-orange-200 dark:bg-orange-800 hover:bg-green-200 dark:hover:bg-green-900/60"
                     : "bg-purple-200 dark:bg-purple-800 hover:bg-green-200 dark:hover:bg-green-900/60"
                 }`}
@@ -79,9 +92,6 @@ export default function NeckerCounter({ initialCount, csrfToken, canEdit = true 
             )}
           </div>
           <p class="text-xs mt-1 opacity-70">in stock</p>
-          {count.value < 10 && (
-            <p class="text-xs font-semibold mt-1">⚠️ Running low</p>
-          )}
           {!saving.value && error.value && (
             <p class="text-xs text-red-500 mt-1">{error.value}</p>
           )}

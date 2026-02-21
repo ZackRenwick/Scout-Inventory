@@ -1,6 +1,6 @@
 // Form for adding/editing inventory items
 import { Signal, useSignal } from "@preact/signals";
-import { ITEM_LOCATIONS } from "../types/inventory.ts";
+import { ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
 
 interface ItemFormProps {
   initialData?: any;
@@ -9,20 +9,21 @@ interface ItemFormProps {
 }
 
 export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
-  const initialSpace = initialData?.space ?? ((initialData?.category === "games" || initialData?.category === "first-aid") ? "scout-post-loft" : "camp-store");
+  const initialSpace = initialData?.space ?? (initialData?.category === "games" ? "scout-post-loft" : "camp-store");
   const space = useSignal<"camp-store" | "scout-post-loft">(initialSpace);
-  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games" | "first-aid">(initialData?.category || "tent");
+  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games">(initialData?.category || "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
   const success = useSignal("");
 
   // Find the group that contains the initial location value (for edit mode)
+  const initialLocationList = initialSpace === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS;
   const initialGroup = initialData?.location
-    ? (ITEM_LOCATIONS.find((g) => g.options.includes(initialData.location))?.group ?? ITEM_LOCATIONS[0].group)
-    : ITEM_LOCATIONS[0].group;
+    ? (initialLocationList.find((g) => g.options.includes(initialData.location))?.group ?? initialLocationList[0].group)
+    : initialLocationList[0].group;
   const locationGroup = useSignal<string>(initialGroup);
   const locationValue = useSignal<string>(
-    initialData?.location ?? ITEM_LOCATIONS[0].options[0]
+    initialData?.location ?? initialLocationList[0].options[0]
   );
 
   const handleSubmit = async (e: Event) => {
@@ -70,10 +71,6 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.ageRange = formData.get("ageRange") || undefined;
       data.brand = formData.get("brand") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
-    } else if (category.value === "first-aid") {
-      data.itemType = formData.get("itemType");
-      const expiryDate = formData.get("expiryDate") as string;
-      if (expiryDate) data.expiryDate = expiryDate;
     } else if (category.value === "food") {
       data.foodType = formData.get("foodType");
       data.expiryDate = formData.get("expiryDate");
@@ -137,7 +134,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               name="spaceRadio"
               value="camp-store"
               checked={space.value === "camp-store"}
-              onChange={() => { space.value = "camp-store"; if (!isEdit) category.value = "tent"; }}
+              onChange={() => { space.value = "camp-store"; if (!isEdit) { category.value = "tent"; locationGroup.value = ITEM_LOCATIONS[0].group; locationValue.value = ITEM_LOCATIONS[0].options[0]; } }}
               disabled={isEdit}
               class="text-purple-600"
             />
@@ -149,7 +146,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               name="spaceRadio"
               value="scout-post-loft"
               checked={space.value === "scout-post-loft"}
-              onChange={() => { space.value = "scout-post-loft"; if (!isEdit) category.value = "games"; }}
+              onChange={() => { space.value = "scout-post-loft"; if (!isEdit) { category.value = "games"; locationGroup.value = LOFT_LOCATIONS[0].group; locationValue.value = LOFT_LOCATIONS[0].options[0]; } }}
               disabled={isEdit}
               class="text-purple-600"
             />
@@ -180,7 +177,6 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           ) : (
             <>
               <option value="games">🎮 Games Equipment</option>
-              <option value="first-aid">🩹 First Aid</option>
             </>
           )}
         </select>
@@ -205,11 +201,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               onChange={(e) => {
                 const group = (e.target as HTMLSelectElement).value;
                 locationGroup.value = group;
-                const firstOption = ITEM_LOCATIONS.find((g) => g.group === group)?.options[0] ?? "N/A";
+                const locs = space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS;
+                const firstOption = locs.find((g) => g.group === group)?.options[0] ?? "N/A";
                 locationValue.value = firstOption;
               }}
             >
-              {ITEM_LOCATIONS.map(({ group }) => (
+              {(space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS).map(({ group }) => (
                 <option value={group}>{group}</option>
               ))}
             </select>
@@ -221,7 +218,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               value={locationValue.value}
               onChange={(e) => { locationValue.value = (e.target as HTMLSelectElement).value; }}
             >
-              {ITEM_LOCATIONS.find((g) => g.group === locationGroup.value)?.options.map((loc) => (
+              {(space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS).find((g) => g.group === locationGroup.value)?.options.map((loc) => (
                 <option value={loc}>{loc}</option>
               ))}
             </select>
@@ -458,29 +455,6 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             <div>
               <label class={labelClass}>Year Purchased</label>
               <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* First Aid-specific fields */}
-      {category.value === "first-aid" && (
-        <div class="mb-6 p-4 bg-red-50 dark:bg-red-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">First Aid Details</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class={labelClass}>Item Type *</label>
-              <select name="itemType" required class={inputClass}>
-                <option value="bandages" selected={initialData?.itemType === "bandages"}>Bandages / Dressings</option>
-                <option value="medication" selected={initialData?.itemType === "medication"}>Medication</option>
-                <option value="equipment" selected={initialData?.itemType === "equipment"}>Equipment</option>
-                <option value="kit" selected={initialData?.itemType === "kit"}>Kit</option>
-                <option value="other" selected={initialData?.itemType === "other"}>Other</option>
-              </select>
-            </div>
-            <div>
-              <label class={labelClass}>Expiry Date</label>
-              <input type="date" name="expiryDate" defaultValue={initialData?.expiryDate ? new Date(initialData.expiryDate).toISOString().split('T')[0] : ''} class={inputClass} />
             </div>
           </div>
         </div>

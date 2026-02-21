@@ -1,7 +1,7 @@
 // Individual item details page
 import { Handlers, PageProps } from "$fresh/server.ts";
-import type { InventoryItem, TentItem, CookingEquipment, FoodItem, GamesItem, FirstAidItem } from "../../types/inventory.ts";
-import { isTentItem, isCookingEquipment, isFoodItem, isGamesItem, isFirstAidItem } from "../../types/inventory.ts";
+import type { InventoryItem, TentItem, CookingEquipment, FoodItem, GamesItem } from "../../types/inventory.ts";
+import { isTentItem, isCookingEquipment, isFoodItem, isGamesItem } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import CategoryIcon from "../../components/CategoryIcon.tsx";
@@ -258,24 +258,6 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 <div>
                   <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>
                   <p class="mt-1 text-gray-900 dark:text-gray-100">{item.yearPurchased}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {isFirstAidItem(item) && (
-          <div class="mt-6 p-4 bg-red-50 dark:bg-red-950/40 rounded-lg">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">First Aid Details</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Item Type</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.itemType.replace(/-/g, ' ')}</p>
-              </div>
-              {item.expiryDate && (
-                <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Expiry Date</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100 font-bold">{formatDate(item.expiryDate)}</p>
                 </div>
               )}
             </div>

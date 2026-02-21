@@ -1,6 +1,6 @@
 // Component for displaying category icons
 interface CategoryIconProps {
-  category: "tent" | "cooking" | "food" | "camping-tools" | "games" | "first-aid";
+  category: "tent" | "cooking" | "food" | "camping-tools" | "games";
   size?: "sm" | "md" | "lg";
 }
 
@@ -17,7 +17,6 @@ export default function CategoryIcon({ category, size = "md" }: CategoryIconProp
     food: "🥫",
     "camping-tools": "🪓",
     games: "🎮",
-    "first-aid": "🩹",
   };
   
   const labels: Record<string, string> = {
@@ -26,7 +25,6 @@ export default function CategoryIcon({ category, size = "md" }: CategoryIconProp
     food: "Food",
     "camping-tools": "Camping Tools",
     games: "Games",
-    "first-aid": "First Aid",
   };
   
   return (

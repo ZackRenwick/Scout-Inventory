@@ -1,5 +1,5 @@
 // Base inventory item interface
-export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "first-aid";
+export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games";
 
 export type ItemSpace = "camp-store" | "scout-post-loft";
 
@@ -18,6 +18,10 @@ export type ItemLocation =
   | "Cubby Hole"
   | "Axe/Saw Hanging Space"
   | "On Top of Red Box" | "On Top of Green Box"
+  | "Loft Shelf 1 - Level 1" | "Loft Shelf 1 - Level 2" | "Loft Shelf 1 - Level 3"
+  | "Loft Shelf 2 - Level 1" | "Loft Shelf 2 - Level 2" | "Loft Shelf 2 - Level 3"
+  | "Loft Shelf 3 - Level 1" | "Loft Shelf 3 - Level 2" | "Loft Shelf 3 - Level 3"
+  | "Loft Shelf 4 - Level 1" | "Loft Shelf 4 - Level 2" | "Loft Shelf 4 - Level 3"
   | "N/A";
 
 export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
@@ -55,6 +59,22 @@ export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
     group: "Other",
     options: ["Axe/Saw Hanging Space", "On Top of Red Box", "On Top of Green Box", "Cubby Hole", "N/A"],
+  },
+];
+
+export const LOFT_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
+  {
+    group: "Loft Shelves",
+    options: [
+      "Loft Shelf 1 - Level 1", "Loft Shelf 1 - Level 2", "Loft Shelf 1 - Level 3",
+      "Loft Shelf 2 - Level 1", "Loft Shelf 2 - Level 2", "Loft Shelf 2 - Level 3",
+      "Loft Shelf 3 - Level 1", "Loft Shelf 3 - Level 2", "Loft Shelf 3 - Level 3",
+      "Loft Shelf 4 - Level 1", "Loft Shelf 4 - Level 2", "Loft Shelf 4 - Level 3",
+    ],
+  },
+  {
+    group: "Other",
+    options: ["N/A"],
   },
 ];
 
@@ -124,15 +144,8 @@ export interface GamesItem extends BaseInventoryItem {
   yearPurchased?: number;
 }
 
-// First aid item properties
-export interface FirstAidItem extends BaseInventoryItem {
-  category: "first-aid";
-  itemType: "bandages" | "medication" | "equipment" | "kit" | "other";
-  expiryDate?: Date;
-}
-
 // Union type for all inventory items
-export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | FirstAidItem;
+export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem;
 
 // Helper type guards
 export function isTentItem(item: InventoryItem): item is TentItem {
@@ -153,10 +166,6 @@ export function isCampingToolItem(item: InventoryItem): item is CampingToolItem 
 
 export function isGamesItem(item: InventoryItem): item is GamesItem {
   return item.category === "games";
-}
-
-export function isFirstAidItem(item: InventoryItem): item is FirstAidItem {
-  return item.category === "first-aid";
 }
 
 // Expiry status for food items

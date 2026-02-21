@@ -30,6 +30,7 @@ import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
+import * as $NeckerAlert from "./islands/NeckerAlert.tsx";
 import * as $NeckerCounter from "./islands/NeckerCounter.tsx";
 import * as $PasswordInput from "./islands/PasswordInput.tsx";
 import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
@@ -68,6 +69,7 @@ const manifest = {
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
     "./islands/MobileNav.tsx": $MobileNav,
+    "./islands/NeckerAlert.tsx": $NeckerAlert,
     "./islands/NeckerCounter.tsx": $NeckerCounter,
     "./islands/PasswordInput.tsx": $PasswordInput,
     "./islands/SpaceDashboard.tsx": $SpaceDashboard,

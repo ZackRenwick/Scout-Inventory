@@ -4,8 +4,9 @@ import Layout from "../components/Layout.tsx";
 import StatCard from "../components/StatCard.tsx";
 import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import NeckerCounter from "../islands/NeckerCounter.tsx";
+import NeckerAlert from "../islands/NeckerAlert.tsx";
 import type { Session } from "../lib/auth.ts";
-import { getAllItems, getNeckerCount } from "../db/kv.ts";
+import { getAllItems } from "../db/kv.ts";
 import { isFoodItem } from "../types/inventory.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
@@ -19,7 +20,6 @@ interface DashboardData {
       food: { count: number; quantity: number };
       "camping-tools": { count: number; quantity: number };
       games: { count: number; quantity: number };
-      "first-aid": { count: number; quantity: number };
     };
     spaceBreakdown: {
       "camp-store": { count: number; quantity: number };
@@ -33,17 +33,13 @@ interface DashboardData {
       expiringWarning: number;
     };
   };
-  neckerCount: number;
   session?: Session;
 }
 
 export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
     try {
-      const [items, neckerCount] = await Promise.all([
-        getAllItems(),
-        getNeckerCount(),
-      ]);
+      const items = await getAllItems();
       const stats = {
         totalItems: items.length,
         totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
@@ -53,7 +49,6 @@ export const handler: Handlers<DashboardData> = {
           food: { count: 0, quantity: 0 },
           "camping-tools": { count: 0, quantity: 0 },
           games: { count: 0, quantity: 0 },
-          "first-aid": { count: 0, quantity: 0 },
         } as Record<string, { count: number; quantity: number }>,
         spaceBreakdown: {
           "camp-store": { count: 0, quantity: 0 },
@@ -80,7 +75,7 @@ export const handler: Handlers<DashboardData> = {
           else if (d <= 30) stats.expiringFood.expiringWarning++;
         }
       }
-      return ctx.render({ stats: stats as DashboardData["stats"], neckerCount, session: ctx.state.session as Session });
+      return ctx.render({ stats: stats as DashboardData["stats"], session: ctx.state.session as Session });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       // Return empty stats on error
@@ -94,7 +89,6 @@ export const handler: Handlers<DashboardData> = {
             food: { count: 0, quantity: 0 },
             "camping-tools": { count: 0, quantity: 0 },
             games: { count: 0, quantity: 0 },
-            "first-aid": { count: 0, quantity: 0 },
           },
           spaceBreakdown: {
             "camp-store": { count: 0, quantity: 0 },
@@ -104,7 +98,6 @@ export const handler: Handlers<DashboardData> = {
           needsRepairItems: 0,
           expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
         },
-        neckerCount: 0,
         session: ctx.state.session as Session,
       });
     }
@@ -112,8 +105,8 @@ export const handler: Handlers<DashboardData> = {
 };
 
 export default function Home({ data }: PageProps<DashboardData>) {
-  const { stats, neckerCount, session } = data;
-  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.needsRepairItems + (neckerCount < 10 ? 1 : 0);
+  const { stats, session } = data;
+  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning + stats.needsRepairItems;
   
   return (
     <Layout username={session?.username} role={session?.role}>
@@ -144,11 +137,11 @@ export default function Home({ data }: PageProps<DashboardData>) {
                   {stats.expiringFood.expiringSoon > 0 && (
                     <li><a href="/reports/expiring" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.expiringFood.expiringSoon} food item{stats.expiringFood.expiringSoon !== 1 ? 's' : ''} expiring within 7 days</a></li>
                   )}
+                  {stats.expiringFood.expiringWarning > 0 && (
+                    <li><a href="/reports/expiring" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.expiringFood.expiringWarning} food item{stats.expiringFood.expiringWarning !== 1 ? 's' : ''} expiring within 30 days</a></li>
+                  )}
                   {stats.needsRepairItems > 0 && (
                     <li><a href="/inventory?needsrepair=true" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.needsRepairItems} item{stats.needsRepairItems !== 1 ? 's' : ''} need repair</a></li>
-                  )}
-                  {neckerCount < 10 && (
-                    <li>Only {neckerCount} necker{neckerCount !== 1 ? 's' : ''} in stock — running low</li>
                   )}
                 </ul>
               </div>
@@ -156,6 +149,9 @@ export default function Home({ data }: PageProps<DashboardData>) {
           </div>
         </div>
       )}
+
+      {/* Dynamic necker low-stock alert (client-side, updates with NeckerCounter) */}
+      <NeckerAlert />
 
       {/* Quick Actions */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
@@ -238,7 +234,6 @@ export default function Home({ data }: PageProps<DashboardData>) {
           />
         </a>
         <NeckerCounter
-          initialCount={neckerCount}
           csrfToken={session?.csrfToken ?? ""}
           canEdit={session?.role !== "viewer"}
         />

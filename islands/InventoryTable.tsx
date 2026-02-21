@@ -1,7 +1,7 @@
 // Interactive inventory table with search and filtering
 import { Signal, useComputed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
-import { isFoodItem, isTentItem, ITEM_LOCATIONS } from "../types/inventory.ts";
+import { isFoodItem, isTentItem, ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
 import ExpiryBadge from "../components/ExpiryBadge.tsx";
 import CategoryIcon from "../components/CategoryIcon.tsx";
@@ -23,9 +23,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
 
-  const uniqueLocations = [...new Set(items.map((i) => i.location))];
-  const allDefinedLocations = new Set(ITEM_LOCATIONS.flatMap((g) => g.options as string[]));
-  const knownGroups = ITEM_LOCATIONS
+  const uniqueLocations = [...new Set(items.map((i) => i.location))] as string[];
+  const allDefinedLocations = new Set([...ITEM_LOCATIONS, ...LOFT_LOCATIONS].flatMap((g) => g.options as string[]));
+  const knownGroups = [...ITEM_LOCATIONS, ...LOFT_LOCATIONS]
     .map((group) => ({ ...group, options: group.options.filter((o) => uniqueLocations.includes(o as string)) }))
     .filter((group) => group.options.length > 0);
   const ungroupedLocations = uniqueLocations.filter((l) => !allDefinedLocations.has(l)).sort();
@@ -42,7 +42,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     "food": "food",
     "camping-tools": "camping tools",
     "games": "games",
-    "first-aid": "first aid",
+
   };
 
   // Filter items based on search and filters — useComputed() memoises the result
@@ -186,7 +186,6 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               </optgroup>
               <optgroup label="🏠 Scout Post Loft">
                 <option value="games">🎮 Games</option>
-                <option value="first-aid">🩹 First Aid</option>
               </optgroup>
             </select>
           </div>
