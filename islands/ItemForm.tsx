@@ -202,12 +202,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
                 const group = (e.target as HTMLSelectElement).value;
                 locationGroup.value = group;
                 const locs = space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS;
-                const firstOption = locs.find((g) => g.group === group)?.options[0] ?? "N/A";
+                const firstOption = locs.find((g) => g.group === group)?.options[0] ?? locs[0].options[0];
                 locationValue.value = firstOption;
               }}
             >
               {(space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS).map(({ group }) => (
-                <option value={group}>{group}</option>
+                <option key={group} value={group} selected={group === locationGroup.value}>{group}</option>
               ))}
             </select>
             {/* Step 2: pick the specific slot within that category */}
@@ -219,7 +219,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               onChange={(e) => { locationValue.value = (e.target as HTMLSelectElement).value; }}
             >
               {(space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS).find((g) => g.group === locationGroup.value)?.options.map((loc) => (
-                <option value={loc}>{loc}</option>
+                <option key={loc} value={loc} selected={loc === locationValue.value}>{loc}</option>
               ))}
             </select>
           </div>

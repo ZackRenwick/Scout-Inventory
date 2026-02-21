@@ -21,8 +21,7 @@ export type ItemLocation =
   | "Loft Shelf 1 - Level 1" | "Loft Shelf 1 - Level 2" | "Loft Shelf 1 - Level 3"
   | "Loft Shelf 2 - Level 1" | "Loft Shelf 2 - Level 2" | "Loft Shelf 2 - Level 3"
   | "Loft Shelf 3 - Level 1" | "Loft Shelf 3 - Level 2" | "Loft Shelf 3 - Level 3"
-  | "Loft Shelf 4 - Level 1" | "Loft Shelf 4 - Level 2" | "Loft Shelf 4 - Level 3"
-  | "N/A";
+  | "Loft Shelf 4 - Level 1" | "Loft Shelf 4 - Level 2" | "Loft Shelf 4 - Level 3";
 
 export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
@@ -58,7 +57,7 @@ export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   },
   {
     group: "Other",
-    options: ["Axe/Saw Hanging Space", "On Top of Red Box", "On Top of Green Box", "Cubby Hole", "N/A"],
+    options: ["Axe/Saw Hanging Space", "On Top of Red Box", "On Top of Green Box", "Cubby Hole"],
   },
 ];
 
@@ -71,10 +70,6 @@ export const LOFT_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
       "Loft Shelf 3 - Level 1", "Loft Shelf 3 - Level 2", "Loft Shelf 3 - Level 3",
       "Loft Shelf 4 - Level 1", "Loft Shelf 4 - Level 2", "Loft Shelf 4 - Level 3",
     ],
-  },
-  {
-    group: "Other",
-    options: ["N/A"],
   },
 ];
 

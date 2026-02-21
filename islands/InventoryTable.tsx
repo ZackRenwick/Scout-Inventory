@@ -5,6 +5,7 @@ import { isFoodItem, isTentItem, ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types
 import type { ItemCategory } from "../types/inventory.ts";
 import ExpiryBadge from "../components/ExpiryBadge.tsx";
 import CategoryIcon from "../components/CategoryIcon.tsx";
+import { getDaysUntil } from "../lib/date-utils.ts";
 
 interface InventoryTableProps {
   items: InventoryItem[];
@@ -22,6 +23,10 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const locationFilter = useSignal<string>("all");
   const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
+  const cookingTypeFilter = useSignal<string>("all");
+  const showExpiredFood = useSignal(false);
+  const showExpiringSoon = useSignal(false);
+  const showExpiring30 = useSignal(false);
 
   const uniqueLocations = [...new Set(items.map((i) => i.location))] as string[];
   const allDefinedLocations = new Set([...ITEM_LOCATIONS, ...LOFT_LOCATIONS].flatMap((g) => g.options as string[]));
@@ -86,6 +91,24 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
       if (!hasCondition || (item as { condition: string }).condition !== "needs-repair") {
         return false;
       }
+    }
+
+    // Cooking equipment type filter
+    if (cookingTypeFilter.value !== "all") {
+      if (item.category !== "cooking") return false;
+      if ((item as { equipmentType?: string }).equipmentType !== cookingTypeFilter.value) return false;
+    }
+
+    // Food expiry filters — when any are active, item must be food matching at least one selected status
+    const anyFoodExpiry = showExpiredFood.value || showExpiringSoon.value || showExpiring30.value;
+    if (anyFoodExpiry) {
+      if (!isFoodItem(item)) return false;
+      const expiryDate = item.expiryDate instanceof Date ? item.expiryDate : new Date(item.expiryDate as string);
+      const days = getDaysUntil(expiryDate);
+      const matchesExpired = showExpiredFood.value && days <= 0;
+      const matchesSoon = showExpiringSoon.value && days > 0 && days <= 7;
+      const matches30 = showExpiring30.value && days > 7 && days <= 30;
+      if (!matchesExpired && !matchesSoon && !matches30) return false;
     }
 
     return true;
@@ -189,7 +212,27 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               </optgroup>
             </select>
           </div>
-          <div class="sm:col-span-2">
+          {(categoryFilter.value === "all" || categoryFilter.value === "cooking") && (
+            <div>
+              <label htmlFor="cooking-type-filter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Equipment Type</label>
+              <select
+                id="cooking-type-filter"
+                value={cookingTypeFilter.value}
+                onChange={(e) => cookingTypeFilter.value = (e.target as HTMLSelectElement).value}
+                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="all">All Equipment Types</option>
+                <option value="stove">Stove</option>
+                <option value="pots">Pots</option>
+                <option value="pans">Pans</option>
+                <option value="utensils">Utensils</option>
+                <option value="cooler">Cooler</option>
+                <option value="water-container">Water Container</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          )}
+          <div class={(categoryFilter.value === "all" || categoryFilter.value === "cooking") ? "" : "sm:col-span-2"}>
             <label htmlFor="location-filter" class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Location</label>
             <select
               id="location-filter"
@@ -209,25 +252,62 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
           </div>
         </div>
         {/* Toggles */}
-        <div class="flex flex-wrap gap-3 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showLowStock.value}
-              onChange={(e) => showLowStock.value = (e.target as HTMLInputElement).checked}
-              class="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-            />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">⚠️ Low Stock Only</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showNeedsRepair.value}
-              onChange={(e) => showNeedsRepair.value = (e.target as HTMLInputElement).checked}
-              class="w-4 h-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-            />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🔧 Needs Repair Only</span>
-          </label>
+        <div class="flex flex-col gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg">
+          {/* Row 1 — condition filters */}
+          <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-8 gap-y-2">
+            <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-3 sm:border-r border-gray-300 dark:border-gray-600 shrink-0">Stock</span>
+            <label class="flex items-center gap-2 cursor-pointer select-none w-full sm:w-auto">
+              <input
+                type="checkbox"
+                checked={showLowStock.value}
+                onChange={(e) => showLowStock.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">⚠️ Low Stock Only</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none w-full sm:w-auto">
+              <input
+                type="checkbox"
+                checked={showNeedsRepair.value}
+                onChange={(e) => showNeedsRepair.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🔧 Needs Repair Only</span>
+            </label>
+          </div>
+          {/* Divider */}
+          <div class="border-t border-gray-200 dark:border-gray-700" />
+          {/* Row 2 — food expiry filters */}
+          <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-8 gap-y-2">
+            <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-3 sm:border-r border-gray-300 dark:border-gray-600 shrink-0">Food</span>
+            <label class="flex items-center gap-2 cursor-pointer select-none w-full sm:w-auto">
+              <input
+                type="checkbox"
+                checked={showExpiredFood.value}
+                onChange={(e) => showExpiredFood.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">❌ Expired</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none w-full sm:w-auto">
+              <input
+                type="checkbox"
+                checked={showExpiringSoon.value}
+                onChange={(e) => showExpiringSoon.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🔴 Expiring Soon (≤7 days)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none w-full sm:w-auto">
+              <input
+                type="checkbox"
+                checked={showExpiring30.value}
+                onChange={(e) => showExpiring30.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🟡 Within 30 Days</span>
+            </label>
+          </div>
         </div>
       </div>
       
@@ -256,14 +336,19 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                   </div>
                   <div class="flex items-center gap-1.5 shrink-0 ml-2">
                     {isLowStock && (
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">⚠️ Low</span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700">⚠️ Low</span>
                     )}
                     {needsRepair && (
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">🔧 Repair</span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">🔧 Repair</span>
                     )}
-                    {"condition" in item && !needsRepair && !isLowStock && (
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">✅ All Good</span>
-                    )}
+                    {"condition" in item && !needsRepair && (() => {
+                      const cond = (item as { condition: string }).condition;
+                      const condLabel = cond === "excellent" ? "✅ Excellent" : cond === "good" ? "✅ Good" : "⚠️ Fair";
+                      const condColor = cond === "fair"
+                        ? "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700"
+                        : "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700";
+                      return <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${condColor}`}>{condLabel}</span>;
+                    })()}
                   </div>
                 </div>
                 {/* Meta grid */}
@@ -400,7 +485,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex flex-col items-start gap-1">
                       {isTentItem(item) && (
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700">
                           👤 {item.capacity}/tent · 🏕️ {item.capacity * item.quantity} total
                         </span>
                       )}
@@ -408,15 +493,22 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                         <ExpiryBadge expiryDate={item.expiryDate} />
                       )}
                       {"condition" in item && (item as { condition: string }).condition === "needs-repair" && (
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">
                           🔧 Needs Repair
                         </span>
                       )}
-                      {"condition" in item && (item as { condition: string }).condition !== "needs-repair" && (
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                          ✅ All Good
-                        </span>
-                      )}
+                      {"condition" in item && (item as { condition: string }).condition !== "needs-repair" && (() => {
+                        const cond = (item as { condition: string }).condition;
+                        const condLabel = cond === "excellent" ? "✅ Excellent" : cond === "good" ? "✅ Good" : "⚠️ Fair";
+                        const condColor = cond === "fair"
+                          ? "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700"
+                          : "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700";
+                        return (
+                          <span class={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${condColor}`}>
+                            {condLabel}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>

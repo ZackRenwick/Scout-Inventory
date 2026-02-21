@@ -179,3 +179,18 @@ A `Deno.cron` job runs every 5 minutes to self-ping the app and keep the isolate
 - Session cookies are `HttpOnly` and `SameSite=Strict`
 - All routes except `/login`, `/styles.css`, and `/api/ping` require an authenticated session
 
+## 💡 Ideas
+
+### 🏕️ Camp Planner
+A planning tool that lets leaders build a camp schedule and automatically checks the inventory to confirm all required equipment is available. Could support:
+- Creating a camp with a date range, expected headcount, and activity list
+- Mapping activities to required inventory categories (e.g. hiking → camping tools, cooking session → stoves + pots)
+- A readiness checklist showing which items are sufficiently stocked and flagging any shortfalls before the camp
+- Generating a kit list PDF or printable checklist for leaders to pack from
+
+### 🍽️ Meal Planner
+A meal planning tool that works directly from the food inventory, helping leaders plan meals for camps without over- or under-ordering. Could support:
+- Building a meal plan for a given number of days and people
+- Pulling current food stock quantities and expiry dates to suggest items to use first
+- Estimating servings remaining from inventory quantities and flagging items running low
+- Marking items as "allocated" to a meal plan so stock figures stay accurate
