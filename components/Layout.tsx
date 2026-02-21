@@ -18,7 +18,7 @@ export default function Layout({ children, title, username, role }: LayoutProps)
           <div class="flex items-center justify-between">
             <a href="/" class="flex items-center space-x-2 shrink-0">
               <span class="text-2xl">⛺</span>
-              <h1 class="text-lg sm:text-xl font-bold leading-tight">Scout Camp Loft</h1>
+              <h1 class="text-lg sm:text-xl font-bold leading-tight">Scout Inventory</h1>
             </a>
             <MobileNav username={username} role={role} />
           </div>
@@ -35,7 +35,7 @@ export default function Layout({ children, title, username, role }: LayoutProps)
       <footer class="bg-purple-800 dark:bg-gray-950 text-purple-200 mt-16 border-t border-purple-700 dark:border-purple-900">
         <div class="container mx-auto px-4 py-6 text-center">
           <p class="text-sm flex flex-col items-center gap-1">
-            Scout Camp Loft Inventory System · Built with Fresh{" "}
+            Scout Inventory · Built with Fresh{" "}
             <EasterEgg />
           </p>
         </div>

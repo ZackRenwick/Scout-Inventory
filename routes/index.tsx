@@ -112,7 +112,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
     <Layout username={session?.username} role={session?.role}>
       <div class="mb-8">
         <h1 class="text-4xl font-bold text-gray-800 dark:text-purple-100 mb-2">📊 Dashboard</h1>
-        <p class="text-gray-600 dark:text-gray-400">Overview of your camp loft inventory</p>
+        <p class="text-gray-600 dark:text-gray-400">Overview of your scout inventory</p>
       </div>
 
       {/* Alert Banner */}

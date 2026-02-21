@@ -112,7 +112,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign In · Scout Camp Loft</title>
+        <title>Sign In · Scout Inventory</title>
         <link rel="stylesheet" href="/styles.css" />
         <script
           dangerouslySetInnerHTML={{
@@ -144,7 +144,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
         <div class="w-full max-w-sm">
           <div class="text-center mb-8">
             <span class="text-5xl">⛺</span>
-            <h1 class="mt-4 text-2xl font-bold text-gray-800 dark:text-purple-100">Scout Camp Loft</h1>
+            <h1 class="mt-4 text-2xl font-bold text-gray-800 dark:text-purple-100">Scout Inventory</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Inventory Management</p>
           </div>
 

@@ -1,4 +1,4 @@
-# Quick Start Guide - Scout Camp Loft Inventory
+# Quick Start Guide - Scout Inventory
 
 ## 🚀 Get Started in 3 Steps
 
