@@ -10,7 +10,7 @@
 // If RESEND_API_KEY or NOTIFY_EMAIL are unset the helpers are safe no-ops — they
 // log to console instead so local dev works without any configuration.
 
-import { getAllItems, getFoodItemsSortedByExpiry } from "../db/kv.ts";
+import { getAllItems, getFoodItemsSortedByExpiry, getNeckerCount } from "../db/kv.ts";
 import { getDaysUntil } from "./date-utils.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -54,13 +54,18 @@ async function sendEmail(subject: string, html: string): Promise<void> {
  * if any items are at or below their minimum threshold.
  */
 export async function checkAndNotifyLowStock(): Promise<void> {
-  const items = await getAllItems();
+  const [items, neckerCount] = await Promise.all([getAllItems(), getNeckerCount()]);
   const lowStock = items.filter((i) => i.quantity <= i.minThreshold);
-  if (lowStock.length === 0) {
+
+  // Necker threshold: configurable via NECKER_MIN_THRESHOLD env var, default 5
+  const neckerThreshold = parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10);
+  const neckersLow = neckerCount <= neckerThreshold;
+
+  if (lowStock.length === 0 && !neckersLow) {
     return;
   }
 
-  const rows = lowStock.map((i) =>
+  const itemRows = lowStock.map((i) =>
     `<tr>
       <td style="padding:6px 12px">${escHtml(i.name)}</td>
       <td style="padding:6px 12px">${escHtml(i.category)}</td>
@@ -69,9 +74,20 @@ export async function checkAndNotifyLowStock(): Promise<void> {
     </tr>`
   ).join("\n");
 
+  const neckerRow = neckersLow
+    ? `<tr>
+      <td style="padding:6px 12px">Neckers</td>
+      <td style="padding:6px 12px">Uniform</td>
+      <td style="padding:6px 12px;text-align:center">${neckerCount}</td>
+      <td style="padding:6px 12px;text-align:center">${neckerThreshold}</td>
+    </tr>`
+    : "";
+
+  const totalCount = lowStock.length + (neckersLow ? 1 : 0);
+
   const html = `
     <h2 style="color:#7c3aed">⚠️ Low Stock Alert — 7th Whitburn Scouts</h2>
-    <p>${lowStock.length} item${lowStock.length !== 1 ? "s are" : " is"} at or below minimum threshold:</p>
+    <p>${totalCount} item${totalCount !== 1 ? "s are" : " is"} at or below minimum threshold:</p>
     <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
       <thead>
         <tr style="background:#f9fafb">
@@ -81,14 +97,13 @@ export async function checkAndNotifyLowStock(): Promise<void> {
           <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e7eb">Min Threshold</th>
         </tr>
       </thead>
-      <tbody>${rows}</tbody>
+      <tbody>${itemRows}${neckerRow}</tbody>
     </table>
     <p style="color:#6b7280;font-size:13px;margin-top:16px">Sent by 7th Whitburn Scouts Inventory — visit the app to restock.</p>
   `;
 
-  const count = lowStock.length;
   await sendEmail(
-    `⚠️ 7th Whitburn Scouts: ${count} item${count !== 1 ? "s" : ""} low on stock`,
+    `⚠️ 7th Whitburn Scouts: ${totalCount} item${totalCount !== 1 ? "s" : ""} low on stock`,
     html,
   );
 }

@@ -2,9 +2,13 @@
 // so it updates instantly when NeckerCounter changes the value.
 import { neckerCount } from "../lib/neckerSignal.ts";
 
-export default function NeckerAlert() {
+interface Props {
+  minThreshold: number;
+}
+
+export default function NeckerAlert({ minThreshold }: Props) {
   // Nothing to show until the count has loaded or if stock is fine
-  if (neckerCount.value === null || neckerCount.value >= 10) {
+  if (neckerCount.value === null || neckerCount.value > minThreshold) {
     return null;
   }
 

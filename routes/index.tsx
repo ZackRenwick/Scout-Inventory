@@ -10,6 +10,7 @@ import { getComputedStats, getFoodItemsSortedByExpiry } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
 interface DashboardData {
+  neckerThreshold: number;
   stats: {
     totalItems: number;
     totalQuantity: number;
@@ -62,7 +63,8 @@ export const handler: Handlers<DashboardData> = {
         needsRepairItems:  computed.needsRepairItems,
         expiringFood,
       };
-      return ctx.render({ stats, session: ctx.state.session as Session });
+      const neckerThreshold = parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10);
+      return ctx.render({ stats, session: ctx.state.session as Session, neckerThreshold });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       // Return empty stats on error
@@ -86,13 +88,14 @@ export const handler: Handlers<DashboardData> = {
           expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
         },
         session: ctx.state.session as Session,
+        neckerThreshold: parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10),
       });
     }
   },
 };
 
 export default function Home({ data }: PageProps<DashboardData>) {
-  const { stats, session } = data;
+  const { stats, session, neckerThreshold } = data;
   const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning + stats.needsRepairItems;
   
   return (
@@ -138,7 +141,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
       )}
 
       {/* Dynamic necker low-stock alert (client-side, updates with NeckerCounter) */}
-      <NeckerAlert />
+      <NeckerAlert minThreshold={neckerThreshold} />
 
       {/* Quick Actions */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
