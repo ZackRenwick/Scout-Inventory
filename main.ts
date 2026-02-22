@@ -10,14 +10,15 @@ import { start } from "$fresh/server.ts";
 import manifest from "./fresh.gen.ts";
 import config from "./fresh.config.ts";
 import { ensureDefaultAdmin } from "./lib/auth.ts";
+import { checkAndNotifyLowStock, checkAndNotifyExpiry } from "./lib/notifications.ts";
 
-// Only seed the admin user when deployed — locally the dev bypass is used
+// Always ensure a default admin account exists — locally and on Deploy
+await ensureDefaultAdmin();
+
 if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
-  await ensureDefaultAdmin();
-
   // Self-ping every 5 minutes to keep the isolate warm and avoid cold starts.
   // Set APP_URL to your deployment URL in Deno Deploy environment variables.
-  const appUrl = Deno.env.get("APP_URL") ?? "https://scout-inventory.zackrenwick.deno.net";
+  const appUrl = Deno.env.get("APP_URL") ?? "https://7thwhitburnscoutsinventory.co.uk";
   Deno.cron("warmup-ping", "*/5 * * * *", async () => {
     try {
       await fetch(`${appUrl}/api/ping`);
@@ -25,5 +26,9 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
       // Non-fatal — cron will retry on next interval
     }
   });
+
+  // Daily 8 AM checks — no-op when RESEND_API_KEY / NOTIFY_EMAIL not configured
+  Deno.cron("notify-low-stock", "0 8 * * *", () => checkAndNotifyLowStock());
+  Deno.cron("notify-expiry", "0 8 * * *", () => checkAndNotifyExpiry());
 }
 await start(manifest, config);

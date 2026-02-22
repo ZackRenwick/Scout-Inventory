@@ -118,6 +118,12 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           >
             📦 Download Inventory JSON
           </a>
+          <a
+            href="/admin/activity"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            📋 Activity Log
+          </a>
         </div>
         <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">The JSON file is import-ready — use it directly with the Bulk Import below to seed another environment.</p>
       </div>

@@ -1,6 +1,6 @@
 // Root middleware — protects all routes except /login and public assets
 import { FreshContext } from "$fresh/server.ts";
-import { getSessionCookie, getSession, extendSession, ensureDefaultAdmin, makeSessionCookie, type Session } from "../lib/auth.ts";
+import { getSessionCookie, getSession, extendSession, makeSessionCookie, type Session } from "../lib/auth.ts";
 
 // Routes that don't require authentication
 const PUBLIC_PATHS = ["/login", "/styles.css", "/api/joke", "/api/ping"];
@@ -17,6 +17,31 @@ const DEV_SESSION: Session = {
   expiresAt: new Date(Date.now() + 1e12).toISOString(),
   csrfToken: "dev-csrf-token",
 };
+
+// Security headers applied to every response
+function applySecurityHeaders(headers: Headers): void {
+  // Prevent the app being embedded in iframes (clickjacking)
+  headers.set("X-Frame-Options", "DENY");
+  // Stop browsers from MIME-sniffing responses away from the declared content-type
+  headers.set("X-Content-Type-Options", "nosniff");
+  // Don't send the full URL as referrer when navigating to external origins
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Disable browser features not needed by this app
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  // Content Security Policy — allow only same-origin resources plus the CDNs used for Preact/Signals
+  headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://esm.sh",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      "connect-src 'self'",
+      "font-src 'self'",
+      "frame-ancestors 'none'",
+    ].join("; "),
+  );
+}
 
 export async function handler(req: Request, ctx: FreshContext) {
   const url = new URL(req.url);
@@ -36,6 +61,7 @@ export async function handler(req: Request, ctx: FreshContext) {
       // Static assets — cache for 1 day, revalidate
       res.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     }
+    applySecurityHeaders(res.headers);
     return res;
   }
 
@@ -46,7 +72,9 @@ export async function handler(req: Request, ctx: FreshContext) {
     (url.hostname === "localhost" || url.hostname === "127.0.0.1")
   ) {
     ctx.state.session = DEV_SESSION;
-    return ctx.next();
+    const res = await ctx.next();
+    applySecurityHeaders(res.headers);
+    return res;
   }
 
   // Validate session
@@ -54,7 +82,6 @@ export async function handler(req: Request, ctx: FreshContext) {
   const session: Session | null = sessionId ? await getSession(sessionId) : null;
 
   if (!session) {
-    await ensureDefaultAdmin();
     const loginUrl = `/login?redirect=${encodeURIComponent(path)}`;
     return new Response(null, { status: 302, headers: { location: loginUrl } });
   }
@@ -71,6 +98,7 @@ export async function handler(req: Request, ctx: FreshContext) {
 
   // Re-issue the cookie so the browser Max-Age counter also resets.
   res.headers.append("Set-Cookie", makeSessionCookie(sessionId!));
+  applySecurityHeaders(res.headers);
 
   return res;
 }

@@ -3,6 +3,8 @@ import { Handlers } from "$fresh/server.ts";
 import type { InventoryItem } from "../../../types/inventory.ts";
 import { getAllItems, createItem, searchItems } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import { validateItemBase, validateFoodItem } from "../../../lib/validation.ts";
+import { logActivity } from "../../../lib/activityLog.ts";
 
 export const handler: Handlers = {
   // GET /api/items - Get all items or search
@@ -57,12 +59,23 @@ export const handler: Handlers = {
     try {
       const body = await req.json();
       
-      // Validate required fields
-      if (!body.name || !body.category || body.quantity === undefined) {
+      // Validate base fields
+      const baseErr = validateItemBase(body);
+      if (baseErr) {
         return new Response(
-          JSON.stringify({ error: "Missing required fields: name, category, quantity" }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          JSON.stringify({ error: baseErr }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
         );
+      }
+      // Validate food-specific fields
+      if (body.category === "food") {
+        const foodErr = validateFoodItem(body);
+        if (foodErr) {
+          return new Response(
+            JSON.stringify({ error: foodErr }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          );
+        }
       }
       
       // Create new item with defaults
@@ -80,6 +93,14 @@ export const handler: Handlers = {
       
       await createItem(newItem);
       
+      await logActivity({
+        username: session.username,
+        action: "item.created",
+        resource: newItem.name,
+        resourceId: newItem.id,
+        details: `${newItem.category} · qty ${newItem.quantity}`,
+      });
+
       return new Response(JSON.stringify(newItem), {
         status: 201,
         headers: { "Content-Type": "application/json" },

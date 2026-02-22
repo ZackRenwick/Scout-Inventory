@@ -2,6 +2,7 @@
 import { Handlers } from "$fresh/server.ts";
 import { getItemById, updateItem, deleteItem } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import { logActivity } from "../../../lib/activityLog.ts";
 
 export const handler: Handlers = {
   // GET /api/items/[id] - Get a specific item
@@ -57,6 +58,14 @@ export const handler: Handlers = {
         });
       }
       
+      await logActivity({
+        username: session.username,
+        action: "item.updated",
+        resource: updatedItem.name,
+        resourceId: id,
+        details: `${updatedItem.category} · qty ${updatedItem.quantity}`,
+      });
+
       return new Response(JSON.stringify(updatedItem), {
         headers: { "Content-Type": "application/json" },
       });
@@ -80,6 +89,8 @@ export const handler: Handlers = {
     const { id } = ctx.params;
     
     try {
+      // Fetch before deleting so we can log the item name
+      const existing = await getItemById(id);
       const success = await deleteItem(id);
       
       if (!success) {
@@ -88,7 +99,15 @@ export const handler: Handlers = {
           headers: { "Content-Type": "application/json" },
         });
       }
-      
+
+      await logActivity({
+        username: session.username,
+        action: "item.deleted",
+        resource: existing?.name,
+        resourceId: id,
+        details: existing ? `${existing.category} · qty was ${existing.quantity}` : undefined,
+      });
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json" },
       });

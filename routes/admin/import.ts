@@ -10,6 +10,7 @@ import type { Handlers } from "$fresh/server.ts";
 import { createItem } from "../../db/kv.ts";
 import type { InventoryItem, ItemCategory, ItemLocation, ItemSpace } from "../../types/inventory.ts";
 import type { Session } from "../../lib/auth.ts";
+import { logActivity } from "../../lib/activityLog.ts";
 
 // ===== CONSTANTS =====
 
@@ -190,6 +191,14 @@ export const handler: Handlers = {
           writeErrors.push({ row: i + j + 1, name: item.name, error: "Failed to save item to database" });
         }
       }
+    }
+
+    if (imported > 0) {
+      await logActivity({
+        username: session.username,
+        action: "items.imported",
+        details: `${imported} item${imported !== 1 ? "s" : ""} imported`,
+      });
     }
 
     return Response.json(

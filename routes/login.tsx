@@ -7,12 +7,12 @@ import {
   makeSessionCookie,
   getSessionCookie,
   getSession,
-  ensureDefaultAdmin,
   updateUserPassword,
   checkRateLimit,
   recordFailedLogin,
   resetRateLimit,
 } from "../lib/auth.ts";
+import { logActivity } from "../lib/activityLog.ts";
 
 interface LoginData {
   error?: string;
@@ -32,7 +32,6 @@ export const handler: Handlers<LoginData> = {
   },
 
   async POST(req, ctx) {
-    await ensureDefaultAdmin();
     const form = await req.formData();
     const username = (form.get("username") as string ?? "").trim();
     const password = form.get("password") as string ?? "";
@@ -66,6 +65,9 @@ export const handler: Handlers<LoginData> = {
     }
 
     const session = await createSession(user);
+
+    await logActivity({ username: user.username, action: "user.login" });
+
     const requestUrl = new URL(req.url);
     const rawRedirect = requestUrl.searchParams.get("redirect") ?? "/";
 
@@ -112,7 +114,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign In · Scout Inventory</title>
+        <title>Sign In · 7th Whitburn Scouts Inventory</title>
         <link rel="stylesheet" href="/styles.css" />
         <script
           dangerouslySetInnerHTML={{
@@ -144,7 +146,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
         <div class="w-full max-w-sm">
           <div class="text-center mb-8">
             <span class="text-5xl">⛺</span>
-            <h1 class="mt-4 text-2xl font-bold text-gray-800 dark:text-purple-100">Scout Inventory</h1>
+            <h1 class="mt-4 text-2xl font-bold text-gray-800 dark:text-purple-100">7th Whitburn Scouts</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Inventory Management</p>
           </div>
 

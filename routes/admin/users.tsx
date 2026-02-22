@@ -12,6 +12,7 @@ import {
   type User,
   type Session,
 } from "../../lib/auth.ts";
+import { logActivity } from "../../lib/activityLog.ts";
 
 interface UsersPageData {
   users: Omit<User, "passwordHash">[];
@@ -56,6 +57,7 @@ export const handler: Handlers<UsersPageData> = {
         if (existing.some((u) => u.username === username)) throw new Error(`User "${username}" already exists.`);
 
         await createUser(username, password, role);
+        await logActivity({ username: session.username, action: "user.created", resource: username });
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
         return ctx.render({ users, session, csrfToken: session.csrfToken, message: `User "${username}" created successfully.` });
       }
@@ -66,6 +68,7 @@ export const handler: Handlers<UsersPageData> = {
         const target = await getUserByUsername(username);
         if (target) await deleteAllSessionsForUser(target.id);
         await deleteUser(username);
+        await logActivity({ username: session.username, action: "user.deleted", resource: username });
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
         return ctx.render({ users, session, csrfToken: session.csrfToken, message: `User "${username}" deleted.` });
       }
@@ -79,6 +82,7 @@ export const handler: Handlers<UsersPageData> = {
         // Invalidate all active sessions for this user
         const target = await getUserByUsername(username);
         if (target) await deleteAllSessionsForUser(target.id);
+        await logActivity({ username: session.username, action: "user.password_changed", resource: username });
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
         return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Password updated for "${username}". Their active sessions have been invalidated.` });
       }
