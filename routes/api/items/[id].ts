@@ -32,8 +32,12 @@ export const handler: Handlers = {
   // PUT /api/items/[id] - Update an item
   async PUT(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return forbidden();
-    if (!csrfOk(req, session)) return csrfFailed();
+    if (!session || session.role === "viewer") {
+      return forbidden();
+    }
+    if (!csrfOk(req, session)) {
+      return csrfFailed();
+    }
     const { id } = ctx.params;
     
     try {
@@ -67,8 +71,12 @@ export const handler: Handlers = {
   // DELETE /api/items/[id] - Delete an item
   async DELETE(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return forbidden();
-    if (!csrfOk(req, session)) return csrfFailed();
+    if (!session || session.role === "viewer") {
+      return forbidden();
+    }
+    if (!csrfOk(req, session)) {
+      return csrfFailed();
+    }
     const { id } = ctx.params;
     
     try {

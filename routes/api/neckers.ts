@@ -22,8 +22,12 @@ export const handler: Handlers = {
 
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return forbidden();
-    if (!csrfOk(req, session)) return csrfFailed();
+    if (!session || session.role === "viewer") {
+      return forbidden();
+    }
+    if (!csrfOk(req, session)) {
+      return csrfFailed();
+    }
 
     try {
       const body = await req.json();

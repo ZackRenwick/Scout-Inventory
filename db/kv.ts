@@ -233,7 +233,9 @@ export async function createItem(item: InventoryItem): Promise<InventoryItem> {
 
 export async function updateItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
   const existing = await getItemById(id);
-  if (!existing) return null;
+  if (!existing) {
+    return null;
+  }
 
   const updated: InventoryItem = {
     ...existing,
@@ -259,7 +261,9 @@ export async function updateItem(id: string, updates: Partial<InventoryItem>): P
 
 export async function deleteItem(id: string): Promise<boolean> {
   const existing = await getItemById(id);
-  if (!existing) return false;
+  if (!existing) {
+    return false;
+  }
 
   const currentStats = await getComputedStats();
   const newStats = applyItemToStats(currentStats, existing, -1);
@@ -356,7 +360,9 @@ export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   const db = await initKv();
   const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
   
-  if (!result.value) return null;
+  if (!result.value) {
+    return null;
+  }
   
   const checkout = deserializeCheckOut(result.value);
   const updated: CheckOut = {
@@ -509,7 +515,9 @@ export async function updateCampPlan(
   existing?: CampPlan,
 ): Promise<CampPlan | null> {
   const plan = existing ?? await getCampPlanById(id);
-  if (!plan) return null;
+  if (!plan) {
+    return null;
+  }
 
   const updated: CampPlan = {
     ...plan,
@@ -525,7 +533,9 @@ export async function updateCampPlan(
 
 export async function deleteCampPlan(id: string): Promise<boolean> {
   const existing = await getCampPlanById(id);
-  if (!existing) return false;
+  if (!existing) {
+    return false;
+  }
   const db = await initKv();
   await db.delete([...KEYS.camps, id]);
   return true;

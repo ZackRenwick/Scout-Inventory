@@ -23,12 +23,16 @@ async function applyItemSideEffects(
 
   // Items removed from the plan
   for (const [itemId, old] of oldMap) {
-    if (newMap.has(itemId)) continue;
+    if (newMap.has(itemId)) {
+      continue;
+    }
     if (old.itemCategory === "food" && old.packedStatus) {
       // Restore food quantity that was previously deducted
       tasks.push(
         getItemById(itemId).then((inv) => {
-          if (inv) return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+          if (inv) {
+            return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+          }
         }),
       );
     } else if (old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus) {
@@ -40,21 +44,27 @@ async function applyItemSideEffects(
   // Items still present — check for status transitions
   for (const [itemId, newItem] of newMap) {
     const old = oldMap.get(itemId);
-    if (!old) continue; // newly added item, no side effect yet
+    if (!old) {
+      continue; // newly added item, no side effect yet
+    }
 
     if (newItem.itemCategory === "food") {
       if (!old.packedStatus && newItem.packedStatus) {
         // Food packed → deduct from inventory
         tasks.push(
           getItemById(itemId).then((inv) => {
-            if (inv) return updateItem(itemId, { quantity: Math.max(0, inv.quantity - newItem.quantityPlanned) });
+            if (inv) {
+              return updateItem(itemId, { quantity: Math.max(0, inv.quantity - newItem.quantityPlanned) });
+            }
           }),
         );
       } else if (old.packedStatus && !newItem.packedStatus) {
         // Food unpacked → restore quantity
         tasks.push(
           getItemById(itemId).then((inv) => {
-            if (inv) return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+            if (inv) {
+              return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+            }
           }),
         );
       }
@@ -62,9 +72,15 @@ async function applyItemSideEffects(
       // Non-food gear — compute the final atCamp value in one pass to avoid
       // issuing two sequential updateItem calls on the same item.
       let atCamp: boolean | undefined;
-      if (!old.packedStatus && newItem.packedStatus) atCamp = true;
-      if (old.packedStatus && !newItem.packedStatus) atCamp = false;
-      if (!old.returnedStatus && newItem.returnedStatus) atCamp = false; // returned overrides
+      if (!old.packedStatus && newItem.packedStatus) {
+        atCamp = true;
+      }
+      if (old.packedStatus && !newItem.packedStatus) {
+        atCamp = false;
+      }
+      if (!old.returnedStatus && newItem.returnedStatus) {
+        atCamp = false; // returned overrides
+      }
       if (atCamp !== undefined) {
         const quantityAtCamp = atCamp ? newItem.quantityPlanned : 0;
         tasks.push(updateItem(itemId, { atCamp, quantityAtCamp }));
@@ -101,8 +117,12 @@ export const handler: Handlers = {
   // PATCH /api/camps/[id] — update plan metadata, status, or checklist items
   async PATCH(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return forbidden();
-    if (!csrfOk(req, session)) return csrfFailed();
+    if (!session || session.role === "viewer") {
+      return forbidden();
+    }
+    if (!csrfOk(req, session)) {
+      return csrfFailed();
+    }
     const { id } = ctx.params;
     try {
       const body = await req.json();
@@ -149,8 +169,12 @@ export const handler: Handlers = {
   // DELETE /api/camps/[id]
   async DELETE(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return forbidden();
-    if (!csrfOk(req, session)) return csrfFailed();
+    if (!session || session.role === "viewer") {
+      return forbidden();
+    }
+    if (!csrfOk(req, session)) {
+      return csrfFailed();
+    }
     const { id } = ctx.params;
     try {
       const success = await deleteCampPlan(id);

@@ -8,7 +8,9 @@ interface CampPlanFormProps {
 }
 
 function isoDate(d: Date | string | undefined): string {
-  if (!d) return "";
+  if (!d) {
+    return "";
+  }
   const date = typeof d === "string" ? new Date(d) : d;
   return date.toISOString().split("T")[0];
 }

@@ -64,7 +64,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
       categoryLabel.includes(q) ||
       item.notes?.toLowerCase().includes(q);
     
-    if (!matchesSearch) return false;
+    if (!matchesSearch) {
+      return false;
+    }
     
     // Category filter
     if (categoryFilter.value !== "all" && item.category !== categoryFilter.value) {
@@ -74,7 +76,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     // Space filter (items without a space field default to camp-store)
     if (spaceFilter.value !== "all") {
       const itemSpace = (item as { space?: string }).space ?? "camp-store";
-      if (itemSpace !== spaceFilter.value) return false;
+      if (itemSpace !== spaceFilter.value) {
+        return false;
+      }
     }
     
     // Location filter
@@ -102,20 +106,28 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
 
     // Cooking equipment type filter
     if (cookingTypeFilter.value !== "all") {
-      if (item.category !== "cooking") return false;
-      if ((item as { equipmentType?: string }).equipmentType !== cookingTypeFilter.value) return false;
+      if (item.category !== "cooking") {
+        return false;
+      }
+      if ((item as { equipmentType?: string }).equipmentType !== cookingTypeFilter.value) {
+        return false;
+      }
     }
 
     // Food expiry filters — when any are active, item must be food matching at least one selected status
     const anyFoodExpiry = showExpiredFood.value || showExpiringSoon.value || showExpiring30.value;
     if (anyFoodExpiry) {
-      if (!isFoodItem(item)) return false;
+      if (!isFoodItem(item)) {
+        return false;
+      }
       const expiryDate = item.expiryDate instanceof Date ? item.expiryDate : new Date(item.expiryDate as string);
       const days = getDaysUntil(expiryDate);
       const matchesExpired = showExpiredFood.value && days <= 0;
       const matchesSoon = showExpiringSoon.value && days > 0 && days <= 7;
       const matches30 = showExpiring30.value && days > 7 && days <= 30;
-      if (!matchesExpired && !matchesSoon && !matches30) return false;
+      if (!matchesExpired && !matchesSoon && !matches30) {
+        return false;
+      }
     }
 
     return true;

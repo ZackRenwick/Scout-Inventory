@@ -34,8 +34,14 @@ export function isExpired(expiryDate: Date): boolean {
 
 export function getExpiryColor(expiryDate: Date): string {
   const days = getDaysUntil(expiryDate);
-  if (days < 0) return "red";
-  if (days <= 7) return "orange";
-  if (days <= 30) return "yellow";
+  if (days < 0) {
+    return "red";
+  }
+  if (days <= 7) {
+    return "orange";
+  }
+  if (days <= 30) {
+    return "yellow";
+  }
   return "green";
 }

@@ -35,7 +35,9 @@ export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }
   const error = useSignal<string | null>(null);
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete camp plan "${name}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete camp plan "${name}"? This cannot be undone.`)) {
+      return;
+    }
     deleting.value = id;
     error.value = null;
     try {

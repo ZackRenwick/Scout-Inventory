@@ -76,7 +76,9 @@ export async function verifyPassword(
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const sha256 = Array.from(new Uint8Array(hashBuffer))
       .map((b) => b.toString(16).padStart(2, "0")).join("");
-    if (sha256 !== hash) return { valid: false };
+    if (sha256 !== hash) {
+      return { valid: false };
+    }
     // Password correct — re-hash with bcrypt for next time
     return { valid: true, newHash: await hashPassword(password) };
   }
@@ -110,7 +112,9 @@ export async function getUserById(id: string): Promise<User | null> {
   // Scan users to find by id
   const entries = kv.list<User>({ prefix: ["auth", "users"] });
   for await (const entry of entries) {
-    if (entry.value.id === id) return entry.value;
+    if (entry.value.id === id) {
+      return entry.value;
+    }
   }
   return null;
 }
@@ -146,7 +150,9 @@ export async function createUser(
 export async function updateUserPassword(username: string, newPassword: string | undefined, preHashedValue?: string): Promise<boolean> {
   const kv = await getKv();
   const user = await getUserByUsername(username);
-  if (!user) return false;
+  if (!user) {
+    return false;
+  }
   user.passwordHash = preHashedValue ?? await hashPassword(newPassword!);
   await kv.set(["auth", "users", user.username], user);
   return true;
@@ -155,7 +161,9 @@ export async function updateUserPassword(username: string, newPassword: string |
 export async function deleteUser(username: string): Promise<boolean> {
   const kv = await getKv();
   const existing = await getUserByUsername(username);
-  if (!existing) return false;
+  if (!existing) {
+    return false;
+  }
   await kv.delete(["auth", "users", username.toLowerCase()]);
   return true;
 }
@@ -244,7 +252,9 @@ export async function createSession(user: User): Promise<Session> {
 export async function getSession(sessionId: string): Promise<Session | null> {
   const kv = await getKv();
   const result = await kv.get<Session>(["auth", "sessions", sessionId]);
-  if (!result.value) return null;
+  if (!result.value) {
+    return null;
+  }
   // Check not expired (belt-and-suspenders; KV TTL handles it too)
   if (new Date(result.value.expiresAt) < new Date()) {
     await kv.delete(["auth", "sessions", sessionId]);
@@ -258,7 +268,9 @@ export async function getSession(sessionId: string): Promise<Session | null> {
 export async function extendSession(sessionId: string): Promise<Session | null> {
   const kv = await getKv();
   const result = await kv.get<Session>(["auth", "sessions", sessionId]);
-  if (!result.value) return null;
+  if (!result.value) {
+    return null;
+  }
   const session = result.value;
   session.expiresAt = new Date(Date.now() + SESSION_DURATION_MS).toISOString();
   await kv.set(["auth", "sessions", sessionId], session, { expireIn: SESSION_DURATION_MS });
@@ -296,7 +308,9 @@ export function getSessionCookie(req: Request): string | null {
   const cookieHeader = req.headers.get("cookie") ?? "";
   for (const part of cookieHeader.split(";")) {
     const [name, ...rest] = part.trim().split("=");
-    if (name === "session") return rest.join("=");
+    if (name === "session") {
+      return rest.join("=");
+    }
   }
   return null;
 }

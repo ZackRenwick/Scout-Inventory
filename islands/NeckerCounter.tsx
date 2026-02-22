@@ -23,7 +23,9 @@ export default function NeckerCounter({ csrfToken, canEdit = true }: NeckerCount
   }, []);
 
   async function adjust(delta: number) {
-    if (saving.value || count.value === null) return;
+    if (saving.value || count.value === null) {
+      return;
+    }
     const prev = count.value;
     const next = Math.max(0, prev + delta);
     count.value = next;

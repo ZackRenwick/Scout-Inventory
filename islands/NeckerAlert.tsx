@@ -4,7 +4,9 @@ import { neckerCount } from "../lib/neckerSignal.ts";
 
 export default function NeckerAlert() {
   // Nothing to show until the count has loaded or if stock is fine
-  if (neckerCount.value === null || neckerCount.value >= 10) return null;
+  if (neckerCount.value === null || neckerCount.value >= 10) {
+    return null;
+  }
 
   return (
     <div class="bg-orange-100 dark:bg-orange-900/60 border-l-4 border-orange-500 dark:border-orange-400 p-4 mb-8">

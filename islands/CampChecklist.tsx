@@ -30,7 +30,9 @@ const STATUS_ORDER: CampPlanStatus[] = ["planning", "packing", "active", "return
 type Tab = "pack" | "return";
 
 function formatDate(d: Date | string | undefined): string {
-  if (!d) return "";
+  if (!d) {
+    return "";
+  }
   const date = typeof d === "string" ? new Date(d) : d;
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -113,9 +115,13 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
   }
 
   async function addItem() {
-    if (!addingItem.value) return;
+    if (!addingItem.value) {
+      return;
+    }
     const inv = allItems.find((i) => i.id === addingItem.value);
-    if (!inv) return;
+    if (!inv) {
+      return;
+    }
     const newEntry: CampPlanItem = {
       itemId: inv.id,
       itemName: inv.name,
