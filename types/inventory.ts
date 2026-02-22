@@ -84,6 +84,8 @@ export interface BaseInventoryItem {
   notes?: string;
   addedDate: Date;
   lastUpdated: Date;
+  /** True while the item is packed for a camp and has not yet been returned to the store */
+  atCamp?: boolean;
 }
 
 // Tent-specific properties
@@ -188,4 +190,32 @@ export interface CheckOut {
   actualReturnDate?: Date;
   status: "checked-out" | "returned" | "overdue";
   notes?: string;
+}
+
+// Camp planning types
+export interface CampPlanItem {
+  itemId: string;
+  itemName: string;
+  itemCategory: ItemCategory;
+  itemLocation: string;
+  quantityPlanned: number;
+  packedStatus: boolean;
+  returnedStatus: boolean;
+  notes?: string;
+}
+
+export type CampPlanStatus = "planning" | "packing" | "active" | "returning" | "completed";
+
+export interface CampPlan {
+  id: string;
+  name: string;
+  campDate: Date;
+  endDate?: Date;
+  location?: string;
+  notes?: string;
+  items: CampPlanItem[];
+  status: CampPlanStatus;
+  createdBy: string;
+  createdAt: Date;
+  lastUpdated: Date;
 }

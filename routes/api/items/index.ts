@@ -2,12 +2,7 @@
 import { Handlers } from "$fresh/server.ts";
 import type { InventoryItem } from "../../../types/inventory.ts";
 import { getAllItems, createItem, searchItems } from "../../../db/kv.ts";
-import type { Session } from "../../../lib/auth.ts";
-
-const FORBIDDEN = new Response(JSON.stringify({ error: "Insufficient permissions" }), {
-  status: 403,
-  headers: { "Content-Type": "application/json" },
-});
+import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
 
 export const handler: Handlers = {
   // GET /api/items - Get all items or search
@@ -53,14 +48,8 @@ export const handler: Handlers = {
   // POST /api/items - Create a new item
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return FORBIDDEN;
-    const csrfHeader = req.headers.get("X-CSRF-Token");
-    if (!csrfHeader || csrfHeader !== session.csrfToken) {
-      return new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    if (!session || session.role === "viewer") return forbidden();
+    if (!csrfOk(req, session)) return csrfFailed();
     try {
       const body = await req.json();
       

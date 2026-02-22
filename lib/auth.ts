@@ -312,3 +312,31 @@ export function clearSessionCookie(): string {
   const secure = IS_DEPLOYED ? "; Secure" : "";
   return `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
+
+// ===== API RESPONSE HELPERS =====
+
+/** Returns true only when the request carries a valid CSRF token matching the session. */
+export function csrfOk(req: Request, session: Session): boolean {
+  const header = req.headers.get("X-CSRF-Token");
+  return !!header && header === session.csrfToken;
+}
+
+/**
+ * Creates a fresh 403 Insufficient-permissions response.
+ * Must be a factory function — Response bodies are consumed streams and cannot
+ * be returned from multiple requests using a shared module-level constant.
+ */
+export function forbidden(): Response {
+  return new Response(JSON.stringify({ error: "Insufficient permissions" }), {
+    status: 403,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/** Creates a fresh 403 Invalid-CSRF-token response. */
+export function csrfFailed(): Response {
+  return new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
+    status: 403,
+    headers: { "Content-Type": "application/json" },
+  });
+}

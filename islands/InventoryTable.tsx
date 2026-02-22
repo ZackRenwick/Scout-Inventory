@@ -335,6 +335,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     <span class="font-semibold text-gray-900 dark:text-gray-100 truncate">{item.name}</span>
                   </div>
                   <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                    {(item as { atCamp?: boolean }).atCamp && (
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-600">🏕️ At Camp</span>
+                    )}
                     {isLowStock && (
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700">⚠️ Low</span>
                     )}
@@ -484,6 +487,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex flex-col items-start gap-1">
+                      {(item as { atCamp?: boolean }).atCamp && (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-600">
+                          🏕️ At Camp
+                        </span>
+                      )}
                       {isTentItem(item) && (
                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700">
                           👤 {item.capacity}/tent · 🏕️ {item.capacity * item.quantity} total

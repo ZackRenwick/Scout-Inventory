@@ -1,6 +1,6 @@
 /// <reference lib="deno.unstable" />
 // Deno KV database setup and operations
-import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace } from "../types/inventory.ts";
+import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace, CampPlan } from "../types/inventory.ts";
 
 // Initialize Deno KV
 let kv: Deno.Kv;
@@ -32,6 +32,7 @@ const KEYS = {
   checkouts:     ["inventory", "checkouts"] as const,
   neckers:       ["inventory", "neckers", "count"] as const,
   computedStats: ["inventory", "stats", "computed"] as const,
+  camps:         ["camps", "plans"] as const,
 };
 
 // Index key helpers
@@ -451,4 +452,81 @@ function deserializeCheckOut(data: any): CheckOut {
     expectedReturnDate: new Date(data.expectedReturnDate),
     actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : undefined,
   };
+}
+
+// ===== CAMP PLAN SERIALIZATION =====
+
+// deno-lint-ignore no-explicit-any
+function serializeCampPlan(plan: CampPlan): any {
+  return {
+    ...plan,
+    campDate: plan.campDate.toISOString(),
+    endDate: plan.endDate?.toISOString(),
+    createdAt: plan.createdAt.toISOString(),
+    lastUpdated: plan.lastUpdated.toISOString(),
+  };
+}
+
+// deno-lint-ignore no-explicit-any
+function deserializeCampPlan(data: any): CampPlan {
+  return {
+    ...data,
+    campDate: new Date(data.campDate),
+    endDate: data.endDate ? new Date(data.endDate) : undefined,
+    createdAt: new Date(data.createdAt),
+    lastUpdated: new Date(data.lastUpdated),
+  };
+}
+
+// ===== CAMP PLAN OPERATIONS =====
+
+export async function getAllCampPlans(): Promise<CampPlan[]> {
+  const db = await initKv();
+  const plans: CampPlan[] = [];
+  for await (const entry of db.list<CampPlan>({ prefix: KEYS.camps })) {
+    plans.push(deserializeCampPlan(entry.value));
+  }
+  plans.sort((a, b) => b.campDate.getTime() - a.campDate.getTime());
+  return plans;
+}
+
+export async function getCampPlanById(id: string): Promise<CampPlan | null> {
+  const db = await initKv();
+  const result = await db.get<CampPlan>([...KEYS.camps, id]);
+  return result.value ? deserializeCampPlan(result.value) : null;
+}
+
+export async function createCampPlan(plan: CampPlan): Promise<CampPlan> {
+  const db = await initKv();
+  await db.set([...KEYS.camps, plan.id], serializeCampPlan(plan));
+  return plan;
+}
+
+export async function updateCampPlan(
+  id: string,
+  updates: Partial<CampPlan>,
+  /** Pass an already-fetched plan to skip the extra KV read. */
+  existing?: CampPlan,
+): Promise<CampPlan | null> {
+  const plan = existing ?? await getCampPlanById(id);
+  if (!plan) return null;
+
+  const updated: CampPlan = {
+    ...plan,
+    ...updates,
+    id,
+    lastUpdated: new Date(),
+  };
+
+  const db = await initKv();
+  await db.set([...KEYS.camps, id], serializeCampPlan(updated));
+  return updated;
+}
+
+export async function deleteCampPlan(id: string): Promise<boolean> {
+  const existing = await getCampPlanById(id);
+  if (!existing) return false;
+  const db = await initKv();
+  await db.delete([...KEYS.camps, id]);
+  return true;
 }

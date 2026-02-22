@@ -11,6 +11,8 @@ import * as $admin_admin_panel from "./routes/admin/admin-panel.tsx";
 import * as $admin_export from "./routes/admin/export.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
 import * as $admin_users from "./routes/admin/users.tsx";
+import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
+import * as $api_camps_index from "./routes/api/camps/index.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
@@ -18,6 +20,10 @@ import * as $api_logout from "./routes/api/logout.ts";
 import * as $api_neckers from "./routes/api/neckers.ts";
 import * as $api_ping from "./routes/api/ping.ts";
 import * as $api_stats from "./routes/api/stats.ts";
+import * as $camps_id_ from "./routes/camps/[id].tsx";
+import * as $camps_id_edit from "./routes/camps/[id]/edit.tsx";
+import * as $camps_index from "./routes/camps/index.tsx";
+import * as $camps_new from "./routes/camps/new.tsx";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $inventory_id_ from "./routes/inventory/[id].tsx";
@@ -26,6 +32,9 @@ import * as $inventory_edit_id_ from "./routes/inventory/edit/[id].tsx";
 import * as $inventory_index from "./routes/inventory/index.tsx";
 import * as $login from "./routes/login.tsx";
 import * as $reports_expiring from "./routes/reports/expiring.tsx";
+import * as $CampChecklist from "./islands/CampChecklist.tsx";
+import * as $CampPlanForm from "./islands/CampPlanForm.tsx";
+import * as $CampPlanList from "./islands/CampPlanList.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
@@ -49,6 +58,8 @@ const manifest = {
     "./routes/admin/export.ts": $admin_export,
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
     "./routes/admin/users.tsx": $admin_users,
+    "./routes/api/camps/[id].ts": $api_camps_id_,
+    "./routes/api/camps/index.ts": $api_camps_index,
     "./routes/api/items/[id].ts": $api_items_id_,
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
@@ -56,6 +67,10 @@ const manifest = {
     "./routes/api/neckers.ts": $api_neckers,
     "./routes/api/ping.ts": $api_ping,
     "./routes/api/stats.ts": $api_stats,
+    "./routes/camps/[id].tsx": $camps_id_,
+    "./routes/camps/[id]/edit.tsx": $camps_id_edit,
+    "./routes/camps/index.tsx": $camps_index,
+    "./routes/camps/new.tsx": $camps_new,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/inventory/[id].tsx": $inventory_id_,
@@ -66,6 +81,9 @@ const manifest = {
     "./routes/reports/expiring.tsx": $reports_expiring,
   },
   islands: {
+    "./islands/CampChecklist.tsx": $CampChecklist,
+    "./islands/CampPlanForm.tsx": $CampPlanForm,
+    "./islands/CampPlanList.tsx": $CampPlanList,
     "./islands/Counter.tsx": $Counter,
     "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/InventoryTable.tsx": $InventoryTable,

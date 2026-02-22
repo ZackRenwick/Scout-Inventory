@@ -1,12 +1,7 @@
 // API route for individual inventory items
 import { Handlers } from "$fresh/server.ts";
 import { getItemById, updateItem, deleteItem } from "../../../db/kv.ts";
-import type { Session } from "../../../lib/auth.ts";
-
-const FORBIDDEN = new Response(JSON.stringify({ error: "Insufficient permissions" }), {
-  status: 403,
-  headers: { "Content-Type": "application/json" },
-});
+import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
 
 export const handler: Handlers = {
   // GET /api/items/[id] - Get a specific item
@@ -37,14 +32,8 @@ export const handler: Handlers = {
   // PUT /api/items/[id] - Update an item
   async PUT(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return FORBIDDEN;
-    const csrfHeader = req.headers.get("X-CSRF-Token");
-    if (!csrfHeader || csrfHeader !== session.csrfToken) {
-      return new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    if (!session || session.role === "viewer") return forbidden();
+    if (!csrfOk(req, session)) return csrfFailed();
     const { id } = ctx.params;
     
     try {
@@ -78,14 +67,8 @@ export const handler: Handlers = {
   // DELETE /api/items/[id] - Delete an item
   async DELETE(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return FORBIDDEN;
-    const csrfHeader = req.headers.get("X-CSRF-Token");
-    if (!csrfHeader || csrfHeader !== session.csrfToken) {
-      return new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    if (!session || session.role === "viewer") return forbidden();
+    if (!csrfOk(req, session)) return csrfFailed();
     const { id } = ctx.params;
     
     try {
