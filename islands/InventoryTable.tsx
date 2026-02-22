@@ -23,6 +23,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const locationFilter = useSignal<string>("all");
   const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
+  const showAtCamp = useSignal(false);
   const cookingTypeFilter = useSignal<string>("all");
   const showExpiredFood = useSignal(false);
   const showExpiringSoon = useSignal(false);
@@ -39,6 +40,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     : knownGroups;
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
+  const atCampCount = useComputed(() => items.filter((i) => (i as { atCamp?: boolean }).atCamp).length);
   
   // Human-readable labels for category slugs so "camping tools" or "first aid" match
   const categoryLabels: Record<string, string> = {
@@ -77,6 +79,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     
     // Location filter
     if (locationFilter.value !== "all" && item.location !== locationFilter.value) {
+      return false;
+    }
+
+    // At camp filter
+    if (showAtCamp.value && !(item as { atCamp?: boolean }).atCamp) {
       return false;
     }
 
@@ -156,9 +163,24 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
         {/* Header */}
         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Filters</span>
-          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
-            {filteredItems.value.length} / {items.length} items
-          </span>
+          <div class="flex items-center gap-2">
+            {atCampCount.value > 0 && (
+              <button
+                type="button"
+                onClick={() => { showAtCamp.value = !showAtCamp.value; }}
+                class={`text-xs font-medium px-2 py-0.5 rounded-full border transition-colors ${
+                  showAtCamp.value
+                    ? "bg-amber-500 text-white border-amber-500"
+                    : "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-600 hover:bg-amber-200 dark:hover:bg-amber-900/60"
+                }`}
+              >
+                🏕️ {atCampCount.value} at camp
+              </button>
+            )}
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+              {filteredItems.value.length} / {items.length} items
+            </span>
+          </div>
         </div>
         {/* Space toggle */}
         <div class="flex items-center gap-2 px-4 pt-3">
@@ -274,6 +296,18 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               />
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🔧 Needs Repair Only</span>
             </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none w-full sm:w-auto">
+              <input
+                type="checkbox"
+                checked={showAtCamp.value}
+                onChange={(e) => showAtCamp.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🏕️ At Camp Only</span>
+              {atCampCount.value > 0 && (
+                <span class="text-xs font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{atCampCount.value}</span>
+              )}
+            </label>
           </div>
           {/* Divider */}
           <div class="border-t border-gray-200 dark:border-gray-700" />
@@ -360,6 +394,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     <span class="text-xs text-gray-500 dark:text-gray-400 block">Quantity</span>
                     <span class="font-medium text-gray-900 dark:text-gray-100">{item.quantity}</span>
                     <span class="text-gray-300 dark:text-gray-400 text-xs"> / {item.minThreshold} min</span>
+                    {!!(item as { quantityAtCamp?: number }).quantityAtCamp && (
+                      <span class="block text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                        🏕️ {(item as { quantityAtCamp?: number }).quantityAtCamp} at camp
+                      </span>
+                    )}
                   </div>
                   <div>
                     <span class="text-xs text-gray-500 dark:text-gray-400 block">Location</span>
@@ -481,6 +520,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                       )}
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">Min: {item.minThreshold}</div>
+                    {!!(item as { quantityAtCamp?: number }).quantityAtCamp && (
+                      <div class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                        🏕️ {(item as { quantityAtCamp?: number }).quantityAtCamp} at camp
+                      </div>
+                    )}
                   </td>
                   <td class="px-6 py-4">
                     <div class="text-sm text-gray-900 dark:text-gray-100">{item.location}</div>

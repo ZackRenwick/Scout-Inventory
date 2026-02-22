@@ -379,6 +379,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               <label class={labelClass}>Food Type *</label>
               <select name="foodType" required class={inputClass}>
                 <option value="canned" selected={initialData?.foodType === "canned"}>Canned</option>
+                <option value="jarred" selected={initialData?.foodType === "jarred"}>Jarred</option>
                 <option value="dried" selected={initialData?.foodType === "dried"}>Dried</option>
                 <option value="packaged" selected={initialData?.foodType === "packaged"}>Packaged</option>
                 <option value="fresh" selected={initialData?.foodType === "fresh"}>Fresh</option>

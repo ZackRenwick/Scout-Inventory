@@ -86,6 +86,8 @@ export interface BaseInventoryItem {
   lastUpdated: Date;
   /** True while the item is packed for a camp and has not yet been returned to the store */
   atCamp?: boolean;
+  /** How many units of this item are currently at camp (only meaningful when atCamp is true) */
+  quantityAtCamp?: number;
 }
 
 // Tent-specific properties
@@ -112,7 +114,7 @@ export interface CookingEquipment extends BaseInventoryItem {
 // Food item properties with expiry tracking
 export interface FoodItem extends BaseInventoryItem {
   category: "food";
-  foodType: "canned" | "dried" | "packaged" | "fresh" | "frozen";
+  foodType: "canned" | "jarred" | "dried" | "packaged" | "fresh" | "frozen";
   expiryDate: Date;
   storageRequirements?: "frozen" | "refrigerated" | "cool-dry" | "room-temp";
   allergens?: string[];

@@ -113,6 +113,84 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         </a>
       </div>
 
+      {/* Bulk Import */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">📤 Bulk Import</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          Import multiple inventory items at once by uploading a <strong>.json</strong> file.
+          All items are validated before any are saved — if any row has an error, the whole import is rejected.
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Maximum 500 items per upload. Remove the <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">"_comment"</code> fields before uploading.
+        </p>
+        <a
+          href="/inventory-import-template.json"
+          download
+          class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition-colors mb-4"
+        >
+          📄 Download JSON Template
+        </a>
+
+        <form
+          id="importForm"
+          class="mt-2"
+          onsubmit={`(async (e) => {
+            e.preventDefault();
+            const btn    = document.getElementById('importBtn');
+            const status = document.getElementById('importStatus');
+            const fileInput = document.getElementById('importFile');
+            if (!fileInput.files.length) { status.textContent = '⚠️ Please select a file.'; status.className = 'mt-3 text-sm text-yellow-700 dark:text-yellow-400'; return; }
+            btn.disabled = true;
+            btn.textContent = '⏳ Importing…';
+            status.textContent = '';
+            const fd = new FormData(e.target);
+            try {
+              const res  = await fetch('/admin/import', { method: 'POST', body: fd });
+              const json = await res.json();
+              if (res.ok || res.status === 201) {
+                status.innerHTML = '✅ Imported <strong>' + json.imported + '</strong> item' + (json.imported !== 1 ? 's' : '') + ' successfully.';
+                status.className = 'mt-3 text-sm text-green-700 dark:text-green-400';
+                e.target.reset();
+              } else if (res.status === 207) {
+                const errList = json.errors.map(function(e){ return '<li>Row ' + e.row + (e.name ? ' (' + e.name + ')' : '') + ': ' + e.error + '</li>'; }).join('');
+                status.innerHTML = '⚠️ Imported <strong>' + json.imported + '</strong> items, but <strong>' + json.errors.length + '</strong> failed:<ul class=\\"mt-1 list-disc list-inside\\">' + errList + '</ul>';
+                status.className = 'mt-3 text-sm text-orange-700 dark:text-orange-400';
+              } else {
+                const errList = json.errors ? json.errors.map(function(e){ return '<li>Row ' + e.row + (e.name ? ' (' + e.name + ')' : '') + ': ' + e.error + '</li>'; }).join('') : '';
+                status.innerHTML = '❌ ' + (json.error || 'Import failed.') + (errList ? '<ul class=\\"mt-1 list-disc list-inside\\">' + errList + '</ul>' : '');
+                status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
+              }
+            } catch {
+              status.textContent = '❌ Request failed. Check your network connection.';
+              status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
+            } finally {
+              btn.disabled = false;
+              btn.textContent = '📤 Import Items';
+            }
+          })(event)`}
+        >
+          <input type="hidden" name="csrf_token" value={csrfToken} />
+          <div class="flex items-center gap-3 flex-wrap">
+            <input
+              id="importFile"
+              type="file"
+              name="file"
+              accept=".json,application/json"
+              required
+              class="text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 dark:file:bg-purple-900/40 dark:file:text-purple-300 hover:file:bg-purple-100"
+            />
+            <button
+              id="importBtn"
+              type="submit"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              📤 Import Items
+            </button>
+          </div>
+          <p id="importStatus" class="mt-3 text-sm"></p>
+        </form>
+      </div>
+
       {/* Database Maintenance */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">🛠️ Database Maintenance</h2>

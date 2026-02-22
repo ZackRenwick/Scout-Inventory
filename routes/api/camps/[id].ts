@@ -33,7 +33,7 @@ async function applyItemSideEffects(
       );
     } else if (old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus) {
       // Gear removed while still at camp — mark as returned to store
-      tasks.push(updateItem(itemId, { atCamp: false }));
+      tasks.push(updateItem(itemId, { atCamp: false, quantityAtCamp: 0 }));
     }
   }
 
@@ -66,7 +66,8 @@ async function applyItemSideEffects(
       if (old.packedStatus && !newItem.packedStatus) atCamp = false;
       if (!old.returnedStatus && newItem.returnedStatus) atCamp = false; // returned overrides
       if (atCamp !== undefined) {
-        tasks.push(updateItem(itemId, { atCamp }));
+        const quantityAtCamp = atCamp ? newItem.quantityPlanned : 0;
+        tasks.push(updateItem(itemId, { atCamp, quantityAtCamp }));
       }
     }
   }

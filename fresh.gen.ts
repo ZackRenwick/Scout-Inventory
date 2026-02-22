@@ -9,6 +9,7 @@ import * as $account_settings from "./routes/account/settings.tsx";
 import * as $admin_middleware from "./routes/admin/_middleware.ts";
 import * as $admin_admin_panel from "./routes/admin/admin-panel.tsx";
 import * as $admin_export from "./routes/admin/export.ts";
+import * as $admin_import from "./routes/admin/import.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
 import * as $admin_users from "./routes/admin/users.tsx";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
@@ -56,6 +57,7 @@ const manifest = {
     "./routes/admin/_middleware.ts": $admin_middleware,
     "./routes/admin/admin-panel.tsx": $admin_admin_panel,
     "./routes/admin/export.ts": $admin_export,
+    "./routes/admin/import.ts": $admin_import,
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
     "./routes/admin/users.tsx": $admin_users,
     "./routes/api/camps/[id].ts": $api_camps_id_,
