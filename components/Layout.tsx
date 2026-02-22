@@ -40,20 +40,6 @@ export default function Layout({ children, title, username, role }: LayoutProps)
           </p>
         </div>
       </footer>
-      <script dangerouslySetInnerHTML={{ __html: `
-        function togglePw(inputId, btnId) {
-          var input = document.getElementById(inputId);
-          var btn = document.getElementById(btnId);
-          if (!input) return;
-          if (input.type === 'password') {
-            input.type = 'text';
-            btn.textContent = '\uD83D\uDE48';
-          } else {
-            input.type = 'password';
-            btn.textContent = '\uD83D\uDC41';
-          }
-        }
-      ` }} />
     </div>
   );
 }

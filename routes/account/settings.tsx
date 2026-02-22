@@ -1,6 +1,7 @@
 // Account settings — any logged-in user can change their own password
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
+import PasswordInput from "../../islands/PasswordInput.tsx";
 import {
   verifyPassword,
   updateUserPassword,
@@ -132,60 +133,39 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="currentPassword">
                 Current password
               </label>
-              <div class="relative">
-                <input
-                  id="currentPassword"
-                  type="password"
-                  name="currentPassword"
-                  required
-                  autocomplete="current-password"
-                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button type="button" {...{"onclick": "togglePw('currentPassword','tog0')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
-                  <span id="tog0">👁</span>
-                </button>
-              </div>
+              <PasswordInput
+                id="currentPassword"
+                name="currentPassword"
+                autocomplete="current-password"
+                required
+              />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="newPassword">
                 New password
               </label>
-              <div class="relative">
-                <input
-                  id="newPassword"
-                  type="password"
-                  name="newPassword"
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  autocomplete="new-password"
-                  placeholder="Min 12 characters"
-                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button type="button" {...{"onclick": "togglePw('newPassword','tog1')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
-                  <span id="tog1">👁</span>
-                </button>
-              </div>
+              <PasswordInput
+                id="newPassword"
+                name="newPassword"
+                autocomplete="new-password"
+                required
+                minLength={12}
+                maxLength={128}
+                placeholder="Min 12 characters"
+              />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="confirmPassword">
                 Confirm new password
               </label>
-              <div class="relative">
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  name="confirmPassword"
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  autocomplete="new-password"
-                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                <button type="button" {...{"onclick": "togglePw('confirmPassword','tog2')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
-                  <span id="tog2">👁</span>
-                </button>
-              </div>
+              <PasswordInput
+                id="confirmPassword"
+                name="confirmPassword"
+                autocomplete="new-password"
+                required
+                minLength={12}
+                maxLength={128}
+              />
             </div>
             <button
               type="submit"

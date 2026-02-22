@@ -12,6 +12,7 @@ import * as $admin_admin_panel from "./routes/admin/admin-panel.tsx";
 import * as $admin_export_json from "./routes/admin/export-json.ts";
 import * as $admin_export from "./routes/admin/export.ts";
 import * as $admin_import from "./routes/admin/import.ts";
+import * as $admin_notify from "./routes/admin/notify.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
 import * as $admin_users from "./routes/admin/users.tsx";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
@@ -35,9 +36,11 @@ import * as $inventory_edit_id_ from "./routes/inventory/edit/[id].tsx";
 import * as $inventory_index from "./routes/inventory/index.tsx";
 import * as $login from "./routes/login.tsx";
 import * as $reports_expiring from "./routes/reports/expiring.tsx";
+import * as $BulkImport from "./islands/BulkImport.tsx";
 import * as $CampChecklist from "./islands/CampChecklist.tsx";
 import * as $CampPlanForm from "./islands/CampPlanForm.tsx";
 import * as $CampPlanList from "./islands/CampPlanList.tsx";
+import * as $ConfirmDeleteForm from "./islands/ConfirmDeleteForm.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
@@ -45,7 +48,9 @@ import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
 import * as $NeckerAlert from "./islands/NeckerAlert.tsx";
 import * as $NeckerCounter from "./islands/NeckerCounter.tsx";
+import * as $NotificationButtons from "./islands/NotificationButtons.tsx";
 import * as $PasswordInput from "./islands/PasswordInput.tsx";
+import * as $RebuildIndexes from "./islands/RebuildIndexes.tsx";
 import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
 import type { Manifest } from "$fresh/server.ts";
@@ -62,6 +67,7 @@ const manifest = {
     "./routes/admin/export-json.ts": $admin_export_json,
     "./routes/admin/export.ts": $admin_export,
     "./routes/admin/import.ts": $admin_import,
+    "./routes/admin/notify.ts": $admin_notify,
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
     "./routes/admin/users.tsx": $admin_users,
     "./routes/api/camps/[id].ts": $api_camps_id_,
@@ -87,9 +93,11 @@ const manifest = {
     "./routes/reports/expiring.tsx": $reports_expiring,
   },
   islands: {
+    "./islands/BulkImport.tsx": $BulkImport,
     "./islands/CampChecklist.tsx": $CampChecklist,
     "./islands/CampPlanForm.tsx": $CampPlanForm,
     "./islands/CampPlanList.tsx": $CampPlanList,
+    "./islands/ConfirmDeleteForm.tsx": $ConfirmDeleteForm,
     "./islands/Counter.tsx": $Counter,
     "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/InventoryTable.tsx": $InventoryTable,
@@ -97,7 +105,9 @@ const manifest = {
     "./islands/MobileNav.tsx": $MobileNav,
     "./islands/NeckerAlert.tsx": $NeckerAlert,
     "./islands/NeckerCounter.tsx": $NeckerCounter,
+    "./islands/NotificationButtons.tsx": $NotificationButtons,
     "./islands/PasswordInput.tsx": $PasswordInput,
+    "./islands/RebuildIndexes.tsx": $RebuildIndexes,
     "./islands/SpaceDashboard.tsx": $SpaceDashboard,
     "./islands/ThemeToggle.tsx": $ThemeToggle,
   },

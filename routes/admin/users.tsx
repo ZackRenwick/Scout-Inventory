@@ -13,6 +13,8 @@ import {
   type Session,
 } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
+import PasswordInput from "../../islands/PasswordInput.tsx";
+import ConfirmDeleteForm from "../../islands/ConfirmDeleteForm.tsx";
 
 interface UsersPageData {
   users: Omit<User, "passwordHash">[];
@@ -167,20 +169,18 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                     <input type="hidden" name="action" value="change-password" />
                     <input type="hidden" name="username" value={user.username} />
                     <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New password</label>
-                    <div class="relative mb-2">
-                      <input
-                        type="password"
+                    <div class="mb-2">
+                      <PasswordInput
                         id={`npw-${user.id}`}
                         name="newPassword"
+                        autocomplete="new-password"
                         required
                         minLength={12}
                         maxLength={128}
                         placeholder="Min 12 characters"
-                        class="w-full px-2 py-1.5 pr-8 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
+                        inputClass="w-full px-2 py-1.5 pr-8 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
+                        buttonClass="absolute inset-y-0 right-0 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                       />
-                      <button type="button" {...{"onclick": `togglePw('npw-${user.id}','ntog-${user.id}')`}} class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
-                        <span id={`ntog-${user.id}`}>👁</span>
-                      </button>
                     </div>
                     <button type="submit" class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
                       Update
@@ -188,14 +188,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                   </form>
                 </details>
                 {user.username !== session.username && (
-                  <form method="POST" {...{"onsubmit": "return confirm('Delete ' + this.username.value + '?')"}}>
-                    <input type="hidden" name="csrf_token" value={csrfToken} />
-                    <input type="hidden" name="action" value="delete" />
-                    <input type="hidden" name="username" value={user.username} />
-                    <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline">
-                      Delete
-                    </button>
-                  </form>
+                  <ConfirmDeleteForm csrfToken={csrfToken} username={user.username} />
                 )}
               </div>
             </div>
@@ -223,21 +216,15 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-              <div class="relative">
-                <input
-                  type="password"
-                  id="createPw"
-                  name="password"
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  placeholder="Min 12 characters"
-                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                />
-                <button type="button" {...{"onclick": "togglePw('createPw','createPwTog')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
-                  <span id="createPwTog">👁</span>
-                </button>
-              </div>
+              <PasswordInput
+                id="createPw"
+                name="password"
+                autocomplete="new-password"
+                required
+                minLength={12}
+                maxLength={128}
+                placeholder="Min 12 characters"
+              />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>

@@ -1,6 +1,11 @@
 // Admin — manage users (admin role only)
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
+import NotificationButtons from "../../islands/NotificationButtons.tsx";
+import BulkImport from "../../islands/BulkImport.tsx";
+import RebuildIndexes from "../../islands/RebuildIndexes.tsx";
+import PasswordInput from "../../islands/PasswordInput.tsx";
+import ConfirmDeleteForm from "../../islands/ConfirmDeleteForm.tsx";
 import {
   getAllUsers,
   createUser,
@@ -101,6 +106,17 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         <p class="text-gray-600 dark:text-gray-400">Manage who can access the inventory system</p>
       </div>
 
+      {/* Notifications */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">🔔 Notifications</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Manually trigger alert emails. Requires <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">RESEND_API_KEY</code> and <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">NOTIFY_EMAIL</code> to be configured.
+        </p>
+        <div class="flex flex-wrap gap-3 mb-3">
+          <NotificationButtons csrfToken={csrfToken} />
+        </div>
+      </div>
+
       {/* Exports */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">📊 Reports &amp; Exports</h2>
@@ -146,64 +162,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           📄 Download JSON Template
         </a>
 
-        <form
-          id="importForm"
-          class="mt-2"
-          onsubmit={`(async (e) => {
-            e.preventDefault();
-            const btn    = document.getElementById('importBtn');
-            const status = document.getElementById('importStatus');
-            const fileInput = document.getElementById('importFile');
-            if (!fileInput.files.length) { status.textContent = '⚠️ Please select a file.'; status.className = 'mt-3 text-sm text-yellow-700 dark:text-yellow-400'; return; }
-            btn.disabled = true;
-            btn.textContent = '⏳ Importing…';
-            status.textContent = '';
-            const fd = new FormData(e.target);
-            try {
-              const res  = await fetch('/admin/import', { method: 'POST', body: fd });
-              const json = await res.json();
-              if (res.ok || res.status === 201) {
-                status.innerHTML = '✅ Imported <strong>' + json.imported + '</strong> item' + (json.imported !== 1 ? 's' : '') + ' successfully.';
-                status.className = 'mt-3 text-sm text-green-700 dark:text-green-400';
-                e.target.reset();
-              } else if (res.status === 207) {
-                const errList = json.errors.map(function(e){ return '<li>Row ' + e.row + (e.name ? ' (' + e.name + ')' : '') + ': ' + e.error + '</li>'; }).join('');
-                status.innerHTML = '⚠️ Imported <strong>' + json.imported + '</strong> items, but <strong>' + json.errors.length + '</strong> failed:<ul class=\\"mt-1 list-disc list-inside\\">' + errList + '</ul>';
-                status.className = 'mt-3 text-sm text-orange-700 dark:text-orange-400';
-              } else {
-                const errList = json.errors ? json.errors.map(function(e){ return '<li>Row ' + e.row + (e.name ? ' (' + e.name + ')' : '') + ': ' + e.error + '</li>'; }).join('') : '';
-                status.innerHTML = '❌ ' + (json.error || 'Import failed.') + (errList ? '<ul class=\\"mt-1 list-disc list-inside\\">' + errList + '</ul>' : '');
-                status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
-              }
-            } catch {
-              status.textContent = '❌ Request failed. Check your network connection.';
-              status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
-            } finally {
-              btn.disabled = false;
-              btn.textContent = '📤 Import Items';
-            }
-          })(event)`}
-        >
-          <input type="hidden" name="csrf_token" value={csrfToken} />
-          <div class="flex items-center gap-3 flex-wrap">
-            <input
-              id="importFile"
-              type="file"
-              name="file"
-              accept=".json,application/json"
-              required
-              class="text-sm text-gray-600 dark:text-gray-300 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 dark:file:bg-purple-900/40 dark:file:text-purple-300 hover:file:bg-purple-100"
-            />
-            <button
-              id="importBtn"
-              type="submit"
-              class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              📤 Import Items
-            </button>
-          </div>
-          <p id="importStatus" class="mt-3 text-sm"></p>
-        </form>
+        <BulkImport csrfToken={csrfToken} />
       </div>
 
       {/* Database Maintenance */}
@@ -213,41 +172,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           Rebuilds all KV secondary indexes and precomputed stats from the primary item data.
           Only needed after a manual data migration or if stats appear incorrect.
         </p>
-        <button
-          type="button"
-          id="rebuildBtn"
-          onclick={`(async () => {
-            const btn = document.getElementById('rebuildBtn');
-            const status = document.getElementById('rebuildStatus');
-            btn.disabled = true;
-            btn.textContent = '⏳ Rebuilding…';
-            status.textContent = '';
-            try {
-              const res = await fetch('/admin/rebuild-indexes', {
-                method: 'POST',
-                headers: { 'X-CSRF-Token': '${csrfToken}' },
-              });
-              const json = await res.json();
-              if (res.ok) {
-                status.textContent = '✅ ' + json.message;
-                status.className = 'mt-3 text-sm text-green-700 dark:text-green-400';
-              } else {
-                status.textContent = '❌ ' + json.error;
-                status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
-              }
-            } catch {
-              status.textContent = '❌ Request failed.';
-              status.className = 'mt-3 text-sm text-red-700 dark:text-red-400';
-            } finally {
-              btn.disabled = false;
-              btn.textContent = '🔄 Rebuild Indexes';
-            }
-          })()`}
-          class="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          🔄 Rebuild Indexes
-        </button>
-        <p id="rebuildStatus" class="mt-3 text-sm"></p>
+        <RebuildIndexes csrfToken={csrfToken} />
       </div>
 
       {message && (
@@ -300,20 +225,18 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                     <input type="hidden" name="action" value="change-password" />
                     <input type="hidden" name="username" value={user.username} />
                     <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New password</label>
-                    <div class="relative mb-2">
-                      <input
-                        type="password"
+                    <div class="mb-2">
+                      <PasswordInput
                         id={`npw-${user.id}`}
                         name="newPassword"
+                        autocomplete="new-password"
                         required
                         minLength={12}
                         maxLength={128}
                         placeholder="Min 12 characters"
-                        class="w-full px-2 py-1.5 pr-8 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
+                        inputClass="w-full px-2 py-1.5 pr-8 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
+                        buttonClass="absolute inset-y-0 right-0 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                       />
-                      <button type="button" {...{"onclick": `togglePw('npw-${user.id}','ntog-${user.id}')`}} class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
-                        <span id={`ntog-${user.id}`}>👁</span>
-                      </button>
                     </div>
                     <button type="submit" class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
                       Update
@@ -321,14 +244,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                   </form>
                 </details>
                 {user.username !== session.username && (
-                  <form method="POST" {...{"onsubmit": "return confirm('Delete ' + this.username.value + '?')"}}>
-                    <input type="hidden" name="csrf_token" value={csrfToken} />
-                    <input type="hidden" name="action" value="delete" />
-                    <input type="hidden" name="username" value={user.username} />
-                    <button type="submit" class="text-sm text-red-600 dark:text-red-400 hover:underline">
-                      Delete
-                    </button>
-                  </form>
+                  <ConfirmDeleteForm csrfToken={csrfToken} username={user.username} />
                 )}
               </div>
             </div>
@@ -356,21 +272,15 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
-              <div class="relative">
-                <input
-                  type="password"
-                  id="createPw"
-                  name="password"
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  placeholder="Min 12 characters"
-                  class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-                />
-                <button type="button" {...{"onclick": "togglePw('createPw','createPwTog')"}} class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="Toggle password visibility">
-                  <span id="createPwTog">👁</span>
-                </button>
-              </div>
+              <PasswordInput
+                id="createPw"
+                name="password"
+                autocomplete="new-password"
+                required
+                minLength={12}
+                maxLength={128}
+                placeholder="Min 12 characters"
+              />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>

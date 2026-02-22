@@ -13,6 +13,7 @@ import {
   resetRateLimit,
 } from "../lib/auth.ts";
 import { logActivity } from "../lib/activityLog.ts";
+import PasswordInput from "../islands/PasswordInput.tsx";
 
 interface LoginData {
   error?: string;
@@ -116,31 +117,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Sign In · 7th Whitburn Scouts Inventory</title>
         <link rel="stylesheet" href="/styles.css" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const saved = localStorage.getItem('theme');
-                if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
-                }
-              })();
-            `,
-          }}
-        />
-        <script dangerouslySetInnerHTML={{ __html: `
-          function togglePassword() {
-            var input = document.getElementById('password');
-            var icon = document.getElementById('pwToggle');
-            if (input.type === 'password') {
-              input.type = 'text';
-              icon.textContent = '\uD83D\uDE48';
-            } else {
-              input.type = 'password';
-              icon.textContent = '\uD83D\uDC41';
-            }
-          }
-        ` }} />
+        <script src="/theme-init.js" />
       </head>
       <body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
         <div class="w-full max-w-sm">
@@ -178,24 +155,12 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="password">
                   Password
                 </label>
-                <div class="relative">
-                  <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    required
-                    autocomplete="current-password"
-                    class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                  />
-                  <button
-                    type="button"
-                    {...{"onclick": "togglePassword()"}}
-                    class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                    aria-label="Toggle password visibility"
-                  >
-                    <span id="pwToggle">👁</span>
-                  </button>
-                </div>
+                <PasswordInput
+                  id="password"
+                  name="password"
+                  autocomplete="current-password"
+                  required
+                />
               </div>
 
               <button

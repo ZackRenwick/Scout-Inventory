@@ -10,18 +10,7 @@ export default function App({ Component }: PageProps) {
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="alternate icon" href="/favicon.ico" />
         <link rel="stylesheet" href="/styles.css" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const saved = localStorage.getItem('theme');
-                if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
-                }
-              })();
-            `,
-          }}
-        />
+        <script src="/theme-init.js" />
       </head>
       <body>
         <Component />
