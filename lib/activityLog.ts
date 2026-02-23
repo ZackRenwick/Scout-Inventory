@@ -15,6 +15,7 @@ export type ActivityAction =
   | "user.created"
   | "user.deleted"
   | "user.password_changed"
+  | "user.role_changed"
   | "item.created"
   | "item.updated"
   | "item.deleted"

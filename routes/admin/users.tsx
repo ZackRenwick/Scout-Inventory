@@ -6,6 +6,7 @@ import {
   createUser,
   deleteUser,
   updateUserPassword,
+  updateUserRole,
   deleteAllSessionsForUser,
   getUserByUsername,
   validatePassword,
@@ -88,6 +89,20 @@ export const handler: Handlers<UsersPageData> = {
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
         return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Password updated for "${username}". Their active sessions have been invalidated.` });
       }
+
+      if (action === "change-role") {
+        const username = form.get("username") as string;
+        const role = form.get("role") as User["role"];
+        if (username === session.username) throw new Error("You cannot change your own role.");
+        if (!["admin", "editor", "viewer"].includes(role)) throw new Error("Invalid role.");
+        await updateUserRole(username, role);
+        // Invalidate sessions so the new role takes effect immediately
+        const target = await getUserByUsername(username);
+        if (target) await deleteAllSessionsForUser(target.id);
+        await logActivity({ username: session.username, action: "user.role_changed", resource: username, details: role });
+        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Role for "${username}" changed to ${role}.` });
+      }
     } catch (err) {
       const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
       return ctx.render({ users, session, csrfToken: session.csrfToken, error: (err as Error).message });
@@ -158,8 +173,30 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                   Created {new Date(user.createdAt).toLocaleDateString()}
                 </div>
               </div>
-              <div class="flex items-center gap-3">
-                {/* Change password inline form */}
+              <div class="flex items-center gap-3">                {/* Change role inline form */}
+                {user.username !== session.username && (
+                  <details class="relative">
+                    <summary class="text-sm text-purple-600 dark:text-purple-400 hover:underline cursor-pointer list-none">Change role</summary>
+                    <form method="POST" class="absolute right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-lg z-10 w-52">
+                      <input type="hidden" name="csrf_token" value={csrfToken} />
+                      <input type="hidden" name="action" value="change-role" />
+                      <input type="hidden" name="username" value={user.username} />
+                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New role</label>
+                      <select
+                        name="role"
+                        defaultValue={user.role}
+                        class="w-full px-2 py-1.5 mb-3 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
+                      >
+                        <option value="viewer">Viewer — read only</option>
+                        <option value="editor">Editor — manage inventory</option>
+                        <option value="admin">Admin — full access</option>
+                      </select>
+                      <button type="submit" class="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors">
+                        Save
+                      </button>
+                    </form>
+                  </details>
+                )}                {/* Change password inline form */}
                 <details class="relative">
                   <summary class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer list-none">
                     Change password

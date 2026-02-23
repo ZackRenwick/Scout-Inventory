@@ -158,6 +158,15 @@ export async function updateUserPassword(username: string, newPassword: string |
   return true;
 }
 
+export async function updateUserRole(username: string, role: User["role"]): Promise<boolean> {
+  const kv = await getKv();
+  const user = await getUserByUsername(username);
+  if (!user) return false;
+  user.role = role;
+  await kv.set(["auth", "users", user.username], user);
+  return true;
+}
+
 export async function deleteUser(username: string): Promise<boolean> {
   const kv = await getKv();
   const existing = await getUserByUsername(username);
