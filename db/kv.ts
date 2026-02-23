@@ -1,6 +1,7 @@
 /// <reference lib="deno.unstable" />
 // Deno KV database setup and operations
 import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace, CampPlan } from "../types/inventory.ts";
+import type { Meal, MealPayload } from "../types/meals.ts";
 
 // Initialize Deno KV
 let kv: Deno.Kv;
@@ -33,6 +34,7 @@ const KEYS = {
   neckers:       ["inventory", "neckers", "count"] as const,
   computedStats: ["inventory", "stats", "computed"] as const,
   camps:         ["camps", "plans"] as const,
+  meals:         ["meals"] as const,
 };
 
 // Index key helpers
@@ -538,5 +540,48 @@ export async function deleteCampPlan(id: string): Promise<boolean> {
   }
   const db = await initKv();
   await db.delete([...KEYS.camps, id]);
+  return true;
+}
+
+// ===== MEAL PLANNER =====
+
+export async function getAllMeals(): Promise<Meal[]> {
+  const db = await initKv();
+  const meals: Meal[] = [];
+  for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
+    if (entry.value) meals.push(entry.value);
+  }
+  return meals.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function getMealById(id: string): Promise<Meal | null> {
+  const db = await initKv();
+  const result = await db.get<Meal>([...KEYS.meals, id]);
+  return result.value ?? null;
+}
+
+export async function createMeal(payload: MealPayload): Promise<Meal> {
+  const db = await initKv();
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const meal: Meal = { id, ...payload, createdAt: now, updatedAt: now };
+  await db.set([...KEYS.meals, id], meal);
+  return meal;
+}
+
+export async function updateMeal(id: string, payload: MealPayload): Promise<Meal | null> {
+  const db = await initKv();
+  const existing = await getMealById(id);
+  if (!existing) return null;
+  const updated: Meal = { ...existing, ...payload, id, updatedAt: new Date().toISOString() };
+  await db.set([...KEYS.meals, id], updated);
+  return updated;
+}
+
+export async function deleteMeal(id: string): Promise<boolean> {
+  const existing = await getMealById(id);
+  if (!existing) return false;
+  const db = await initKv();
+  await db.delete([...KEYS.meals, id]);
   return true;
 }

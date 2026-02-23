@@ -21,7 +21,10 @@ export type ActivityAction =
   | "items.imported"
   | "camp.created"
   | "camp.updated"
-  | "camp.deleted";
+  | "camp.deleted"
+  | "meal.created"
+  | "meal.updated"
+  | "meal.deleted";
 
 export interface ActivityEntry {
   id: string;

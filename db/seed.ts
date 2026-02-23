@@ -1,8 +1,19 @@
 // Seed data for development and testing
 import type { InventoryItem } from "../types/inventory.ts";
-import { createItem, rebuildIndexes } from "./kv.ts";
+import type { MealPayload } from "../types/meals.ts";
+import { createItem, createMeal, rebuildIndexes } from "./kv.ts";
 
 const CAMP_STORE = "camp-store" as const;
+
+// Stable IDs for food items so meal ingredients can link to them
+const FOOD_IDS = {
+  beans:      "seed-food-beans-001",
+  oatmeal:    "seed-food-oatmeal-001",
+  trailMix:   "seed-food-trailmix-001",
+  freezeDried:"seed-food-freezedried-001",
+  apples:     "seed-food-apples-001",
+  hotChoc:    "seed-food-hotchoc-001",
+} as const;
 
 export async function seedDatabase() {
   const sampleItems: InventoryItem[] = [
@@ -103,6 +114,7 @@ export async function seedDatabase() {
       quantity: 5,
       minThreshold: 2,
       location: "On Top of Plastic Shelf 2",
+      addedDate: new Date("2024-04-01"),
       lastUpdated: new Date("2024-04-01"),
       notes: "Keeps ice for 3 days",
     },
@@ -117,13 +129,15 @@ export async function seedDatabase() {
       quantity: 6,
       minThreshold: 3,
       location: "Plastic Shelf 2 - Level 1",
+      addedDate: new Date("2025-01-05"),
       lastUpdated: new Date("2025-01-05"),
       notes: "Collapsible with spigot",
     },
     
     // Food Items
+    // Pre-assigned IDs so meals can reference them as linked ingredients
     {
-      id: crypto.randomUUID(),
+      id: FOOD_IDS.beans,
       name: "Canned Beans - Variety Pack",
       category: "food",
       space: CAMP_STORE,
@@ -139,7 +153,7 @@ export async function seedDatabase() {
       notes: "Black beans, pinto beans, kidney beans",
     },
     {
-      id: crypto.randomUUID(),
+      id: FOOD_IDS.oatmeal,
       name: "Instant Oatmeal Packets",
       category: "food",
       space: CAMP_STORE,
@@ -155,7 +169,7 @@ export async function seedDatabase() {
       notes: "Assorted flavors - maple, apple cinnamon, original",
     },
     {
-      id: crypto.randomUUID(),
+      id: FOOD_IDS.trailMix,
       name: "Trail Mix - Bulk",
       category: "food",
       space: CAMP_STORE,
@@ -171,7 +185,7 @@ export async function seedDatabase() {
       notes: "Peanuts, raisins, M&Ms, cashews",
     },
     {
-      id: crypto.randomUUID(),
+      id: FOOD_IDS.freezeDried,
       name: "Freeze-Dried Camping Meals",
       category: "food",
       space: CAMP_STORE,
@@ -187,7 +201,7 @@ export async function seedDatabase() {
       notes: "Various flavors - chicken pasta, beef stew, vegetarian chili",
     },
     {
-      id: crypto.randomUUID(),
+      id: FOOD_IDS.apples,
       name: "Fresh Apples",
       category: "food",
       space: CAMP_STORE,
@@ -204,7 +218,7 @@ export async function seedDatabase() {
       notes: "Granny Smith - use soon",
     },
     {
-      id: crypto.randomUUID(),
+      id: FOOD_IDS.hotChoc,
       name: "Hot Chocolate Mix",
       category: "food",
       space: CAMP_STORE,
@@ -222,13 +236,69 @@ export async function seedDatabase() {
   ];
 
   console.log("Seeding database with sample inventory items...");
-  
+
   for (const item of sampleItems) {
     await createItem(item);
     console.log(`✓ Added: ${item.name}`);
   }
-  
+
   console.log(`\nDatabase seeded with ${sampleItems.length} items!`);
+
+  // ===== MEALS =====
+  const sampleMeals: MealPayload[] = [
+    {
+      name: "Porridge Breakfast",
+      description: "Simple hot oat porridge — quick to prepare for large groups",
+      ingredients: [
+        { inventoryItemId: FOOD_IDS.oatmeal, name: "Instant Oatmeal Packets", servingsPerUnit: 1 },
+        { name: "Honey", servingsPerUnit: 20 },
+        { name: "Raisins (handful)", servingsPerUnit: 10 },
+      ],
+    },
+    {
+      name: "Campfire Bean Stew",
+      description: "Hearty one-pot stew, great over rice or with bread",
+      ingredients: [
+        { inventoryItemId: FOOD_IDS.beans, name: "Canned Beans - Variety Pack", servingsPerUnit: 4 },
+        { name: "Chopped Tomatoes (400g tin)", servingsPerUnit: 6 },
+        { name: "Onion", servingsPerUnit: 8 },
+        { name: "Vegetable Stock Cube", servingsPerUnit: 12 },
+        { name: "Mixed Spice / Cumin", servingsPerUnit: 30 },
+      ],
+    },
+    {
+      name: "Afternoon Trail Snack",
+      description: "Quick no-cook energy snack between activities",
+      ingredients: [
+        { inventoryItemId: FOOD_IDS.trailMix, name: "Trail Mix - Bulk", servingsPerUnit: 6 },
+        { inventoryItemId: FOOD_IDS.apples, name: "Fresh Apples", servingsPerUnit: 1 },
+      ],
+    },
+    {
+      name: "Freeze-Dried Camp Dinner",
+      description: "No-fuss hot dinner — just add boiling water",
+      ingredients: [
+        { inventoryItemId: FOOD_IDS.freezeDried, name: "Freeze-Dried Camping Meals", servingsPerUnit: 1 },
+      ],
+    },
+    {
+      name: "Evening Hot Chocolate",
+      description: "Warm wind-down drink around the campfire",
+      ingredients: [
+        { inventoryItemId: FOOD_IDS.hotChoc, name: "Hot Chocolate Mix", servingsPerUnit: 20 },
+        { name: "Milk (pint)", servingsPerUnit: 4 },
+      ],
+    },
+  ];
+
+  console.log("\nSeeding database with sample meals...");
+
+  for (const meal of sampleMeals) {
+    const created = await createMeal(meal);
+    console.log(`✓ Added meal: ${created.name}`);
+  }
+
+  console.log(`\n${sampleMeals.length} meals seeded!`);
 }
 
 // Run this file directly to seed the database

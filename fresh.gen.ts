@@ -21,6 +21,8 @@ import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
 import * as $api_logout from "./routes/api/logout.ts";
+import * as $api_meals_id_ from "./routes/api/meals/[id].ts";
+import * as $api_meals_index from "./routes/api/meals/index.ts";
 import * as $api_neckers from "./routes/api/neckers.ts";
 import * as $api_ping from "./routes/api/ping.ts";
 import * as $api_stats from "./routes/api/stats.ts";
@@ -35,6 +37,9 @@ import * as $inventory_add from "./routes/inventory/add.tsx";
 import * as $inventory_edit_id_ from "./routes/inventory/edit/[id].tsx";
 import * as $inventory_index from "./routes/inventory/index.tsx";
 import * as $login from "./routes/login.tsx";
+import * as $meals_id_edit from "./routes/meals/[id]/edit.tsx";
+import * as $meals_index from "./routes/meals/index.tsx";
+import * as $meals_new from "./routes/meals/new.tsx";
 import * as $reports_expiring from "./routes/reports/expiring.tsx";
 import * as $BulkImport from "./islands/BulkImport.tsx";
 import * as $CampChecklist from "./islands/CampChecklist.tsx";
@@ -45,6 +50,8 @@ import * as $Counter from "./islands/Counter.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
+import * as $MealForm from "./islands/MealForm.tsx";
+import * as $MealPlannerForm from "./islands/MealPlannerForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
 import * as $NeckerAlert from "./islands/NeckerAlert.tsx";
 import * as $NeckerCounter from "./islands/NeckerCounter.tsx";
@@ -76,6 +83,8 @@ const manifest = {
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
     "./routes/api/logout.ts": $api_logout,
+    "./routes/api/meals/[id].ts": $api_meals_id_,
+    "./routes/api/meals/index.ts": $api_meals_index,
     "./routes/api/neckers.ts": $api_neckers,
     "./routes/api/ping.ts": $api_ping,
     "./routes/api/stats.ts": $api_stats,
@@ -90,6 +99,9 @@ const manifest = {
     "./routes/inventory/edit/[id].tsx": $inventory_edit_id_,
     "./routes/inventory/index.tsx": $inventory_index,
     "./routes/login.tsx": $login,
+    "./routes/meals/[id]/edit.tsx": $meals_id_edit,
+    "./routes/meals/index.tsx": $meals_index,
+    "./routes/meals/new.tsx": $meals_new,
     "./routes/reports/expiring.tsx": $reports_expiring,
   },
   islands: {
@@ -102,6 +114,8 @@ const manifest = {
     "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
+    "./islands/MealForm.tsx": $MealForm,
+    "./islands/MealPlannerForm.tsx": $MealPlannerForm,
     "./islands/MobileNav.tsx": $MobileNav,
     "./islands/NeckerAlert.tsx": $NeckerAlert,
     "./islands/NeckerCounter.tsx": $NeckerCounter,
