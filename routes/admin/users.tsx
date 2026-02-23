@@ -173,30 +173,31 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                   Created {new Date(user.createdAt).toLocaleDateString()}
                 </div>
               </div>
-              <div class="flex items-center gap-3">                {/* Change role inline form */}
+              <div class="flex items-center gap-3">
+                {/* Change role — inline select, only for other users */}
                 {user.username !== session.username && (
-                  <details class="relative">
-                    <summary class="text-sm text-purple-600 dark:text-purple-400 hover:underline cursor-pointer list-none">Change role</summary>
-                    <form method="POST" class="absolute right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-lg z-10 w-52">
-                      <input type="hidden" name="csrf_token" value={csrfToken} />
-                      <input type="hidden" name="action" value="change-role" />
-                      <input type="hidden" name="username" value={user.username} />
-                      <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New role</label>
-                      <select
-                        name="role"
-                        defaultValue={user.role}
-                        class="w-full px-2 py-1.5 mb-3 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
-                      >
-                        <option value="viewer">Viewer — read only</option>
-                        <option value="editor">Editor — manage inventory</option>
-                        <option value="admin">Admin — full access</option>
-                      </select>
-                      <button type="submit" class="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors">
-                        Save
-                      </button>
-                    </form>
-                  </details>
-                )}                {/* Change password inline form */}
+                  <form method="POST" class="flex items-center gap-1.5">
+                    <input type="hidden" name="csrf_token" value={csrfToken} />
+                    <input type="hidden" name="action" value="change-role" />
+                    <input type="hidden" name="username" value={user.username} />
+                    <select
+                      name="role"
+                      defaultValue={user.role}
+                      class="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                    >
+                      <option value="viewer">viewer</option>
+                      <option value="editor">editor</option>
+                      <option value="admin">admin</option>
+                    </select>
+                    <button
+                      type="submit"
+                      class="text-xs px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                    >
+                      Save
+                    </button>
+                  </form>
+                )}
+                {/* Change password inline form */}
                 <details class="relative">
                   <summary class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer list-none">
                     Change password
