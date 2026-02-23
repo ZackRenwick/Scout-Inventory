@@ -14,7 +14,6 @@ import * as $admin_export from "./routes/admin/export.ts";
 import * as $admin_import from "./routes/admin/import.ts";
 import * as $admin_notify from "./routes/admin/notify.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
-import * as $admin_users from "./routes/admin/users.tsx";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
@@ -76,7 +75,6 @@ const manifest = {
     "./routes/admin/import.ts": $admin_import,
     "./routes/admin/notify.ts": $admin_notify,
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
-    "./routes/admin/users.tsx": $admin_users,
     "./routes/api/camps/[id].ts": $api_camps_id_,
     "./routes/api/camps/index.ts": $api_camps_index,
     "./routes/api/items/[id].ts": $api_items_id_,

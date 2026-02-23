@@ -114,7 +114,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
             </div>
             <div class="ml-3">
               <h3 class="text-lg font-medium text-red-900 dark:text-red-100">
-                Attention Required
+                Attention Required Soon
               </h3>
               <div class="mt-2 text-sm text-red-800 dark:text-red-200">
                 <ul class="list-disc list-inside space-y-1">

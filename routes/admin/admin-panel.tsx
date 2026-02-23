@@ -11,12 +11,14 @@ import {
   createUser,
   deleteUser,
   updateUserPassword,
+  updateUserRole,
   deleteAllSessionsForUser,
   getUserByUsername,
   validatePassword,
   type User,
   type Session,
 } from "../../lib/auth.ts";
+import { logActivity } from "../../lib/activityLog.ts";
 
 interface UsersPageData {
   users: Omit<User, "passwordHash">[];
@@ -84,8 +86,23 @@ export const handler: Handlers<UsersPageData> = {
         // Invalidate all active sessions for this user
         const target = await getUserByUsername(username);
         if (target) await deleteAllSessionsForUser(target.id);
+        await logActivity({ username: session.username, action: "user.password_changed", resource: username });
         const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
         return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Password updated for "${username}". Their active sessions have been invalidated.` });
+      }
+
+      if (action === "change-role") {
+        const username = form.get("username") as string;
+        const role = form.get("role") as User["role"];
+        if (username === session.username) throw new Error("You cannot change your own role.");
+        if (!["admin", "editor", "viewer"].includes(role)) throw new Error("Invalid role.");
+        await updateUserRole(username, role);
+        // Invalidate sessions so the new role takes effect immediately
+        const target = await getUserByUsername(username);
+        if (target) await deleteAllSessionsForUser(target.id);
+        await logActivity({ username: session.username, action: "user.role_changed", resource: username, details: role });
+        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
+        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Role for "${username}" changed to ${role}.` });
       }
     } catch (err) {
       const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
@@ -194,10 +211,11 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         <div class="divide-y divide-gray-200 dark:divide-gray-700">
           {users.map((user) => (
             <div key={user.id} class="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <div class="flex items-center gap-2">
+              {/* Left: identity */}
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
                   <span class="font-medium text-gray-800 dark:text-gray-100">👤 {user.username}</span>
-                  <span class={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  <span class={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                     user.role === "admin"
                       ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
                       : user.role === "editor"
@@ -207,25 +225,57 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                     {user.role}
                   </span>
                   {user.username === session.username && (
-                    <span class="text-xs text-gray-400 dark:text-gray-500">(you)</span>
+                    <span class="text-xs text-gray-400 dark:text-gray-500 italic">(you)</span>
                   )}
                 </div>
-                <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  Created {new Date(user.createdAt).toLocaleDateString()}
+                <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  Member since {new Date(user.createdAt).toLocaleDateString()}
                 </div>
               </div>
-              <div class="flex items-center gap-3">
-                {/* Change password inline form */}
+
+              {/* Right: actions */}
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                {/* Role change */}
+                {user.username !== session.username && (
+                  <form method="POST" class="flex items-center gap-1.5">
+                    <input type="hidden" name="csrf_token" value={csrfToken} />
+                    <input type="hidden" name="action" value="change-role" />
+                    <input type="hidden" name="username" value={user.username} />
+                    <select
+                      name="role"
+                      defaultValue={user.role}
+                      class="text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                    >
+                      <option value="viewer">viewer</option>
+                      <option value="editor">editor</option>
+                      <option value="admin">admin</option>
+                    </select>
+                    <button
+                      type="submit"
+                      class="text-xs px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors"
+                    >
+                      Save role
+                    </button>
+                  </form>
+                )}
+
+                {/* Divider */}
+                {user.username !== session.username && (
+                  <span class="hidden sm:block text-gray-300 dark:text-gray-600 select-none">|</span>
+                )}
+
+                {/* Change password */}
                 <details class="relative">
-                  <summary class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer list-none">
+                  <summary class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer list-none select-none transition-colors">
                     Change password
                   </summary>
-                  <form method="POST" class="absolute right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-lg z-10 w-64">
+                  <form method="POST" class="absolute right-0 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-xl z-10 w-64">
+                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-3">Change password for <span class="text-purple-600 dark:text-purple-300">{user.username}</span></p>
                     <input type="hidden" name="csrf_token" value={csrfToken} />
                     <input type="hidden" name="action" value="change-password" />
                     <input type="hidden" name="username" value={user.username} />
-                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">New password</label>
-                    <div class="mb-2">
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">New password</label>
+                    <div class="mb-3">
                       <PasswordInput
                         id={`npw-${user.id}`}
                         name="newPassword"
@@ -234,15 +284,16 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                         minLength={12}
                         maxLength={128}
                         placeholder="Min 12 characters"
-                        inputClass="w-full px-2 py-1.5 pr-8 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500"
+                        inputClass="w-full px-2 py-1.5 pr-8 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-1 focus:ring-purple-500"
                         buttonClass="absolute inset-y-0 right-0 px-2 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                       />
                     </div>
-                    <button type="submit" class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
-                      Update
+                    <button type="submit" class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors">
+                      Update password
                     </button>
                   </form>
                 </details>
+
                 {user.username !== session.username && (
                   <ConfirmDeleteForm csrfToken={csrfToken} username={user.username} />
                 )}
