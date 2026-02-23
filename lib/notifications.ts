@@ -19,10 +19,10 @@ const RESEND_URL = "https://api.resend.com/emails";
 
 async function sendEmail(subject: string, html: string): Promise<void> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  const to = Deno.env.get("NOTIFY_EMAIL");
+  const toRaw = Deno.env.get("NOTIFY_EMAIL");
   const from = Deno.env.get("NOTIFY_FROM_EMAIL") ?? "noreply@7thwhitburnscoutsinventory.co.uk";
 
-  if (!apiKey || !to) {
+  if (!apiKey || !toRaw) {
     console.log(`[notifications] Email not configured — skipping: "${subject}"`);
     return;
   }
@@ -34,16 +34,16 @@ async function sendEmail(subject: string, html: string): Promise<void> {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({ from, to: toRaw, subject, html }),
     });
     if (!res.ok) {
       const text = await res.text();
       console.error(`[notifications] Resend API error ${res.status}: ${text}`);
     } else {
-      console.log(`[notifications] Sent: "${subject}" → ${to}`);
+      console.log(`[notifications] Sent: "${subject}" → ${toRaw}`);
     }
   } catch (err) {
-    console.error("[notifications] Network error sending email:", err);
+    console.error(`[notifications] Network error sending email to ${toRaw}:`, err);
   }
 }
 
