@@ -28,14 +28,14 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   });
 
   // Daily 8 AM checks — no-op when RESEND_API_KEY / NOTIFY_EMAIL not configured
-  Deno.cron("notify-low-stock", "0 8 * * *", async () => {
+  Deno.cron("notify-low-stock", "0 8 * * 3,5", async () => {
     try {
       await checkAndNotifyLowStock();
     } catch (err) {
       console.error("[cron] notify-low-stock failed:", err);
     }
   });
-  Deno.cron("notify-expiry", "0 8 * * *", async () => {
+  Deno.cron("notify-expiry", "0 8 * * 3,5", async () => {
     try {
       await checkAndNotifyExpiry();
     } catch (err) {
