@@ -27,6 +27,8 @@ async function sendEmail(subject: string, html: string): Promise<void> {
     return;
   }
 
+  const to = toRaw.split(",").map((e) => e.trim()).filter(Boolean);
+
   try {
     const res = await fetch(RESEND_URL, {
       method: "POST",
@@ -34,16 +36,16 @@ async function sendEmail(subject: string, html: string): Promise<void> {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from, to: toRaw, subject, html }),
+      body: JSON.stringify({ from, to, subject, html }),
     });
     if (!res.ok) {
       const text = await res.text();
       console.error(`[notifications] Resend API error ${res.status}: ${text}`);
     } else {
-      console.log(`[notifications] Sent: "${subject}" → ${toRaw}`);
+      console.log(`[notifications] Sent: "${subject}" → ${to.join(", ")}`);
     }
   } catch (err) {
-    console.error(`[notifications] Network error sending email to ${toRaw}:`, err);
+    console.error(`[notifications] Network error sending email to ${to.join(", ")}:`, err);
   }
 }
 
