@@ -213,3 +213,23 @@ export interface CampPlan {
   createdAt: Date;
   lastUpdated: Date;
 }
+
+// Camp equipment template — a reusable named list of items with no dates/status
+export interface CampTemplateItem {
+  itemId: string;
+  itemName: string;
+  itemCategory: ItemCategory;
+  itemLocation: string;
+  quantityPlanned: number;
+  notes?: string;
+}
+
+export interface CampTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  items: CampTemplateItem[];
+  createdBy: string;
+  createdAt: Date;
+  lastUpdated: Date;
+}

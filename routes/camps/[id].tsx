@@ -1,23 +1,25 @@
 // Camp plan detail / checklist page
 import { Handlers, PageProps } from "$fresh/server.ts";
-import type { CampPlan, InventoryItem } from "../../types/inventory.ts";
+import type { CampPlan, CampTemplate, InventoryItem } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import CampChecklist from "../../islands/CampChecklist.tsx";
 import type { Session } from "../../lib/auth.ts";
-import { getCampPlanById, getAllItems } from "../../db/kv.ts";
+import { getCampPlanById, getAllItems, getAllCampTemplates } from "../../db/kv.ts";
 
 interface CampDetailPageData {
   plan: CampPlan;
   allItems: InventoryItem[];
+  templates: CampTemplate[];
   session?: Session;
 }
 
 export const handler: Handlers<CampDetailPageData> = {
   async GET(_req, ctx) {
     const { id } = ctx.params;
-    const [plan, allItems] = await Promise.all([
+    const [plan, allItems, templates] = await Promise.all([
       getCampPlanById(id),
       getAllItems(),
+      getAllCampTemplates(),
     ]);
 
     if (!plan) {
@@ -25,7 +27,7 @@ export const handler: Handlers<CampDetailPageData> = {
     }
 
     allItems.sort((a, b) => a.name.localeCompare(b.name));
-    return ctx.render({ plan, allItems, session: ctx.state.session as Session });
+    return ctx.render({ plan, allItems, templates, session: ctx.state.session as Session });
   },
 };
 
@@ -62,6 +64,7 @@ export default function CampDetailPage({ data }: PageProps<CampDetailPageData>) 
       <CampChecklist
         plan={data.plan}
         allItems={data.allItems}
+        templates={data.templates}
         canEdit={canEdit}
         csrfToken={data.session?.csrfToken}
       />

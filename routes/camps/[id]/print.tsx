@@ -1,6 +1,7 @@
 // Print-optimised equipment list for a camp plan
 import { Handlers, PageProps } from "$fresh/server.ts";
 import type { CampPlan } from "../../../types/inventory.ts";
+import { ITEM_LOCATIONS } from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
 import { getCampPlanById } from "../../../db/kv.ts";
 import PrintButton from "../../../islands/PrintButton.tsx";
@@ -42,10 +43,21 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
   const gear = plan.items.filter((i) => i.itemCategory !== "food");
   const food = plan.items.filter((i) => i.itemCategory === "food");
 
-  // Group gear by category
-  const gearByCategory: Record<string, typeof gear> = {};
+  const BOX_LOCATIONS = new Set(
+    ITEM_LOCATIONS.find((g) => g.group === "Boxes")?.options ?? []
+  );
+
+  // Items stored in a named box — group by box
+  const boxGear: Record<string, typeof gear> = {};
+  // Everything else — group by category
+  const categoryGear: Record<string, typeof gear> = {};
+
   for (const item of gear) {
-    (gearByCategory[item.itemCategory] ??= []).push(item);
+    if (BOX_LOCATIONS.has(item.itemLocation as never)) {
+      (boxGear[item.itemLocation] ??= []).push(item);
+    } else {
+      (categoryGear[item.itemCategory] ??= []).push(item);
+    }
   }
 
   const dateRange = plan.endDate
@@ -134,8 +146,37 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
             {plan.notes && <p style="margin-top:0.5rem;font-size:0.8rem;color:#555">{plan.notes}</p>}
           </div>
 
-          {/* Gear sections grouped by category */}
-          {Object.entries(gearByCategory).map(([cat, items]) => (
+          {/* Box sections */}
+          {Object.entries(boxGear).map(([box, items]) => (
+            <div key={box}>
+              <h2>📦 {box} — {items.length} item{items.length !== 1 ? "s" : ""}</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:2rem">Pack</th>
+                    <th style="width:2rem">Return</th>
+                    <th>Item</th>
+                    <th style="width:4rem;text-align:right">Qty</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.itemId}>
+                      <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
+                      <td><span class={`check${item.returnedStatus ? " ticked" : ""}`} /></td>
+                      <td>{item.itemName}</td>
+                      <td style="text-align:right">{item.quantityPlanned}</td>
+                      <td class="notes">{item.notes ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+
+          {/* Remaining gear grouped by category */}
+          {Object.entries(categoryGear).map(([cat, items]) => (
             <div key={cat}>
               <h2>{CATEGORY_EMOJI[cat] ?? "📦"} {cat.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</h2>
               <table>

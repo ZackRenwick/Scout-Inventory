@@ -1,6 +1,6 @@
 /// <reference lib="deno.unstable" />
 // Deno KV database setup and operations
-import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace, CampPlan } from "../types/inventory.ts";
+import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace, CampPlan, CampTemplate, CampTemplateItem } from "../types/inventory.ts";
 import type { Meal, MealPayload } from "../types/meals.ts";
 
 // Initialize Deno KV
@@ -34,6 +34,7 @@ const KEYS = {
   neckers:       ["inventory", "neckers", "count"] as const,
   computedStats: ["inventory", "stats", "computed"] as const,
   camps:         ["camps", "plans"] as const,
+  templates:     ["camps", "templates"] as const,
   meals:         ["meals"] as const,
 };
 
@@ -617,6 +618,62 @@ export async function deleteCampPlan(id: string): Promise<boolean> {
   }
   const db = await initKv();
   await db.delete([...KEYS.camps, id]);
+  return true;
+}
+
+// ===== CAMP TEMPLATES =====
+
+// deno-lint-ignore no-explicit-any
+function serializeCampTemplate(t: CampTemplate): any {
+  return { ...t, createdAt: t.createdAt.toISOString(), lastUpdated: t.lastUpdated.toISOString() };
+}
+
+// deno-lint-ignore no-explicit-any
+function deserializeCampTemplate(data: any): CampTemplate {
+  return { ...data, createdAt: new Date(data.createdAt), lastUpdated: new Date(data.lastUpdated) };
+}
+
+export async function getAllCampTemplates(): Promise<CampTemplate[]> {
+  const db = await initKv();
+  const templates: CampTemplate[] = [];
+  for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
+    templates.push(deserializeCampTemplate(entry.value));
+  }
+  return templates.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function getCampTemplateById(id: string): Promise<CampTemplate | null> {
+  const db = await initKv();
+  const result = await db.get<CampTemplate>([...KEYS.templates, id]);
+  return result.value ? deserializeCampTemplate(result.value) : null;
+}
+
+export async function createCampTemplate(
+  name: string,
+  items: CampTemplateItem[],
+  createdBy: string,
+  description?: string,
+): Promise<CampTemplate> {
+  const db = await initKv();
+  const now = new Date();
+  const template: CampTemplate = {
+    id: crypto.randomUUID(),
+    name,
+    description,
+    items,
+    createdBy,
+    createdAt: now,
+    lastUpdated: now,
+  };
+  await db.set([...KEYS.templates, template.id], serializeCampTemplate(template));
+  return template;
+}
+
+export async function deleteCampTemplate(id: string): Promise<boolean> {
+  const existing = await getCampTemplateById(id);
+  if (!existing) return false;
+  const db = await initKv();
+  await db.delete([...KEYS.templates, id]);
   return true;
 }
 

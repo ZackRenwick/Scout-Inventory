@@ -1,11 +1,12 @@
 // Camp checklist island — full management for a single camp plan
 import { useSignal, useComputed } from "@preact/signals";
-import type { CampPlan, CampPlanItem, CampPlanStatus, InventoryItem } from "../types/inventory.ts";
+import type { CampPlan, CampPlanItem, CampPlanStatus, CampTemplate, InventoryItem } from "../types/inventory.ts";
 import { ITEM_LOCATIONS } from "../types/inventory.ts";
 
 interface CampChecklistProps {
   plan: CampPlan;
   allItems: InventoryItem[];
+  templates: CampTemplate[];
   canEdit: boolean;
   csrfToken?: string;
 }
@@ -40,7 +41,7 @@ function formatDate(d: Date | string | undefined): string {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function CampChecklist({ plan: initialPlan, allItems, canEdit, csrfToken }: CampChecklistProps) {
+export default function CampChecklist({ plan: initialPlan, allItems, templates: initialTemplates, canEdit, csrfToken }: CampChecklistProps) {
   const plan = useSignal<CampPlan>(initialPlan);
   const tab = useSignal<Tab>("pack");
   const saving = useSignal(false);
@@ -50,8 +51,16 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
   const addQty = useSignal(1);
   const addNote = useSignal("");
   const showAddPanel = useSignal(false);
-  const addMode = useSignal<"item" | "box">("item");
+  const addMode = useSignal<"item" | "box" | "template">("item");
   const selectedBox = useSignal("");
+  // Template signals
+  const templates = useSignal<CampTemplate[]>(initialTemplates);
+  const selectedTemplateId = useSignal("");
+  const showSaveTemplate = useSignal(false);
+  const templateName = useSignal("");
+  const templateDesc = useSignal("");
+  const savingTemplate = useSignal(false);
+  const templateSaved = useSignal(false);
 
   const planItemIds = useComputed(() => new Set(plan.value.items.map((i) => i.itemId)));
 
@@ -108,6 +117,13 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
   function toggleReturned(itemId: string) {
     const items = plan.value.items.map((i) =>
       i.itemId === itemId ? { ...i, returnedStatus: !i.returnedStatus } : i
+    );
+    patch({ items });
+  }
+
+  function returnAll() {
+    const items = plan.value.items.map((i) =>
+      i.itemCategory !== "food" ? { ...i, returnedStatus: true } : i
     );
     patch({ items });
   }
@@ -179,6 +195,78 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
     await patch({ items });
     selectedBox.value = "";
     showAddPanel.value = false;
+  }
+
+  const selectedTemplate = useComputed(() =>
+    templates.value.find((t) => t.id === selectedTemplateId.value)
+  );
+
+  const templateNewItems = useComputed(() => {
+    if (!selectedTemplate.value) return [];
+    return selectedTemplate.value.items.filter((ti) => !planItemIds.value.has(ti.itemId));
+  });
+
+  async function importTemplate() {
+    if (!selectedTemplate.value || templateNewItems.value.length === 0) return;
+    const newEntries: CampPlanItem[] = templateNewItems.value.map((ti) => ({
+      itemId: ti.itemId,
+      itemName: ti.itemName,
+      itemCategory: ti.itemCategory,
+      itemLocation: ti.itemLocation,
+      quantityPlanned: ti.quantityPlanned,
+      packedStatus: false,
+      returnedStatus: false,
+      notes: ti.notes,
+    }));
+    const items = [...plan.value.items, ...newEntries];
+    await patch({ items });
+    selectedTemplateId.value = "";
+    showAddPanel.value = false;
+  }
+
+  async function saveAsTemplate() {
+    const name = templateName.value.trim();
+    if (!name) return;
+    savingTemplate.value = true;
+    error.value = null;
+    try {
+      const res = await fetch("/api/camp-templates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken ?? "",
+        },
+        body: JSON.stringify({
+          name,
+          description: templateDesc.value.trim() || undefined,
+          items: plan.value.items
+            .filter((i) => i.itemCategory !== "food")
+            .map((i) => ({
+              itemId: i.itemId,
+              itemName: i.itemName,
+              itemCategory: i.itemCategory,
+              itemLocation: i.itemLocation,
+              quantityPlanned: i.quantityPlanned,
+              notes: i.notes,
+            })),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to save template");
+      }
+      const saved: CampTemplate = await res.json();
+      templates.value = [...templates.value, saved].sort((a, b) => a.name.localeCompare(b.name));
+      templateName.value = "";
+      templateDesc.value = "";
+      showSaveTemplate.value = false;
+      templateSaved.value = true;
+      setTimeout(() => { templateSaved.value = false; }, 3000);
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : "Failed to save template.";
+    } finally {
+      savingTemplate.value = false;
+    }
   }
 
   return (
@@ -255,13 +343,65 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
         )}
 
         {canEdit && (
-          <div class="mt-4 flex gap-2 flex-wrap">
+          <div class="mt-4 flex gap-2 flex-wrap items-start">
             <a
               href={`/camps/${plan.value.id}/edit`}
               class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               ✏️ Edit Details
             </a>
+            {plan.value.items.filter((i) => i.itemCategory !== "food").length > 0 && (
+              <div class="flex flex-col gap-2">
+                {!showSaveTemplate.value ? (
+                  <button
+                    type="button"
+                    onClick={() => { showSaveTemplate.value = true; }}
+                    class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    📋 Save as template
+                  </button>
+                ) : (
+                  <div class="flex flex-col gap-2 p-3 border border-purple-200 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20 rounded-md">
+                    <p class="text-xs font-medium text-purple-700 dark:text-purple-300">Save equipment list as a reusable template (food items excluded):</p>
+                    <input
+                      type="text"
+                      placeholder="Template name (e.g. Weekend camp kit)"
+                      maxLength={80}
+                      value={templateName.value}
+                      onInput={(e) => { templateName.value = (e.target as HTMLInputElement).value; }}
+                      class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description (optional)"
+                      value={templateDesc.value}
+                      onInput={(e) => { templateDesc.value = (e.target as HTMLInputElement).value; }}
+                      class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <div class="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={saveAsTemplate}
+                        disabled={savingTemplate.value || !templateName.value.trim()}
+                        class="text-sm px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-60 transition-colors"
+                      >
+                        {savingTemplate.value ? "Saving…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { showSaveTemplate.value = false; templateName.value = ""; templateDesc.value = ""; }}
+                        class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {templateSaved.value && (
+                  <p class="text-xs text-green-600 dark:text-green-400">✓ Template saved!</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -300,7 +440,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
                 </button>
                 <button
                   type="button"
-                  onClick={() => { addMode.value = "box"; addingItem.value = ""; itemSearch.value = ""; }}
+                  onClick={() => { addMode.value = "box"; addingItem.value = ""; itemSearch.value = ""; selectedTemplateId.value = ""; }}
                   class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
                     addMode.value === "box"
                       ? "bg-purple-600 text-white border-purple-600"
@@ -309,6 +449,19 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
                 >
                   📦 Add whole box
                 </button>
+                {templates.value.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { addMode.value = "template"; addingItem.value = ""; itemSearch.value = ""; selectedBox.value = ""; }}
+                    class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                      addMode.value === "template"
+                        ? "bg-purple-600 text-white border-purple-600"
+                        : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    }`}
+                  >
+                    📋 From template
+                  </button>
+                )}
               </div>
 
               {addMode.value === "box" ? (
@@ -358,6 +511,65 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
                       >
                         {saving.value ? "…" : `Add all ${boxItems.value.length} item${boxItems.value.length !== 1 ? "s" : ""} from ${selectedBox.value}`}
                       </button>
+                    </div>
+                  )}
+                </div>
+              ) : addMode.value === "template" ? (
+                <div class="space-y-3">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Select a template to import its equipment items (already-added items are skipped).</p>
+                  {templates.value.length === 0 ? (
+                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">No templates saved yet. Add items and use "Save as template" to create one.</p>
+                  ) : (
+                    <div class="flex flex-wrap gap-2">
+                      {templates.value.map((t) => (
+                        <button
+                          type="button"
+                          key={t.id}
+                          onClick={() => { selectedTemplateId.value = selectedTemplateId.value === t.id ? "" : t.id; }}
+                          class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                            selectedTemplateId.value === t.id
+                              ? "bg-purple-100 dark:bg-purple-900/40 border-purple-500 text-purple-800 dark:text-purple-200 font-medium"
+                              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          }`}
+                        >
+                          📋 {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedTemplate.value && (
+                    <div class="space-y-2">
+                      {selectedTemplate.value.description && (
+                        <p class="text-xs text-gray-500 dark:text-gray-400 italic">{selectedTemplate.value.description}</p>
+                      )}
+                      {templateNewItems.value.length === 0 ? (
+                        <p class="text-sm text-gray-500 dark:text-gray-400 italic">All items from this template are already in the plan.</p>
+                      ) : (
+                        <>
+                          <p class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                            {templateNewItems.value.length} item{templateNewItems.value.length !== 1 ? "s" : ""} will be added from <strong>{selectedTemplate.value.name}</strong>:
+                          </p>
+                          <div class="border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700 max-h-40 overflow-y-auto">
+                            {templateNewItems.value.map((ti) => (
+                              <div key={ti.itemId} class="px-3 py-2 text-sm">
+                                <span class="font-medium text-gray-800 dark:text-gray-100">{ti.itemName}</span>
+                                <span class="text-gray-500 dark:text-gray-400 ml-2 text-xs">
+                                  {ti.itemCategory} · qty: {ti.quantityPlanned}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={importTemplate}
+                            disabled={saving.value}
+                            class="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors"
+                          >
+                            {saving.value ? "…" : `Add ${templateNewItems.value.length} item${templateNewItems.value.length !== 1 ? "s" : ""} from ${selectedTemplate.value.name}`}
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -514,6 +726,18 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
             </div>
           ) : (
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
+              {gearItems.value.length > 0 && returnedGearCount.value < totalGear.value && canEdit && (
+                <div class="px-4 py-2 flex justify-end bg-gray-50 dark:bg-gray-800/60">
+                  <button
+                    type="button"
+                    onClick={returnAll}
+                    disabled={saving.value}
+                    class="text-xs font-medium px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60 transition-colors"
+                  >
+                    ✓ Mark all returned
+                  </button>
+                </div>
+              )}
               {gearItems.value.length > 0
                 ? gearItems.value.map((item) => renderRow(item, "return"))
                 : <p class="px-4 py-6 text-sm text-gray-500 dark:text-gray-400 text-center italic">No gear items in this plan</p>

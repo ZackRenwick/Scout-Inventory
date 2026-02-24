@@ -15,6 +15,8 @@ import * as $admin_import from "./routes/admin/import.ts";
 import * as $admin_notify from "./routes/admin/notify.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
 import * as $admin_stocktake from "./routes/admin/stocktake.tsx";
+import * as $api_camp_templates_id_ from "./routes/api/camp-templates/[id].ts";
+import * as $api_camp_templates_index from "./routes/api/camp-templates/index.ts";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
@@ -34,6 +36,7 @@ import * as $camps_id_edit from "./routes/camps/[id]/edit.tsx";
 import * as $camps_id_print from "./routes/camps/[id]/print.tsx";
 import * as $camps_index from "./routes/camps/index.tsx";
 import * as $camps_new from "./routes/camps/new.tsx";
+import * as $camps_templates from "./routes/camps/templates.tsx";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $inventory_id_ from "./routes/inventory/[id].tsx";
@@ -70,6 +73,7 @@ import * as $PrintButton from "./islands/PrintButton.tsx";
 import * as $RebuildIndexes from "./islands/RebuildIndexes.tsx";
 import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
 import * as $StocktakeWizard from "./islands/StocktakeWizard.tsx";
+import * as $TemplateBuilder from "./islands/TemplateBuilder.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -88,6 +92,8 @@ const manifest = {
     "./routes/admin/notify.ts": $admin_notify,
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
     "./routes/admin/stocktake.tsx": $admin_stocktake,
+    "./routes/api/camp-templates/[id].ts": $api_camp_templates_id_,
+    "./routes/api/camp-templates/index.ts": $api_camp_templates_index,
     "./routes/api/camps/[id].ts": $api_camps_id_,
     "./routes/api/camps/index.ts": $api_camps_index,
     "./routes/api/items/[id].ts": $api_items_id_,
@@ -107,6 +113,7 @@ const manifest = {
     "./routes/camps/[id]/print.tsx": $camps_id_print,
     "./routes/camps/index.tsx": $camps_index,
     "./routes/camps/new.tsx": $camps_new,
+    "./routes/camps/templates.tsx": $camps_templates,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/inventory/[id].tsx": $inventory_id_,
@@ -145,6 +152,7 @@ const manifest = {
     "./islands/RebuildIndexes.tsx": $RebuildIndexes,
     "./islands/SpaceDashboard.tsx": $SpaceDashboard,
     "./islands/StocktakeWizard.tsx": $StocktakeWizard,
+    "./islands/TemplateBuilder.tsx": $TemplateBuilder,
     "./islands/ThemeToggle.tsx": $ThemeToggle,
   },
   baseUrl: import.meta.url,

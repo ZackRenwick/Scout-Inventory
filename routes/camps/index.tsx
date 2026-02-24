@@ -39,12 +39,20 @@ export default function CampsPage({ data }: PageProps<CampsPageData>) {
             Plan camps, manage packing lists, and track equipment returns
           </p>
           {canEdit && (
-            <a
-              href="/camps/new"
-              class="px-4 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 transition-colors"
-            >
-              ➕ New Camp Plan
-            </a>
+            <div class="flex gap-2 flex-wrap">
+              <a
+                href="/camps/templates"
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                📋 Templates
+              </a>
+              <a
+                href="/camps/new"
+                class="px-4 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 transition-colors"
+              >
+                ➕ New Camp Plan
+              </a>
+            </div>
           )}
         </div>
       </div>
