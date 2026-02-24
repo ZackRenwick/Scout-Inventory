@@ -4,6 +4,7 @@ import Layout from "../../../components/Layout.tsx";
 import MealForm from "../../../islands/MealForm.tsx";
 import { getMealById, getItemsByCategory } from "../../../db/kv.ts";
 import { type Session } from "../../../lib/auth.ts";
+import type { FoodItem } from "../../../types/inventory.ts";
 import type { Meal, FoodItemSummary } from "../../../types/meals.ts";
 
 interface EditMealPageData {
@@ -27,7 +28,12 @@ export const handler: Handlers<EditMealPageData> = {
       return new Response(null, { status: 302, headers: { location: "/meals" } });
     }
     const foodItems: FoodItemSummary[] = rawFood
-      .map((i) => ({ id: i.id, name: i.name, quantity: i.quantity }))
+      .map((i) => ({
+        id: i.id,
+        name: i.name,
+        quantity: i.quantity,
+        expiryDate: (i as FoodItem).expiryDate?.toISOString(),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return ctx.render({ meal, foodItems, session, csrfToken: session.csrfToken });

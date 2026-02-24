@@ -6,7 +6,7 @@ import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import NeckerCounter from "../islands/NeckerCounter.tsx";
 import NeckerAlert from "../islands/NeckerAlert.tsx";
 import type { Session } from "../lib/auth.ts";
-import { getComputedStats, getFoodItemsSortedByExpiry } from "../db/kv.ts";
+import { getComputedStats, getFoodItemsSortedByExpiry, getActiveCheckOuts } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
 interface DashboardData {
@@ -27,6 +27,8 @@ interface DashboardData {
     };
     lowStockItems: number;
     needsRepairItems: number;
+    activeLoans: number;
+    overdueLoans: number;
     expiringFood: {
       expired: number;
       expiringSoon: number;
@@ -41,9 +43,10 @@ export const handler: Handlers<DashboardData> = {
     try {
       // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
       // Both run concurrently — no full inventory scan needed for the dashboard.
-      const [computed, foodItems] = await Promise.all([
+      const [computed, foodItems, activeLoansData] = await Promise.all([
         getComputedStats(),
         getFoodItemsSortedByExpiry(),
+        getActiveCheckOuts(),
       ]);
 
       const expiringFood = { expired: 0, expiringSoon: 0, expiringWarning: 0 };
@@ -54,6 +57,11 @@ export const handler: Handlers<DashboardData> = {
         else if (d <= 30) expiringFood.expiringWarning++;
       }
 
+      const now = new Date();
+      const overdueLoans = activeLoansData.filter(
+        (l) => new Date(l.expectedReturnDate) < now,
+      ).length;
+
       const stats: DashboardData["stats"] = {
         totalItems:        computed.totalItems,
         totalQuantity:     computed.totalQuantity,
@@ -61,6 +69,8 @@ export const handler: Handlers<DashboardData> = {
         spaceBreakdown:    computed.spaceBreakdown,
         lowStockItems:     computed.lowStockItems,
         needsRepairItems:  computed.needsRepairItems,
+        activeLoans:       activeLoansData.length,
+        overdueLoans,
         expiringFood,
       };
       const neckerThreshold = parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10);
@@ -85,6 +95,8 @@ export const handler: Handlers<DashboardData> = {
           },
           lowStockItems: 0,
           needsRepairItems: 0,
+          activeLoans: 0,
+          overdueLoans: 0,
           expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
         },
         session: ctx.state.session as Session,
@@ -186,7 +198,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
       </div>
       
       {/* Overview Stats */}
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
           <StatCard
             title="Expired Food"
@@ -214,12 +226,30 @@ export default function Home({ data }: PageProps<DashboardData>) {
             subtitle="Need restocking"
           />
         </a>
+        <a href="/inventory?onloan=true" class="block hover:shadow-lg transition-shadow">
+          <StatCard
+            title="Active Loans"
+            value={stats.activeLoans}
+            icon="📤"
+            color={stats.overdueLoans > 0 ? "red" : stats.activeLoans > 0 ? "yellow" : "green"}
+            subtitle={stats.overdueLoans > 0 ? `${stats.overdueLoans} overdue` : "Items out on loan"}
+          />
+        </a>
+        <a href="/inventory?needsrepair=true" class="block hover:shadow-lg transition-shadow">
+          <StatCard
+            title="Needs Repair"
+            value={stats.needsRepairItems}
+            icon="🔧"
+            color={stats.needsRepairItems > 0 ? "yellow" : "green"}
+            subtitle="Items flagged for repair"
+          />
+        </a>
         <NeckerCounter
           csrfToken={session?.csrfToken ?? ""}
           canEdit={session?.role !== "viewer"}
         />
       </div>
-      
+
       <SpaceDashboard categoryBreakdown={stats.categoryBreakdown} spaceBreakdown={stats.spaceBreakdown} expiringFood={stats.expiringFood} />
       
     </Layout>

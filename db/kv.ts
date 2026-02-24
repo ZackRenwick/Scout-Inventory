@@ -126,6 +126,23 @@ export async function getComputedStats(): Promise<ComputedStats> {
 const CACHE_TTL_MS = 5 * 60_000; // 5 minutes
 let itemsCache: { items: InventoryItem[]; expiresAt: number } | null = null;
 
+export async function getAllItems(): Promise<InventoryItem[]> {
+  if (itemsCache && Date.now() < itemsCache.expiresAt) {
+    return itemsCache.items;
+  }
+
+  const db = await initKv();
+  const items: InventoryItem[] = [];
+
+  const entries = db.list<InventoryItem>({ prefix: KEYS.items });
+  for await (const entry of entries) {
+    items.push(deserializeItem(entry.value));
+  }
+
+  itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
+  return items;
+}
+
 function invalidateItemsCache(): void {
   itemsCache = null;
 }
@@ -151,23 +168,6 @@ function removeFromIndex(op: Deno.AtomicOperation, item: InventoryItem): void {
 }
 
 // ===== INVENTORY ITEMS OPERATIONS =====
-
-export async function getAllItems(): Promise<InventoryItem[]> {
-  if (itemsCache && Date.now() < itemsCache.expiresAt) {
-    return itemsCache.items;
-  }
-
-  const db = await initKv();
-  const items: InventoryItem[] = [];
-  
-  const entries = db.list<InventoryItem>({ prefix: KEYS.items });
-  for await (const entry of entries) {
-    items.push(deserializeItem(entry.value));
-  }
-
-  itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
-  return items;
-}
 
 export async function getItemById(id: string): Promise<InventoryItem | null> {
   const db = await initKv();
@@ -300,21 +300,25 @@ export async function rebuildIndexes(): Promise<void> {
   const db = await initKv();
 
   // 1. Delete all existing index entries
+  const deleteOps = [];
   for await (const entry of db.list({ prefix: ["inventory", "idx"] })) {
-    await db.delete(entry.key);
+    deleteOps.push(db.delete(entry.key));
   }
+  await Promise.all(deleteOps);
 
   // 2. Scan all items, rebuild indexes + stats
   let stats = emptyStats();
   const entries = db.list<InventoryItem>({ prefix: KEYS.items });
+  const batchOps = [];
 
   for await (const entry of entries) {
     const item = deserializeItem(entry.value);
     const op = db.atomic();
     addToIndex(op, item);
-    await op.commit();
+    batchOps.push(op.commit());
     stats = applyItemToStats(stats, item, 1);
   }
+  await Promise.all(batchOps);
 
   // 3. Write rebuilt stats
   await db.set(KEYS.computedStats, stats);
@@ -384,6 +388,35 @@ export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   }
   
   return updated;
+}
+
+export async function getCheckOutById(id: string): Promise<CheckOut | null> {
+  const db = await initKv();
+  const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
+  return result.value ? deserializeCheckOut(result.value) : null;
+}
+
+/**
+ * Cancel/delete a loan record. If the loan has not been returned yet, the
+ * loaned quantity is restored to the item's stock before the record is removed.
+ */
+export async function deleteCheckOut(id: string): Promise<boolean> {
+  const db = await initKv();
+  const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
+  if (!result.value) return false;
+
+  const checkout = deserializeCheckOut(result.value);
+
+  // Restore stock for loans that were never returned
+  if (checkout.status !== "returned") {
+    const item = await getItemById(checkout.itemId);
+    if (item) {
+      await updateItem(checkout.itemId, { quantity: item.quantity + checkout.quantity });
+    }
+  }
+
+  await db.delete([...KEYS.checkouts, id]);
+  return true;
 }
 
 // ===== NECKER COUNT =====

@@ -4,6 +4,7 @@ import Layout from "../../components/Layout.tsx";
 import MealForm from "../../islands/MealForm.tsx";
 import { getItemsByCategory } from "../../db/kv.ts";
 import { type Session } from "../../lib/auth.ts";
+import type { FoodItem } from "../../types/inventory.ts";
 import type { FoodItemSummary } from "../../types/meals.ts";
 
 interface NewMealPageData {
@@ -20,7 +21,12 @@ export const handler: Handlers<NewMealPageData> = {
     }
     const rawFood = await getItemsByCategory("food");
     const foodItems: FoodItemSummary[] = rawFood
-      .map((i) => ({ id: i.id, name: i.name, quantity: i.quantity }))
+      .map((i) => ({
+        id: i.id,
+        name: i.name,
+        quantity: i.quantity,
+        expiryDate: (i as FoodItem).expiryDate?.toISOString(),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return ctx.render({ foodItems, session, csrfToken: session.csrfToken });

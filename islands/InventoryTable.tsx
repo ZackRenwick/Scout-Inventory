@@ -1,5 +1,5 @@
 // Interactive inventory table with search and filtering
-import { Signal, useComputed, useSignal } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
 import { isFoodItem, isTentItem, ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
@@ -14,9 +14,11 @@ interface InventoryTableProps {
   initialLowStock?: boolean;
   initialCategory?: string;
   csrfToken?: string;
+  loanedItemIds?: string[];
+  initialOnLoan?: boolean;
 }
 
-export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, initialLowStock = false, initialCategory = "all", csrfToken = "" }: InventoryTableProps) {
+export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, initialLowStock = false, initialCategory = "all", csrfToken = "", loanedItemIds = [], initialOnLoan = false }: InventoryTableProps) {
   const searchQuery = useSignal("");
   const categoryFilter = useSignal<"all" | ItemCategory>(initialCategory as "all" | ItemCategory);
   const spaceFilter = useSignal<"all" | "camp-store" | "scout-post-loft">("all");
@@ -24,6 +26,8 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
   const showAtCamp = useSignal(false);
+  const showOnLoan = useSignal(initialOnLoan);
+  const loanedIdSet = new Set(loanedItemIds);
   const cookingTypeFilter = useSignal<string>("all");
   const showExpiredFood = useSignal(false);
   const showExpiringSoon = useSignal(false);
@@ -41,6 +45,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const confirmDeleteId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
   const atCampCount = useComputed(() => items.filter((i) => (i as { atCamp?: boolean }).atCamp).length);
+  const loanedCount = loanedIdSet.size;
   
   // Human-readable labels for category slugs so "camping tools" or "first aid" match
   const categoryLabels: Record<string, string> = {
@@ -88,6 +93,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
 
     // At camp filter
     if (showAtCamp.value && !(item as { atCamp?: boolean }).atCamp) {
+      return false;
+    }
+
+    // On loan filter
+    if (showOnLoan.value && !loanedIdSet.has(item.id)) {
       return false;
     }
 
@@ -148,7 +158,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
       if (response.ok) {
         confirmDeleteId.value = null;
         showToast("Item deleted successfully", "success");
-        setTimeout(() => window.location.reload(), 1000);
+        setTimeout(() => globalThis.location.reload(), 1000);
       } else {
         confirmDeleteId.value = null;
         showToast("Failed to delete item", "error");
@@ -231,7 +241,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
             <select
               id="category-filter"
               value={categoryFilter.value}
-              onChange={(e) => categoryFilter.value = (e.target as HTMLSelectElement).value as any}
+              onChange={(e) => categoryFilter.value = (e.target as HTMLSelectElement).value as ItemCategory}
               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Categories</option>
@@ -318,6 +328,18 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🏕️ At Camp Only</span>
               {atCampCount.value > 0 && (
                 <span class="text-xs font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">{atCampCount.value}</span>
+              )}
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer select-none w-full sm:w-auto">
+              <input
+                type="checkbox"
+                checked={showOnLoan.value}
+                onChange={(e) => showOnLoan.value = (e.target as HTMLInputElement).checked}
+                class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">📤 On Loan Only</span>
+              {loanedCount > 0 && (
+                <span class="text-xs font-medium px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">{loanedCount}</span>
               )}
             </label>
           </div>
@@ -457,11 +479,12 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     confirmDeleteId.value === item.id ? (
                       <span class="flex items-center gap-2 ml-auto">
                         <span class="text-gray-500 dark:text-gray-400 text-xs">Delete?</span>
-                        <button onClick={() => handleDelete(item.id)} class="text-red-600 hover:text-red-800 font-semibold text-xs">Yes</button>
-                        <button onClick={() => confirmDeleteId.value = null} class="text-gray-400 hover:text-gray-600 text-xs">No</button>
+                        <button type="button" onClick={() => handleDelete(item.id)} class="text-red-600 hover:text-red-800 font-semibold text-xs">Yes</button>
+                        <button type="button" onClick={() => confirmDeleteId.value = null} class="text-gray-400 hover:text-gray-600 text-xs">No</button>
                       </span>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => confirmDeleteId.value = item.id}
                         class="ml-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
                       >
@@ -590,12 +613,14 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                         <span class="inline-flex items-center gap-2">
                           <span class="text-gray-500 dark:text-gray-400 text-xs">Delete?</span>
                           <button
+                            type="button"
                             onClick={() => handleDelete(item.id)}
                             class="text-red-600 hover:text-red-800 font-semibold text-xs"
                           >
                             Yes
                           </button>
                           <button
+                            type="button"
                             onClick={() => confirmDeleteId.value = null}
                             class="text-gray-400 hover:text-gray-600 text-xs"
                           >
@@ -604,6 +629,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                         </span>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => confirmDeleteId.value = item.id}
                           class="text-red-600 hover:text-red-900"
                         >

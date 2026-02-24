@@ -2,8 +2,19 @@
 
 /** One ingredient line within a meal recipe. */
 export interface MealIngredient {
-  /** ID of the linked food inventory item, if tracked in inventory. Omit for free-form ingredients. */
+  /**
+   * ID of a specific inventory item batch. Use this when you intentionally
+   * want to consume one particular batch (e.g. the batch expiring soonest).
+   * Leave unset to match by name instead.
+   */
   inventoryItemId?: string;
+  /**
+   * Canonical ingredient name used for name-based inventory matching.
+   * When set (without inventoryItemId), stock is summed across ALL inventory
+   * items that share this name — e.g. all "Passata" batches with different
+   * expiry dates are treated as one pool.
+   */
+  inventoryItemName?: string;
   /** Ingredient display name. Auto-filled from inventory when linked, otherwise entered manually. */
   name: string;
   /** How many people one unit of this item feeds for this recipe. */
@@ -32,4 +43,6 @@ export interface FoodItemSummary {
   id: string;
   name: string;
   quantity: number;
+  /** ISO date string — present only for food items that have an expiry date set. */
+  expiryDate?: string;
 }

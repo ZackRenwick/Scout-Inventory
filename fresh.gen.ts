@@ -14,17 +14,21 @@ import * as $admin_export from "./routes/admin/export.ts";
 import * as $admin_import from "./routes/admin/import.ts";
 import * as $admin_notify from "./routes/admin/notify.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
+import * as $admin_stocktake from "./routes/admin/stocktake.tsx";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
+import * as $api_loans_id_ from "./routes/api/loans/[id].ts";
+import * as $api_loans_index from "./routes/api/loans/index.ts";
 import * as $api_logout from "./routes/api/logout.ts";
 import * as $api_meals_id_ from "./routes/api/meals/[id].ts";
 import * as $api_meals_index from "./routes/api/meals/index.ts";
 import * as $api_neckers from "./routes/api/neckers.ts";
 import * as $api_ping from "./routes/api/ping.ts";
 import * as $api_stats from "./routes/api/stats.ts";
+import * as $api_stocktake from "./routes/api/stocktake.ts";
 import * as $camps_id_ from "./routes/camps/[id].tsx";
 import * as $camps_id_edit from "./routes/camps/[id]/edit.tsx";
 import * as $camps_index from "./routes/camps/index.tsx";
@@ -32,9 +36,12 @@ import * as $camps_new from "./routes/camps/new.tsx";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $inventory_id_ from "./routes/inventory/[id].tsx";
+import * as $inventory_id_qr from "./routes/inventory/[id]/qr.tsx";
 import * as $inventory_add from "./routes/inventory/add.tsx";
 import * as $inventory_edit_id_ from "./routes/inventory/edit/[id].tsx";
 import * as $inventory_index from "./routes/inventory/index.tsx";
+import * as $loans_index from "./routes/loans/index.tsx";
+import * as $loans_new from "./routes/loans/new.tsx";
 import * as $login from "./routes/login.tsx";
 import * as $meals_id_edit from "./routes/meals/[id]/edit.tsx";
 import * as $meals_index from "./routes/meals/index.tsx";
@@ -49,6 +56,8 @@ import * as $Counter from "./islands/Counter.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
+import * as $LoanForm from "./islands/LoanForm.tsx";
+import * as $LoanList from "./islands/LoanList.tsx";
 import * as $MealForm from "./islands/MealForm.tsx";
 import * as $MealPlannerForm from "./islands/MealPlannerForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
@@ -56,8 +65,10 @@ import * as $NeckerAlert from "./islands/NeckerAlert.tsx";
 import * as $NeckerCounter from "./islands/NeckerCounter.tsx";
 import * as $NotificationButtons from "./islands/NotificationButtons.tsx";
 import * as $PasswordInput from "./islands/PasswordInput.tsx";
+import * as $PrintButton from "./islands/PrintButton.tsx";
 import * as $RebuildIndexes from "./islands/RebuildIndexes.tsx";
 import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
+import * as $StocktakeWizard from "./islands/StocktakeWizard.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -75,17 +86,21 @@ const manifest = {
     "./routes/admin/import.ts": $admin_import,
     "./routes/admin/notify.ts": $admin_notify,
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
+    "./routes/admin/stocktake.tsx": $admin_stocktake,
     "./routes/api/camps/[id].ts": $api_camps_id_,
     "./routes/api/camps/index.ts": $api_camps_index,
     "./routes/api/items/[id].ts": $api_items_id_,
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
+    "./routes/api/loans/[id].ts": $api_loans_id_,
+    "./routes/api/loans/index.ts": $api_loans_index,
     "./routes/api/logout.ts": $api_logout,
     "./routes/api/meals/[id].ts": $api_meals_id_,
     "./routes/api/meals/index.ts": $api_meals_index,
     "./routes/api/neckers.ts": $api_neckers,
     "./routes/api/ping.ts": $api_ping,
     "./routes/api/stats.ts": $api_stats,
+    "./routes/api/stocktake.ts": $api_stocktake,
     "./routes/camps/[id].tsx": $camps_id_,
     "./routes/camps/[id]/edit.tsx": $camps_id_edit,
     "./routes/camps/index.tsx": $camps_index,
@@ -93,9 +108,12 @@ const manifest = {
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/inventory/[id].tsx": $inventory_id_,
+    "./routes/inventory/[id]/qr.tsx": $inventory_id_qr,
     "./routes/inventory/add.tsx": $inventory_add,
     "./routes/inventory/edit/[id].tsx": $inventory_edit_id_,
     "./routes/inventory/index.tsx": $inventory_index,
+    "./routes/loans/index.tsx": $loans_index,
+    "./routes/loans/new.tsx": $loans_new,
     "./routes/login.tsx": $login,
     "./routes/meals/[id]/edit.tsx": $meals_id_edit,
     "./routes/meals/index.tsx": $meals_index,
@@ -112,6 +130,8 @@ const manifest = {
     "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
+    "./islands/LoanForm.tsx": $LoanForm,
+    "./islands/LoanList.tsx": $LoanList,
     "./islands/MealForm.tsx": $MealForm,
     "./islands/MealPlannerForm.tsx": $MealPlannerForm,
     "./islands/MobileNav.tsx": $MobileNav,
@@ -119,8 +139,10 @@ const manifest = {
     "./islands/NeckerCounter.tsx": $NeckerCounter,
     "./islands/NotificationButtons.tsx": $NotificationButtons,
     "./islands/PasswordInput.tsx": $PasswordInput,
+    "./islands/PrintButton.tsx": $PrintButton,
     "./islands/RebuildIndexes.tsx": $RebuildIndexes,
     "./islands/SpaceDashboard.tsx": $SpaceDashboard,
+    "./islands/StocktakeWizard.tsx": $StocktakeWizard,
     "./islands/ThemeToggle.tsx": $ThemeToggle,
   },
   baseUrl: import.meta.url,

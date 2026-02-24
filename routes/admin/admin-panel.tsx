@@ -134,6 +134,21 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         </div>
       </div>
 
+      {/* Stock-take */}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">📋 Stock-take</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Walk the store, physically count each item, and apply corrections. Items are ordered by location
+          so you can move through the store systematically. A discrepancy report is shown before any changes are applied.
+        </p>
+        <a
+          href="/admin/stocktake"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+        >
+          📋 Start Stock-take
+        </a>
+      </div>
+
       {/* Exports */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">📊 Reports &amp; Exports</h2>

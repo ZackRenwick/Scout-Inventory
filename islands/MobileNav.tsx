@@ -27,6 +27,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         <a href="/inventory" class="hover:text-purple-200 transition-colors">Inventory</a>
         <a href="/camps" class="hover:text-purple-200 transition-colors">Camp Planning</a>
         <a href="/meals" class="hover:text-purple-200 transition-colors">Meal Planner</a>
+        <a href="/loans" class="hover:text-purple-200 transition-colors">Loans</a>
         {role === "admin" && (
           <a href="/admin/admin-panel" class="hover:text-purple-200 transition-colors">Admin</a>
         )}
@@ -50,6 +51,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           <a href="/inventory" class="block px-6 py-3 hover:bg-purple-800 transition-colors">📋 Inventory</a>
           <a href="/camps" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🏕️ Camp Planning</a>
           <a href="/meals" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🍽️ Meal Planner</a>
+          <a href="/loans" class="block px-6 py-3 hover:bg-purple-800 transition-colors">📤 Loans</a>
           {role === "admin" && (
             <a href="/admin/admin-panel" class="block px-6 py-3 hover:bg-purple-800 transition-colors">⚙️ Admin</a>
           )}

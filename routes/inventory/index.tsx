@@ -4,7 +4,7 @@ import type { InventoryItem } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import InventoryTable from "../../islands/InventoryTable.tsx";
 import type { Session } from "../../lib/auth.ts";
-import { getAllItems } from "../../db/kv.ts";
+import { getAllItems, getActiveCheckOuts } from "../../db/kv.ts";
 
 interface InventoryPageData {
   items: InventoryItem[];
@@ -12,6 +12,8 @@ interface InventoryPageData {
   needsRepair: boolean;
   lowStock: boolean;
   initialCategory: string;
+  loanedItemIds: string[];
+  initialOnLoan: boolean;
 }
 
 export const handler: Handlers<InventoryPageData> = {
@@ -20,13 +22,40 @@ export const handler: Handlers<InventoryPageData> = {
     const needsRepair = url.searchParams.get("needsrepair") === "true";
     const lowStock = url.searchParams.get("lowstock") === "true";
     const initialCategory = url.searchParams.get("category") ?? "all";
+    const initialOnLoan = url.searchParams.get("onloan") === "true";
     try {
-      const items = await getAllItems();
+      const [items, activeLoans] = await Promise.all([
+        getAllItems(),
+        getActiveCheckOuts(),
+      ]);
       items.sort((a, b) => a.name.localeCompare(b.name));
-      return ctx.render({ items, session: ctx.state.session as Session, needsRepair, lowStock, initialCategory });
+
+      // Lazy load items in chunks
+      const chunkSize = 50;
+      const paginatedItems = items.slice(0, chunkSize);
+
+      const loanedItemIds = [...new Set(activeLoans.map((l) => l.itemId))];
+
+      return ctx.render({
+        items: paginatedItems,
+        session: ctx.state.session as Session,
+        needsRepair,
+        lowStock,
+        initialCategory,
+        loanedItemIds,
+        initialOnLoan,
+      });
     } catch (error) {
       console.error("Failed to fetch items:", error);
-      return ctx.render({ items: [], session: ctx.state.session as Session, needsRepair, lowStock });
+      return ctx.render({
+        items: [],
+        session: ctx.state.session as Session,
+        needsRepair,
+        lowStock,
+        initialCategory,
+        loanedItemIds: [],
+        initialOnLoan,
+      });
     }
   },
 };
@@ -49,7 +78,7 @@ export default function InventoryPage({ data }: PageProps<InventoryPageData>) {
         </div>
       </div>
       
-      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} initialLowStock={data.lowStock} initialCategory={data.initialCategory} csrfToken={data.session?.csrfToken} />
+      <InventoryTable items={data.items} canEdit={canEdit} initialNeedsRepair={data.needsRepair} initialLowStock={data.lowStock} initialCategory={data.initialCategory} csrfToken={data.session?.csrfToken} loanedItemIds={data.loanedItemIds} initialOnLoan={data.initialOnLoan} />
     </Layout>
   );
 }
