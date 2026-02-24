@@ -111,11 +111,6 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
 
   return (
     <form onSubmit={handleSubmit} class="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 w-full max-w-2xl">
-      {success.value && (
-        <div class="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded flex items-center gap-2">
-          <span>✓</span> {success.value}
-        </div>
-      )}
       {error.value && (
         <div class="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded">
           {error.value}
@@ -465,6 +460,11 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       </div>
       
       {/* Submit Buttons */}
+      {success.value && (
+        <div id="form-success" class="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded flex items-center gap-2">
+          <span>✓</span> {success.value}
+        </div>
+      )}
       <div class="flex gap-3">
         <button
           type="submit"

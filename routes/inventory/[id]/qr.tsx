@@ -27,6 +27,10 @@ export const handler: Handlers<QrPageData> = {
     if (!item) {
       return new Response("Item not found", { status: 404 });
     }
+    const session = ctx.state.session as Session | undefined;
+    if (!session || session.role !== "admin") {
+      return new Response(null, { status: 302, headers: { location: `/inventory/${id}` } });
+    }
     const origin = new URL(req.url).origin;
     const itemUrl = `${origin}/inventory/${id}`;
 
@@ -42,7 +46,7 @@ export const handler: Handlers<QrPageData> = {
       }
     } catch (_) { /* leave qrDataUri empty; label still prints with URL */ }
 
-    return ctx.render({ item, itemUrl, qrDataUri, session: ctx.state.session as Session });
+    return ctx.render({ item, itemUrl, qrDataUri, session });
   },
 };
 

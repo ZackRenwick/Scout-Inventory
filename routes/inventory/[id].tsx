@@ -75,6 +75,7 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
               ✏️ Edit
             </a>
             )}
+            {data.session?.role === "admin" && (
             <a
               href={`/inventory/${item.id}/qr`}
               target="_blank"
@@ -83,6 +84,7 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
             >
               🖨️ QR Label
             </a>
+            )}
           </div>
         </div>
         
