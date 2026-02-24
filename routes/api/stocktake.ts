@@ -4,6 +4,8 @@ import { getItemById, updateItem } from "../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 
+const VALID_CONDITIONS = new Set(["excellent", "good", "fair", "needs-repair"]);
+
 interface StocktakeUpdate {
   id: string;
   quantity: number;
@@ -13,7 +15,7 @@ interface StocktakeUpdate {
 export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role === "viewer") return forbidden();
+    if (!session || session.role !== "admin") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     let body: { updates: StocktakeUpdate[] };
@@ -41,6 +43,10 @@ export const handler: Handlers = {
       updates.map(async ({ id, quantity, condition }) => {
         if (typeof quantity !== "number" || quantity < 0 || !Number.isInteger(quantity)) {
           errors.push(`Invalid quantity for item ${id}`);
+          return;
+        }
+        if (condition !== undefined && !VALID_CONDITIONS.has(condition)) {
+          errors.push(`Invalid condition "${condition}" for item ${id}`);
           return;
         }
         try {

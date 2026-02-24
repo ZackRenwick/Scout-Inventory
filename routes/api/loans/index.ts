@@ -53,6 +53,23 @@ export const handler: Handlers = {
       );
     }
 
+    // Enforce length limits to prevent oversized KV records
+    const borrowerStr = (borrower as string).trim();
+    if (borrowerStr.length > 100) {
+      return new Response(
+        JSON.stringify({ error: "Borrower name must be 100 characters or fewer." }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if (notes !== undefined && notes !== null) {
+      if (typeof notes !== "string" || (notes as string).length > 500) {
+        return new Response(
+          JSON.stringify({ error: "Notes must be 500 characters or fewer." }),
+          { status: 400, headers: { "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Reject food items — they are consumable and shouldn't be loaned
     if (item.category === "food") {
       return new Response(
@@ -74,7 +91,7 @@ export const handler: Handlers = {
         id: crypto.randomUUID(),
         itemId,
         itemName: item.name,
-        borrower: (borrower as string).trim(),
+        borrower: borrowerStr,
         quantity: qty,
         checkOutDate: new Date(),
         expectedReturnDate: returnDate,

@@ -234,6 +234,14 @@ export async function ensureDefaultAdmin(): Promise<void> {
   // No user with that username — create one
   await createUser(username, password, "admin");
   console.log(`[auth] Created default admin user: ${username}`);
+
+  // Warn loudly in production if the fallback default password is in use
+  if (IS_DEPLOYED && !Deno.env.get("ADMIN_PASSWORD")) {
+    console.warn(
+      "[auth] WARNING: ADMIN_PASSWORD env var is not set. The default admin account uses the "
+      + "built-in fallback password. Set ADMIN_PASSWORD in your deployment environment immediately.",
+    );
+  }
 }
 
 // ===== SESSION OPERATIONS =====

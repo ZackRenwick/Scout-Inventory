@@ -56,6 +56,7 @@ export interface ComputedStats {
   spaceBreakdown: Record<ItemSpace, { count: number; quantity: number }>;
   lowStockItems: number;
   needsRepairItems: number;
+  activeLoansCount: number;
 }
 
 function emptyStats(): ComputedStats {
@@ -75,6 +76,7 @@ function emptyStats(): ComputedStats {
     },
     lowStockItems: 0,
     needsRepairItems: 0,
+    activeLoansCount: 0,
   };
 }
 
@@ -94,6 +96,7 @@ function applyItemToStats(stats: ComputedStats, item: InventoryItem, sign: 1 | -
     spaceBreakdown:    { ...stats.spaceBreakdown }    as ComputedStats["spaceBreakdown"],
     lowStockItems:     stats.lowStockItems,
     needsRepairItems:  stats.needsRepairItems,
+    activeLoansCount:  stats.activeLoansCount ?? 0,
   };
 
   // Deep-copy the two buckets we'll touch
@@ -125,6 +128,7 @@ export async function getComputedStats(): Promise<ComputedStats> {
 // against external KV modifications. 5 minutes is a safe, sensible default.
 const CACHE_TTL_MS = 5 * 60_000; // 5 minutes
 let itemsCache: { items: InventoryItem[]; expiresAt: number } | null = null;
+let checkoutsCache: { checkouts: CheckOut[]; expiresAt: number } | null = null;
 
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
@@ -145,6 +149,10 @@ export async function getAllItems(): Promise<InventoryItem[]> {
 
 function invalidateItemsCache(): void {
   itemsCache = null;
+}
+
+function invalidateCheckoutsCache(): void {
+  checkoutsCache = null;
 }
 
 // ===== ATOMIC INDEX HELPERS =====
@@ -320,24 +328,38 @@ export async function rebuildIndexes(): Promise<void> {
   }
   await Promise.all(batchOps);
 
-  // 3. Write rebuilt stats
+  // 3. Count active loans for stats
+  let activeLoansCount = 0;
+  for await (const entry of db.list<CheckOut>({ prefix: KEYS.checkouts })) {
+    const co = deserializeCheckOut(entry.value);
+    if (co.status !== "returned") activeLoansCount++;
+  }
+  stats.activeLoansCount = activeLoansCount;
+
+  // 4. Write rebuilt stats
   await db.set(KEYS.computedStats, stats);
-  
-  // 4. Invalidate in-memory cache
+
+  // 5. Invalidate in-memory caches
   invalidateItemsCache();
+  invalidateCheckoutsCache();
 }
 
 // ===== CHECK-OUT OPERATIONS =====
 
 export async function getAllCheckOuts(): Promise<CheckOut[]> {
+  if (checkoutsCache && Date.now() < checkoutsCache.expiresAt) {
+    return checkoutsCache.checkouts;
+  }
+
   const db = await initKv();
   const checkouts: CheckOut[] = [];
-  
+
   const entries = db.list<CheckOut>({ prefix: KEYS.checkouts });
   for await (const entry of entries) {
     checkouts.push(deserializeCheckOut(entry.value));
   }
-  
+
+  checkoutsCache = { checkouts, expiresAt: Date.now() + CACHE_TTL_MS };
   return checkouts;
 }
 
@@ -349,16 +371,23 @@ export async function getActiveCheckOuts(): Promise<CheckOut[]> {
 export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
   const db = await initKv();
   const serializedCheckOut = serializeCheckOut(checkout);
-  await db.set([...KEYS.checkouts, checkout.id], serializedCheckOut);
-  
-  // Update item quantity
+
+  // Atomically write the checkout record and increment active loans count
+  const currentStats = await getComputedStats();
+  const newStats: ComputedStats = { ...currentStats, activeLoansCount: (currentStats.activeLoansCount ?? 0) + 1 };
+  await db.atomic()
+    .set([...KEYS.checkouts, checkout.id], serializedCheckOut)
+    .set(KEYS.computedStats, newStats)
+    .commit();
+
+  invalidateCheckoutsCache();
+
+  // Deduct quantity from item stock
   const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, {
-      quantity: item.quantity - checkout.quantity,
-    });
+    await updateItem(checkout.itemId, { quantity: item.quantity - checkout.quantity });
   }
-  
+
   return checkout;
 }
 
@@ -377,16 +406,22 @@ export async function returnCheckOut(id: string): Promise<CheckOut | null> {
     status: "returned",
   };
   
-  await db.set([...KEYS.checkouts, id], serializeCheckOut(updated));
-  
+  // Atomically write the return and decrement active loans count
+  const currentStats = await getComputedStats();
+  const newStats: ComputedStats = { ...currentStats, activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1) };
+  await db.atomic()
+    .set([...KEYS.checkouts, id], serializeCheckOut(updated))
+    .set(KEYS.computedStats, newStats)
+    .commit();
+
+  invalidateCheckoutsCache();
+
   // Restore item quantity
   const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, {
-      quantity: item.quantity + checkout.quantity,
-    });
+    await updateItem(checkout.itemId, { quantity: item.quantity + checkout.quantity });
   }
-  
+
   return updated;
 }
 
@@ -407,15 +442,24 @@ export async function deleteCheckOut(id: string): Promise<boolean> {
 
   const checkout = deserializeCheckOut(result.value);
 
-  // Restore stock for loans that were never returned
-  if (checkout.status !== "returned") {
+  // Restore stock for loans that were never returned and decrement active loan count
+  const isActive = checkout.status !== "returned";
+  if (isActive) {
     const item = await getItemById(checkout.itemId);
     if (item) {
       await updateItem(checkout.itemId, { quantity: item.quantity + checkout.quantity });
     }
+    const currentStats = await getComputedStats();
+    const newStats: ComputedStats = { ...currentStats, activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1) };
+    await db.atomic()
+      .delete([...KEYS.checkouts, id])
+      .set(KEYS.computedStats, newStats)
+      .commit();
+  } else {
+    await db.delete([...KEYS.checkouts, id]);
   }
 
-  await db.delete([...KEYS.checkouts, id]);
+  invalidateCheckoutsCache();
   return true;
 }
 

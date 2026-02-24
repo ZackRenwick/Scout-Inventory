@@ -30,14 +30,10 @@ export const handler: Handlers<InventoryPageData> = {
       ]);
       items.sort((a, b) => a.name.localeCompare(b.name));
 
-      // Lazy load items in chunks
-      const chunkSize = 50;
-      const paginatedItems = items.slice(0, chunkSize);
-
       const loanedItemIds = [...new Set(activeLoans.map((l) => l.itemId))];
 
       return ctx.render({
-        items: paginatedItems,
+        items,
         session: ctx.state.session as Session,
         needsRepair,
         lowStock,

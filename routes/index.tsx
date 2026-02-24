@@ -42,7 +42,8 @@ export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
     try {
       // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
-      // Both run concurrently — no full inventory scan needed for the dashboard.
+      // getActiveCheckOuts is cache-backed after the first request.
+      // All three run concurrently.
       const [computed, foodItems, activeLoansData] = await Promise.all([
         getComputedStats(),
         getFoodItemsSortedByExpiry(),
@@ -57,6 +58,9 @@ export const handler: Handlers<DashboardData> = {
         else if (d <= 30) expiringFood.expiringWarning++;
       }
 
+      // activeLoansCount comes from precomputed stats (O(1) KV read, already fetched above).
+      // overdueLoans is time-based so must be computed at request time, but the
+      // checkout list is served from the in-memory cache.
       const now = new Date();
       const overdueLoans = activeLoansData.filter(
         (l) => new Date(l.expectedReturnDate) < now,
@@ -69,7 +73,7 @@ export const handler: Handlers<DashboardData> = {
         spaceBreakdown:    computed.spaceBreakdown,
         lowStockItems:     computed.lowStockItems,
         needsRepairItems:  computed.needsRepairItems,
-        activeLoans:       activeLoansData.length,
+        activeLoans:       computed.activeLoansCount ?? activeLoansData.length,
         overdueLoans,
         expiringFood,
       };

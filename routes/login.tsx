@@ -80,6 +80,9 @@ export const handler: Handlers<LoginData> = {
       "/account",
       "/admin",
       "/api",
+      "/loans",
+      "/camps",
+      "/meals",
       "/greet",
     ];
 
