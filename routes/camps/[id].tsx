@@ -43,12 +43,20 @@ export default function CampDetailPage({ data }: PageProps<CampDetailPageData>) 
         <p><span class="font-semibold">Beta feature</span> — Camp Planning is still being developed. Feedback and bug reports are welcome.</p>
       </div>
 
-      <div class="mb-4">
+      <div class="mb-4 flex items-center justify-between gap-3">
         <a
           href="/camps"
           class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
         >
           ← Back to Camp Plans
+        </a>
+        <a
+          href={`/camps/${data.plan.id}/print`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        >
+          🖨️ Print List
         </a>
       </div>
       <CampChecklist

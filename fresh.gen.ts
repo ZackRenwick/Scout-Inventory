@@ -31,6 +31,7 @@ import * as $api_stats from "./routes/api/stats.ts";
 import * as $api_stocktake from "./routes/api/stocktake.ts";
 import * as $camps_id_ from "./routes/camps/[id].tsx";
 import * as $camps_id_edit from "./routes/camps/[id]/edit.tsx";
+import * as $camps_id_print from "./routes/camps/[id]/print.tsx";
 import * as $camps_index from "./routes/camps/index.tsx";
 import * as $camps_new from "./routes/camps/new.tsx";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
@@ -103,6 +104,7 @@ const manifest = {
     "./routes/api/stocktake.ts": $api_stocktake,
     "./routes/camps/[id].tsx": $camps_id_,
     "./routes/camps/[id]/edit.tsx": $camps_id_edit,
+    "./routes/camps/[id]/print.tsx": $camps_id_print,
     "./routes/camps/index.tsx": $camps_index,
     "./routes/camps/new.tsx": $camps_new,
     "./routes/greet/[name].tsx": $greet_name_,
