@@ -1,6 +1,7 @@
 // Camp checklist island — full management for a single camp plan
 import { useSignal, useComputed } from "@preact/signals";
 import type { CampPlan, CampPlanItem, CampPlanStatus, InventoryItem } from "../types/inventory.ts";
+import { ITEM_LOCATIONS } from "../types/inventory.ts";
 
 interface CampChecklistProps {
   plan: CampPlan;
@@ -8,6 +9,8 @@ interface CampChecklistProps {
   canEdit: boolean;
   csrfToken?: string;
 }
+
+const BOX_LOCATIONS = ITEM_LOCATIONS.find((g) => g.group === "Boxes")?.options ?? [];
 
 const STATUS_LABELS: Record<CampPlanStatus, string> = {
   planning: "Planning",
@@ -47,6 +50,8 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
   const addQty = useSignal(1);
   const addNote = useSignal("");
   const showAddPanel = useSignal(false);
+  const addMode = useSignal<"item" | "box">("item");
+  const selectedBox = useSignal("");
 
   const planItemIds = useComputed(() => new Set(plan.value.items.map((i) => i.itemId)));
 
@@ -145,6 +150,36 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
     "px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm";
 
   const selectedInv = useComputed(() => allItems.find((i) => i.id === addingItem.value));
+
+  const boxItems = useComputed(() => {
+    if (!selectedBox.value) return [];
+    return allItems.filter(
+      (i) => i.location === selectedBox.value && !planItemIds.value.has(i.id)
+    );
+  });
+
+  const availableBoxes = useComputed(() =>
+    BOX_LOCATIONS.filter((box) =>
+      allItems.some((i) => i.location === box && !planItemIds.value.has(i.id))
+    )
+  );
+
+  async function addWholeBox() {
+    if (!selectedBox.value || boxItems.value.length === 0) return;
+    const newEntries: CampPlanItem[] = boxItems.value.map((inv) => ({
+      itemId: inv.id,
+      itemName: inv.name,
+      itemCategory: inv.category,
+      itemLocation: inv.location,
+      quantityPlanned: inv.quantity,
+      packedStatus: false,
+      returnedStatus: false,
+    }));
+    const items = [...plan.value.items, ...newEntries];
+    await patch({ items });
+    selectedBox.value = "";
+    showAddPanel.value = false;
+  }
 
   return (
     <div class="space-y-6">
@@ -250,6 +285,84 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
 
           {showAddPanel.value && (
             <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4 space-y-3">
+              {/* Mode tabs */}
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { addMode.value = "item"; selectedBox.value = ""; }}
+                  class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                    addMode.value === "item"
+                      ? "bg-purple-600 text-white border-purple-600"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  🔍 Individual item
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { addMode.value = "box"; addingItem.value = ""; itemSearch.value = ""; }}
+                  class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                    addMode.value === "box"
+                      ? "bg-purple-600 text-white border-purple-600"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  📦 Add whole box
+                </button>
+              </div>
+
+              {addMode.value === "box" ? (
+                <div class="space-y-3">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Select a box to add all its contents to the plan at once.</p>
+                  {availableBoxes.value.length === 0 ? (
+                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">All box items are already in this plan.</p>
+                  ) : (
+                    <div class="flex flex-wrap gap-2">
+                      {availableBoxes.value.map((box) => (
+                        <button
+                          type="button"
+                          key={box}
+                          onClick={() => { selectedBox.value = selectedBox.value === box ? "" : box; }}
+                          class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                            selectedBox.value === box
+                              ? "bg-purple-100 dark:bg-purple-900/40 border-purple-500 text-purple-800 dark:text-purple-200 font-medium"
+                              : "border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                          }`}
+                        >
+                          📦 {box}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedBox.value && boxItems.value.length > 0 && (
+                    <div class="space-y-2">
+                      <p class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                        {boxItems.value.length} item{boxItems.value.length !== 1 ? "s" : ""} will be added from <strong>{selectedBox.value}</strong>:
+                      </p>
+                      <div class="border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700 max-h-40 overflow-y-auto">
+                        {boxItems.value.map((inv) => (
+                          <div key={inv.id} class="px-3 py-2 text-sm">
+                            <span class="font-medium text-gray-800 dark:text-gray-100">{inv.name}</span>
+                            <span class="text-gray-500 dark:text-gray-400 ml-2 text-xs">
+                              {inv.category} · qty: {inv.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addWholeBox}
+                        disabled={saving.value}
+                        class="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors"
+                      >
+                        {saving.value ? "…" : `Add all ${boxItems.value.length} item${boxItems.value.length !== 1 ? "s" : ""} from ${selectedBox.value}`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
               <input
                 type="text"
                 placeholder="Search inventory…"
@@ -333,6 +446,8 @@ export default function CampChecklist({ plan: initialPlan, allItems, canEdit, cs
                     </button>
                   </div>
                 </div>
+              )}
+              </>
               )}
             </div>
           )}
