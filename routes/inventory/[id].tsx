@@ -250,18 +250,6 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                   <p class="mt-1 text-gray-900 dark:text-gray-100">{item.playerCount}</p>
                 </div>
               )}
-              {item.ageRange && (
-                <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Age Range</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.ageRange}</p>
-                </div>
-              )}
-              {item.brand && (
-                <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Brand</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.brand}</p>
-                </div>
-              )}
               {item.yearPurchased && (
                 <div>
                   <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>

@@ -66,12 +66,10 @@
     "space": "scout-post-loft",
     "quantity": 1,
     "minThreshold": 1,
-    "location": "Loft Shelf 1 - Level 1",
+    "location": "Loft Shelf 1",
     "gameType": "outdoor-game",
     "condition": "good",
     "playerCount": "2-16",
-    "ageRange": "6+",
-    "brand": "",
     "yearPurchased": 2023,
     "notes": ""
   }

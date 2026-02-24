@@ -68,8 +68,6 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.gameType = formData.get("gameType");
       data.condition = formData.get("condition");
       data.playerCount = formData.get("playerCount") || undefined;
-      data.ageRange = formData.get("ageRange") || undefined;
-      data.brand = formData.get("brand") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
     } else if (category.value === "food") {
       data.foodType = formData.get("foodType");
@@ -444,14 +442,6 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             <div>
               <label class={labelClass}>Player Count</label>
               <input type="text" name="playerCount" defaultValue={initialData?.playerCount} placeholder="e.g. 2-4" class={inputClass} />
-            </div>
-            <div>
-              <label class={labelClass}>Age Range</label>
-              <input type="text" name="ageRange" defaultValue={initialData?.ageRange} placeholder="e.g. 8+" class={inputClass} />
-            </div>
-            <div>
-              <label class={labelClass}>Brand</label>
-              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>

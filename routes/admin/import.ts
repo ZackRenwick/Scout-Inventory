@@ -102,7 +102,7 @@ function validateItem(raw: RawItem, index: number): ValidationResult | Validatio
     return { ok: true, item: { ...base, category: "camping-tools", toolType: raw.toolType, condition: raw.condition, material: raw.material, brand: raw.brand, yearPurchased: raw.yearPurchased } };
   }
   // games
-  return { ok: true, item: { ...base, category: "games", gameType: raw.gameType, condition: raw.condition, playerCount: raw.playerCount, ageRange: raw.ageRange, brand: raw.brand, yearPurchased: raw.yearPurchased } };
+  return { ok: true, item: { ...base, category: "games", gameType: raw.gameType, condition: raw.condition, playerCount: raw.playerCount, yearPurchased: raw.yearPurchased } };
 }
 
 // ===== HANDLER =====
