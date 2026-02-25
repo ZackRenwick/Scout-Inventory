@@ -23,7 +23,7 @@ export const handler: Handlers<MealsPageData> = {
 
     const foodItems: FoodItemSummary[] = rawFood
       .map((i) => ({ id: i.id, name: i.name, quantity: i.quantity }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
     const csrfToken = session.csrfToken;
     return ctx.render({ meals, foodItems, session, csrfToken });

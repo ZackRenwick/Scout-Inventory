@@ -21,7 +21,7 @@ export const handler: Handlers<StocktakePageData> = {
     const allItems = await getAllItems();
 
     // Sort by location so the user can physically walk the store in order
-    allItems.sort((a, b) => a.location.localeCompare(b.location) || a.name.localeCompare(b.name));
+    allItems.sort((a, b) => a.location.localeCompare(b.location, undefined, { numeric: true }) || a.name.localeCompare(b.name, undefined, { numeric: true }));
 
     const stocktakeItems: StocktakeItem[] = allItems.map((item) => ({
       id: item.id,

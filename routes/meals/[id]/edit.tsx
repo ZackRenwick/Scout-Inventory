@@ -34,7 +34,7 @@ export const handler: Handlers<EditMealPageData> = {
         quantity: i.quantity,
         expiryDate: (i as FoodItem).expiryDate?.toISOString(),
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
     return ctx.render({ meal, foodItems, session, csrfToken: session.csrfToken });
   },

@@ -256,7 +256,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
         throw new Error(data.error ?? "Failed to save template");
       }
       const saved: CampTemplate = await res.json();
-      templates.value = [...templates.value, saved].sort((a, b) => a.name.localeCompare(b.name));
+      templates.value = [...templates.value, saved].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
       templateName.value = "";
       templateDesc.value = "";
       showSaveTemplate.value = false;

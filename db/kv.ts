@@ -639,7 +639,7 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
   for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
     templates.push(deserializeCampTemplate(entry.value));
   }
-  return templates.sort((a, b) => a.name.localeCompare(b.name));
+  return templates.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 }
 
 export async function getCampTemplateById(id: string): Promise<CampTemplate | null> {
@@ -685,7 +685,7 @@ export async function getAllMeals(): Promise<Meal[]> {
   for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
     if (entry.value) meals.push(entry.value);
   }
-  return meals.sort((a, b) => a.name.localeCompare(b.name));
+  return meals.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 }
 
 export async function getMealById(id: string): Promise<Meal | null> {

@@ -34,7 +34,7 @@ export const handler: Handlers = {
       }
       
       // Sort by name
-      items.sort((a, b) => a.name.localeCompare(b.name));
+      items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
       
       return new Response(JSON.stringify(items), {
         headers: { "Content-Type": "application/json" },

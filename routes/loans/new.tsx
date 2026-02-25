@@ -29,7 +29,7 @@ export const handler: Handlers<NewLoanPageData> = {
         quantity: i.quantity,
         location: i.location,
       }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
     return ctx.render({ items: loanable, session });
   },

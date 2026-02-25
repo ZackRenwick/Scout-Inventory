@@ -125,7 +125,7 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
     rows.sort((a, b) => {
       // Tracked items first, then untracked; each group sorted by name
       if (a.tracked !== b.tracked) return a.tracked ? -1 : 1;
-      return a.name.localeCompare(b.name);
+      return a.name.localeCompare(b.name, undefined, { numeric: true });
     });
     setResults(rows);
   }

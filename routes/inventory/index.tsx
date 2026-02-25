@@ -28,7 +28,7 @@ export const handler: Handlers<InventoryPageData> = {
         getAllItems(),
         getActiveCheckOuts(),
       ]);
-      items.sort((a, b) => a.name.localeCompare(b.name));
+      items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
       const loanedItemIds = [...new Set(activeLoans.map((l) => l.itemId))];
 

@@ -32,7 +32,7 @@ function toImportShape(item: InventoryItem): Record<string, any> {
 export const handler: Handlers = {
   async GET(_req, _ctx) {
     const items = await getAllItems();
-    items.sort((a, b) => a.name.localeCompare(b.name));
+    items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
     const payload = items.map(toImportShape);
     const json = JSON.stringify(payload, null, 2);

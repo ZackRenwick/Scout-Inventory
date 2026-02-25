@@ -26,7 +26,7 @@ export const handler: Handlers<CampDetailPageData> = {
       return new Response(null, { status: 302, headers: { location: "/camps" } });
     }
 
-    allItems.sort((a, b) => a.name.localeCompare(b.name));
+    allItems.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     return ctx.render({ plan, allItems, templates, session: ctx.state.session as Session });
   },
 };
