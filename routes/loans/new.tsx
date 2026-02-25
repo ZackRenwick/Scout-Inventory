@@ -17,10 +17,11 @@ export const handler: Handlers<NewLoanPageData> = {
       return new Response(null, { status: 302, headers: { location: "/loans" } });
     }
 
-    // Only non-food items can be loaned (food is consumable)
+    // Only non-food items can be loaned (food is consumable).
+    // Exclude items already at camp or fully out-of-stock due to active loans.
     const allItems = await getAllItems();
     const loanable: LoanableItem[] = allItems
-      .filter((i) => i.category !== "food" && i.quantity > 0)
+      .filter((i) => i.category !== "food" && i.quantity > 0 && !i.atCamp)
       .map((i) => ({
         id: i.id,
         name: i.name,
