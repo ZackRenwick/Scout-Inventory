@@ -136,6 +136,12 @@ let checkoutsCache: { checkouts: CheckOut[]; expiresAt: number } | null = null;
 let itemsInFlight: Promise<InventoryItem[]> | null = null;
 let checkoutsInFlight: Promise<CheckOut[]> | null = null;
 
+let campPlansCache: { plans: CampPlan[]; expiresAt: number } | null = null;
+let campPlansInFlight: Promise<CampPlan[]> | null = null;
+
+let templatesCache: { templates: CampTemplate[]; expiresAt: number } | null = null;
+let templatesInFlight: Promise<CampTemplate[]> | null = null;
+
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
@@ -167,14 +173,26 @@ function invalidateCheckoutsCache(): void {
   checkoutsInFlight = null;
 }
 
+function invalidateCampPlansCache(): void {
+  campPlansCache = null;
+  campPlansInFlight = null;
+}
+
+function invalidateTemplatesCache(): void {
+  templatesCache = null;
+  templatesInFlight = null;
+}
+
 /**
- * Kick off background population of the items and checkouts caches.
- * Call this early in a request handler to warm the cache for subsequent
- * navigations without blocking the current render.
+ * Kick off background population of the items, checkouts, camp plans, and
+ * templates caches. Call this early in a request handler to warm the cache
+ * for subsequent navigations without blocking the current render.
  */
 export function preloadCaches(): void {
   getAllItems().catch(() => {});
   getAllCheckOuts().catch(() => {});
+  getAllCampPlans().catch(() => {});
+  getAllCampTemplates().catch(() => {});
 }
 
 // ===== ATOMIC INDEX HELPERS =====
@@ -583,13 +601,24 @@ function deserializeCampPlan(data: any): CampPlan {
 // ===== CAMP PLAN OPERATIONS =====
 
 export async function getAllCampPlans(): Promise<CampPlan[]> {
-  const db = await initKv();
-  const plans: CampPlan[] = [];
-  for await (const entry of db.list<CampPlan>({ prefix: KEYS.camps })) {
-    plans.push(deserializeCampPlan(entry.value));
+  if (campPlansCache && Date.now() < campPlansCache.expiresAt) {
+    return campPlansCache.plans;
   }
-  plans.sort((a, b) => b.campDate.getTime() - a.campDate.getTime());
-  return plans;
+  if (campPlansInFlight) return campPlansInFlight;
+
+  campPlansInFlight = (async () => {
+    const db = await initKv();
+    const plans: CampPlan[] = [];
+    for await (const entry of db.list<CampPlan>({ prefix: KEYS.camps })) {
+      plans.push(deserializeCampPlan(entry.value));
+    }
+    plans.sort((a, b) => b.campDate.getTime() - a.campDate.getTime());
+    campPlansCache = { plans, expiresAt: Date.now() + CACHE_TTL_MS };
+    campPlansInFlight = null;
+    return plans;
+  })();
+
+  return campPlansInFlight;
 }
 
 export async function getCampPlanById(id: string): Promise<CampPlan | null> {
@@ -601,6 +630,7 @@ export async function getCampPlanById(id: string): Promise<CampPlan | null> {
 export async function createCampPlan(plan: CampPlan): Promise<CampPlan> {
   const db = await initKv();
   await db.set([...KEYS.camps, plan.id], serializeCampPlan(plan));
+  invalidateCampPlansCache();
   return plan;
 }
 
@@ -624,6 +654,7 @@ export async function updateCampPlan(
 
   const db = await initKv();
   await db.set([...KEYS.camps, id], serializeCampPlan(updated));
+  invalidateCampPlansCache();
   return updated;
 }
 
@@ -634,6 +665,7 @@ export async function deleteCampPlan(id: string): Promise<boolean> {
   }
   const db = await initKv();
   await db.delete([...KEYS.camps, id]);
+  invalidateCampPlansCache();
   return true;
 }
 
@@ -650,12 +682,24 @@ function deserializeCampTemplate(data: any): CampTemplate {
 }
 
 export async function getAllCampTemplates(): Promise<CampTemplate[]> {
-  const db = await initKv();
-  const templates: CampTemplate[] = [];
-  for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
-    templates.push(deserializeCampTemplate(entry.value));
+  if (templatesCache && Date.now() < templatesCache.expiresAt) {
+    return templatesCache.templates;
   }
-  return templates.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (templatesInFlight) return templatesInFlight;
+
+  templatesInFlight = (async () => {
+    const db = await initKv();
+    const templates: CampTemplate[] = [];
+    for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
+      templates.push(deserializeCampTemplate(entry.value));
+    }
+    templates.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    templatesCache = { templates, expiresAt: Date.now() + CACHE_TTL_MS };
+    templatesInFlight = null;
+    return templates;
+  })();
+
+  return templatesInFlight;
 }
 
 export async function getCampTemplateById(id: string): Promise<CampTemplate | null> {
@@ -682,6 +726,7 @@ export async function createCampTemplate(
     lastUpdated: now,
   };
   await db.set([...KEYS.templates, template.id], serializeCampTemplate(template));
+  invalidateTemplatesCache();
   return template;
 }
 
@@ -690,6 +735,7 @@ export async function deleteCampTemplate(id: string): Promise<boolean> {
   if (!existing) return false;
   const db = await initKv();
   await db.delete([...KEYS.templates, id]);
+  invalidateTemplatesCache();
   return true;
 }
 
