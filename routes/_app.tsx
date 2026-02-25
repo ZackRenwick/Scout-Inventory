@@ -11,7 +11,12 @@ export default function App({ Component }: PageProps) {
         <link rel="alternate icon" href="/favicon.ico" />
         <link rel="preload" href="/styles.css" as="style" />
         <link rel="stylesheet" href="/styles.css" />
-        <script>{`(function(){var s=localStorage.getItem("theme");if(s==="dark"||(!s&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}})()`}</script>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){
+  var s = localStorage.getItem("theme");
+  if (s === "dark" || (!s && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.classList.add("dark");
+  }
+})();` }} />
       </head>
       <body>
         <Component />
