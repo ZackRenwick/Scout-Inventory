@@ -91,9 +91,10 @@ export async function handler(req: Request, ctx: FreshContext) {
 
   // Rolling session — extend expiry on every authenticated request so
   // any activity (navigation, API call, form submission) resets the idle timer.
+  // Pass the already-fetched session to avoid a redundant KV read inside extendSession.
   const [res] = await Promise.all([
     ctx.next(),
-    extendSession(sessionId!),
+    extendSession(sessionId!, session),
   ]);
 
   // Re-issue the cookie so the browser Max-Age counter also resets.

@@ -95,8 +95,13 @@ export function generateId(): string {
 
 // ===== DB HELPERS =====
 
+let _kv: Deno.Kv | null = null;
+
 async function getKv(): Promise<Deno.Kv> {
-  return await Deno.openKv();
+  if (!_kv) {
+    _kv = await Deno.openKv();
+  }
+  return _kv;
 }
 
 // ===== USER OPERATIONS =====
@@ -281,18 +286,21 @@ export async function getSession(sessionId: string): Promise<Session | null> {
 }
 
 // Slide the session expiry forward by SESSION_DURATION_MS from now (rolling session).
-// Returns the updated session, or null if it no longer exists.
-export async function extendSession(sessionId: string): Promise<Session | null> {
+// Accepts the already-fetched session to avoid a redundant KV read.
+export async function extendSession(sessionId: string, existingSession?: Session): Promise<Session | null> {
   const kv = await getKv();
-  const result = await kv.get<Session>(["auth", "sessions", sessionId]);
-  if (!result.value) {
-    return null;
+  let session = existingSession;
+  if (!session) {
+    const result = await kv.get<Session>(["auth", "sessions", sessionId]);
+    if (!result.value) return null;
+    session = result.value;
   }
-  const session = result.value;
   session.expiresAt = new Date(Date.now() + SESSION_DURATION_MS).toISOString();
-  await kv.set(["auth", "sessions", sessionId], session, { expireIn: SESSION_DURATION_MS });
-  // Keep the secondary user→session index TTL in sync
-  await kv.set(["auth", "user_sessions", session.userId, sessionId], true, { expireIn: SESSION_DURATION_MS });
+  // Combine both writes into one atomic operation
+  await kv.atomic()
+    .set(["auth", "sessions", sessionId], session, { expireIn: SESSION_DURATION_MS })
+    .set(["auth", "user_sessions", session.userId, sessionId], true, { expireIn: SESSION_DURATION_MS })
+    .commit();
   return session;
 }
 
