@@ -46,6 +46,12 @@ export interface ActivityEntry {
 const LOG_PREFIX = ["activity", "log"] as const;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
+let _kv: Deno.Kv | null = null;
+async function getKv(): Promise<Deno.Kv> {
+  if (!_kv) _kv = await Deno.openKv();
+  return _kv;
+}
+
 /** Produces a zero-padded inverted epoch so KV scans return entries newest-first. */
 function invertedEpoch(): string {
   return String(Number.MAX_SAFE_INTEGER - Date.now()).padStart(17, "0");
@@ -60,7 +66,7 @@ export async function logActivity(
   entry: Omit<ActivityEntry, "id" | "timestamp">,
 ): Promise<void> {
   try {
-    const kv = await Deno.openKv();
+    const kv = await getKv();
     const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
     const key = [...LOG_PREFIX, invertedEpoch(), id];
@@ -79,7 +85,7 @@ export async function logActivity(
  * Returns entries in reverse chronological order (newest first).
  */
 export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
-  const kv = await Deno.openKv();
+  const kv = await getKv();
   const entries: ActivityEntry[] = [];
   const effectiveLimit = Math.min(limit, 500);
   for await (

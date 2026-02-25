@@ -131,29 +131,50 @@ const CACHE_TTL_MS = 5 * 60_000; // 5 minutes
 let itemsCache: { items: InventoryItem[]; expiresAt: number } | null = null;
 let checkoutsCache: { checkouts: CheckOut[]; expiresAt: number } | null = null;
 
+// In-flight deduplication: if a fetch is already running, subsequent callers
+// get the same promise rather than each starting their own KV scan.
+let itemsInFlight: Promise<InventoryItem[]> | null = null;
+let checkoutsInFlight: Promise<CheckOut[]> | null = null;
+
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
   }
+  if (itemsInFlight) return itemsInFlight;
 
-  const db = await initKv();
-  const items: InventoryItem[] = [];
+  itemsInFlight = (async () => {
+    const db = await initKv();
+    const items: InventoryItem[] = [];
+    const entries = db.list<InventoryItem>({ prefix: KEYS.items });
+    for await (const entry of entries) {
+      items.push(deserializeItem(entry.value));
+    }
+    itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
+    itemsInFlight = null;
+    return items;
+  })();
 
-  const entries = db.list<InventoryItem>({ prefix: KEYS.items });
-  for await (const entry of entries) {
-    items.push(deserializeItem(entry.value));
-  }
-
-  itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
-  return items;
+  return itemsInFlight;
 }
 
 function invalidateItemsCache(): void {
   itemsCache = null;
+  itemsInFlight = null;
 }
 
 function invalidateCheckoutsCache(): void {
   checkoutsCache = null;
+  checkoutsInFlight = null;
+}
+
+/**
+ * Kick off background population of the items and checkouts caches.
+ * Call this early in a request handler to warm the cache for subsequent
+ * navigations without blocking the current render.
+ */
+export function preloadCaches(): void {
+  getAllItems().catch(() => {});
+  getAllCheckOuts().catch(() => {});
 }
 
 // ===== ATOMIC INDEX HELPERS =====
@@ -185,46 +206,37 @@ export async function getItemById(id: string): Promise<InventoryItem | null> {
 }
 
 /**
- * Fetch all items for a specific category directly from the category index.
- * O(n_category) — does not scan the full item list.
+ * Fetch all items for a specific category.
+ * Uses the in-memory cache when warm; falls back to a full KV scan.
+ * Avoids N individual KV reads that the index-then-lookup approach requires.
  */
 export async function getItemsByCategory(category: ItemCategory): Promise<InventoryItem[]> {
-  const db = await initKv();
-  const ids: string[] = [];
-  for await (const entry of db.list<string>({ prefix: [...IDX.category, category] })) {
-    ids.push(entry.value);
-  }
-  const results = await Promise.all(ids.map((id) => getItemById(id)));
-  return results.filter((item): item is InventoryItem => item !== null);
+  const all = await getAllItems();
+  return all.filter((item) => item.category === category);
 }
 
 /**
- * Fetch all items for a specific space directly from the space index.
- * O(n_space) — does not scan the full item list.
+ * Fetch all items for a specific space.
+ * Uses the in-memory cache when warm; falls back to a full KV scan.
  */
 export async function getItemsBySpace(space: ItemSpace): Promise<InventoryItem[]> {
-  const db = await initKv();
-  const ids: string[] = [];
-  for await (const entry of db.list<string>({ prefix: [...IDX.space, space] })) {
-    ids.push(entry.value);
-  }
-  const results = await Promise.all(ids.map((id) => getItemById(id)));
-  return results.filter((item): item is InventoryItem => item !== null);
+  const all = await getAllItems();
+  return all.filter((item) => (item.space ?? "camp-store") === space);
 }
 
 /**
- * Fetch all food items ordered by expiry date (ascending) using the expiry index.
- * ISO date strings sort lexicographically, so the KV scan order is chronological.
- * O(n_food) — does not scan the full item list.
+ * Fetch all food items ordered by expiry date (ascending).
+ * Uses the in-memory cache when warm; falls back to a full KV scan.
+ * Avoids N individual KV reads from the expiry index approach.
  */
 export async function getFoodItemsSortedByExpiry(): Promise<FoodItem[]> {
-  const db = await initKv();
-  const ids: string[] = [];
-  for await (const entry of db.list<string>({ prefix: IDX.expiry })) {
-    ids.push(entry.value);
-  }
-  const results = await Promise.all(ids.map((id) => getItemById(id)));
-  return results.filter((item): item is FoodItem => item !== null && item.category === "food");
+  const all = await getAllItems();
+  return (all.filter((item): item is FoodItem => item.category === "food"))
+    .sort((a, b) => {
+      const aTime = a.expiryDate instanceof Date ? a.expiryDate.getTime() : new Date(a.expiryDate as string).getTime();
+      const bTime = b.expiryDate instanceof Date ? b.expiryDate.getTime() : new Date(b.expiryDate as string).getTime();
+      return aTime - bTime;
+    });
 }
 
 export async function createItem(item: InventoryItem): Promise<InventoryItem> {
@@ -351,17 +363,21 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
   if (checkoutsCache && Date.now() < checkoutsCache.expiresAt) {
     return checkoutsCache.checkouts;
   }
+  if (checkoutsInFlight) return checkoutsInFlight;
 
-  const db = await initKv();
-  const checkouts: CheckOut[] = [];
+  checkoutsInFlight = (async () => {
+    const db = await initKv();
+    const checkouts: CheckOut[] = [];
+    const entries = db.list<CheckOut>({ prefix: KEYS.checkouts });
+    for await (const entry of entries) {
+      checkouts.push(deserializeCheckOut(entry.value));
+    }
+    checkoutsCache = { checkouts, expiresAt: Date.now() + CACHE_TTL_MS };
+    checkoutsInFlight = null;
+    return checkouts;
+  })();
 
-  const entries = db.list<CheckOut>({ prefix: KEYS.checkouts });
-  for await (const entry of entries) {
-    checkouts.push(deserializeCheckOut(entry.value));
-  }
-
-  checkoutsCache = { checkouts, expiresAt: Date.now() + CACHE_TTL_MS };
-  return checkouts;
+  return checkoutsInFlight;
 }
 
 export async function getActiveCheckOuts(): Promise<CheckOut[]> {
