@@ -15,6 +15,8 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
   const submitting = useSignal(false);
   const error = useSignal("");
   const success = useSignal("");
+  const boxContents = useSignal<{ name: string; quantity: number }[]>(initialData?.contents ?? []);
+  const equipmentType = useSignal<string>(initialData?.equipmentType ?? "stove");
 
   // Find the group that contains the initial location value (for edit mode)
   const initialLocationList = initialSpace === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS;
@@ -60,6 +62,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.capacity = formData.get("capacityField") || undefined;
       data.condition = formData.get("condition");
       data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.contents = boxContents.value.filter((c) => c.name.trim());
     } else if (category.value === "camping-tools") {
       data.toolType = formData.get("toolType");
       data.condition = formData.get("condition");
@@ -293,13 +296,14 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Equipment Type *</label>
-              <select name="equipmentType" required class={inputClass}>
+              <select name="equipmentType" required class={inputClass} onChange={(e) => { equipmentType.value = (e.target as HTMLSelectElement).value; }}>
                 <option value="stove" selected={initialData?.equipmentType === "stove"}>Stove</option>
                 <option value="pots" selected={initialData?.equipmentType === "pots"}>Pots</option>
                 <option value="pans" selected={initialData?.equipmentType === "pans"}>Pans</option>
                 <option value="utensils" selected={initialData?.equipmentType === "utensils"}>Utensils</option>
                 <option value="cooler" selected={initialData?.equipmentType === "cooler"}>Cooler</option>
                 <option value="water-container" selected={initialData?.equipmentType === "water-container"}>Water Container</option>
+                <option value="box" selected={initialData?.equipmentType === "box"}>Box / Kit</option>
                 <option value="other" selected={initialData?.equipmentType === "other"}>Other</option>
               </select>
             </div>
@@ -329,6 +333,65 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               <input type="text" name="capacityField" defaultValue={initialData?.capacity} placeholder="e.g., 5L, 48 quart" class={inputClass} />
             </div>
           </div>
+
+          {/* Box contents editor — only for Box / Kit type */}
+          {equipmentType.value === "box" && (
+          <div class="mt-4 pt-4 border-t border-orange-200 dark:border-orange-800">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-gray-700 dark:text-gray-200">Box Contents</h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track the individual items inside this box or kit (e.g. 4 knives, 3 wooden spoons)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { boxContents.value = [...boxContents.value, { name: "", quantity: 1 }]; }}
+                class="shrink-0 text-sm px-3 py-1.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded hover:bg-orange-200 dark:hover:bg-orange-800/60 font-medium"
+              >
+                + Add item
+              </button>
+            </div>
+            {boxContents.value.length === 0 ? (
+              <p class="text-sm text-gray-400 dark:text-gray-500 italic">No contents recorded yet.</p>
+            ) : (
+              <div class="space-y-2">
+                {boxContents.value.map((row, i) => (
+                  <div key={i} class="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      value={row.quantity}
+                      min={1}
+                      onInput={(e) => {
+                        const copy = [...boxContents.value];
+                        copy[i] = { ...copy[i], quantity: parseInt((e.target as HTMLInputElement).value) || 1 };
+                        boxContents.value = copy;
+                      }}
+                      class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Item name (e.g. Wooden spoon)"
+                      value={row.name}
+                      onInput={(e) => {
+                        const copy = [...boxContents.value];
+                        copy[i] = { ...copy[i], name: (e.target as HTMLInputElement).value };
+                        boxContents.value = copy;
+                      }}
+                      class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { boxContents.value = boxContents.value.filter((_, j) => j !== i); }}
+                      class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          )}
         </div>
       )}
       

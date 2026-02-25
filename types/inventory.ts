@@ -97,14 +97,22 @@ export interface TentItem extends BaseInventoryItem {
   yearPurchased?: number;
 }
 
+// A single named item tracked inside a box/kit
+export interface BoxContentItem {
+  name: string;
+  quantity: number;
+}
+
 // Cooking equipment properties
 export interface CookingEquipment extends BaseInventoryItem {
   category: "cooking";
-  equipmentType: "stove" | "pots" | "pans" | "utensils" | "cooler" | "water-container" | "other";
+  equipmentType: "stove" | "pots" | "pans" | "utensils" | "cooler" | "water-container" | "box" | "other";
   material?: string;
   fuelType?: string; // For stoves
   capacity?: string; // For pots, coolers, etc.
   condition: "excellent" | "good" | "fair" | "needs-repair";
+  /** Individual items tracked inside this box/kit */
+  contents?: BoxContentItem[];
 }
 
 // Food item properties with expiry tracking

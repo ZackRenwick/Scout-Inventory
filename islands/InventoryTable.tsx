@@ -32,6 +32,8 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const showExpiredFood = useSignal(false);
   const showExpiringSoon = useSignal(false);
   const showExpiring30 = useSignal(false);
+  const sortField = useSignal<"name" | "location" | "status" | "quantity">("name");
+  const sortDir = useSignal<"asc" | "desc">("asc");
 
   const uniqueLocations = [...new Set(items.map((i) => i.location))] as string[];
   const allDefinedLocations = new Set([...ITEM_LOCATIONS, ...LOFT_LOCATIONS].flatMap((g) => g.options as string[]));
@@ -59,7 +61,8 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
 
   // Filter items based on search and filters — useComputed() memoises the result
   // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
-  const filteredItems = useComputed(() => items.filter((item) => {
+  const filteredItems = useComputed(() => {
+    const filtered = items.filter((item) => {
     // Search filter
     const q = searchQuery.value.toLowerCase();
     const categoryLabel = categoryLabels[item.category] ?? item.category;
@@ -142,8 +145,33 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
       }
     }
 
-    return true;
-  }));
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      const dir = sortDir.value === "asc" ? 1 : -1;
+      if (sortField.value === "location") {
+        return dir * a.location.localeCompare(b.location, undefined, { numeric: true });
+      }
+      if (sortField.value === "quantity") {
+        return dir * (a.quantity - b.quantity);
+      }
+      if (sortField.value === "status") {
+        const score = (item: InventoryItem) => {
+          if ("condition" in item && (item as { condition: string }).condition === "needs-repair") return 0;
+          if (((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0) return 1;
+          if (item.quantity <= item.minThreshold) return 2;
+          if ((item as { atCamp?: boolean }).atCamp) return 3;
+          if (loanedIdSet.has(item.id)) return 4;
+          if ("condition" in item && (item as { condition: string }).condition === "fair") return 5;
+          if ("condition" in item && (item as { condition: string }).condition === "good") return 6;
+          return 7;
+        };
+        return dir * (score(a) - score(b));
+      }
+      // Default: name
+      return dir * a.name.localeCompare(b.name, undefined, { numeric: true });
+    });
+  });
   
   const showToast = (message: string, type: "success" | "error") => {
     toast.value = { message, type };
@@ -510,20 +538,32 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Item
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                onClick={() => { if (sortField.value === "name") { sortDir.value = sortDir.value === "asc" ? "desc" : "asc"; } else { sortField.value = "name"; sortDir.value = "asc"; } }}
+              >
+                Item {sortField.value === "name" ? (sortDir.value === "asc" ? "↑" : "↓") : <span class="opacity-30">↕</span>}
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Category
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Quantity
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                onClick={() => { if (sortField.value === "quantity") { sortDir.value = sortDir.value === "asc" ? "desc" : "asc"; } else { sortField.value = "quantity"; sortDir.value = "asc"; } }}
+              >
+                Quantity {sortField.value === "quantity" ? (sortDir.value === "asc" ? "↑" : "↓") : <span class="opacity-30">↕</span>}
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Location
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                onClick={() => { if (sortField.value === "location") { sortDir.value = sortDir.value === "asc" ? "desc" : "asc"; } else { sortField.value = "location"; sortDir.value = "asc"; } }}
+              >
+                Location {sortField.value === "location" ? (sortDir.value === "asc" ? "↑" : "↓") : <span class="opacity-30">↕</span>}
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Status
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none hover:text-gray-700 dark:hover:text-gray-200"
+                onClick={() => { if (sortField.value === "status") { sortDir.value = sortDir.value === "asc" ? "desc" : "asc"; } else { sortField.value = "status"; sortDir.value = "asc"; } }}
+              >
+                Status {sortField.value === "status" ? (sortDir.value === "asc" ? "↑" : "↓") : <span class="opacity-30">↕</span>}
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Actions
