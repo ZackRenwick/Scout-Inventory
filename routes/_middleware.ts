@@ -1,6 +1,7 @@
 // Root middleware — protects all routes except /login and public assets
 import { FreshContext } from "$fresh/server.ts";
 import { getSessionCookie, getSession, extendSession, makeSessionCookie, type Session } from "../lib/auth.ts";
+import { preloadCaches } from "../db/kv.ts";
 
 // Routes that don't require authentication
 const PUBLIC_PATHS = ["/login", "/styles.css", "/api/joke", "/api/ping"];
@@ -72,6 +73,7 @@ export async function handler(req: Request, ctx: FreshContext) {
     (url.hostname === "localhost" || url.hostname === "127.0.0.1")
   ) {
     ctx.state.session = DEV_SESSION;
+    preloadCaches();
     const res = await ctx.next();
     applySecurityHeaders(res.headers);
     return res;
@@ -88,6 +90,10 @@ export async function handler(req: Request, ctx: FreshContext) {
 
   // Attach session to state so handlers/pages can read it
   ctx.state.session = session;
+
+  // Warm all caches in the background — zero latency cost thanks to in-flight
+  // deduplication; subsequent calls within the TTL are no-ops.
+  preloadCaches();
 
   // Rolling session — extend expiry on every authenticated request so
   // any activity (navigation, API call, form submission) resets the idle timer.

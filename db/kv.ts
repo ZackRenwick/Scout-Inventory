@@ -127,7 +127,7 @@ export async function getComputedStats(): Promise<ComputedStats> {
 // ===== IN-MEMORY CACHE (for getAllItems / full-list pages) =====
 // All writes invalidate this cache immediately, so the TTL is just a safety net
 // against external KV modifications. 5 minutes is a safe, sensible default.
-const CACHE_TTL_MS = 5 * 60_000; // 5 minutes
+const CACHE_TTL_MS = 10 * 60_000; // 10 minutes
 let itemsCache: { items: InventoryItem[]; expiresAt: number } | null = null;
 let checkoutsCache: { checkouts: CheckOut[]; expiresAt: number } | null = null;
 

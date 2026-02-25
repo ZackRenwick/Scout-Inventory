@@ -6,7 +6,7 @@ import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import NeckerCounter from "../islands/NeckerCounter.tsx";
 import NeckerAlert from "../islands/NeckerAlert.tsx";
 import type { Session } from "../lib/auth.ts";
-import { getComputedStats, getFoodItemsSortedByExpiry, getActiveCheckOuts, preloadCaches } from "../db/kv.ts";
+import { getComputedStats, getFoodItemsSortedByExpiry, getActiveCheckOuts } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
 interface DashboardData {
@@ -40,10 +40,6 @@ interface DashboardData {
 
 export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
-    // Start warming the full item + checkout caches in the background so that
-    // navigating to /inventory, /loans, etc. after the homepage is instant.
-    // This does not block the homepage render — getComputedStats() is O(1).
-    preloadCaches();
     try {
       // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
       // getActiveCheckOuts is cache-backed after the first request.
