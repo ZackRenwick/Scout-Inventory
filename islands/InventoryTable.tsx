@@ -109,7 +109,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
     // Needs repair filter
     if (showNeedsRepair.value) {
       const hasCondition = "condition" in item;
-      if (!hasCondition || (item as { condition: string }).condition !== "needs-repair") {
+      const condNeedsRepair = hasCondition && (item as { condition: string }).condition === "needs-repair";
+      const partialRepair = (item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0;
+      if (!condNeedsRepair && partialRepair <= 0) {
         return false;
       }
     }
@@ -388,7 +390,8 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
         ) : (
           filteredItems.value.map((item) => {
             const isLowStock = item.quantity <= item.minThreshold;
-            const needsRepair = "condition" in item && (item as { condition: string }).condition === "needs-repair";
+            const partialRepairQty = (item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0;
+            const needsRepair = ("condition" in item && (item as { condition: string }).condition === "needs-repair") || partialRepairQty > 0;
             const accentColor = isLowStock
               ? "border-l-red-500"
               : needsRepair
@@ -409,7 +412,10 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     {isLowStock && (
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700">⚠️ Low</span>
                     )}
-                    {needsRepair && (
+                    {partialRepairQty > 0 && (
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">🔧 {partialRepairQty} need repair</span>
+                    )}
+                    {needsRepair && partialRepairQty <= 0 && (
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">🔧 Repair</span>
                     )}
                     {"condition" in item && !needsRepair && (() => {
@@ -582,6 +588,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                       {"condition" in item && (item as { condition: string }).condition === "needs-repair" && (
                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">
                           🔧 Needs Repair
+                        </span>
+                      )}
+                      {("quantityNeedsRepair" in item) && (item as { quantityNeedsRepair?: number }).quantityNeedsRepair! > 0 && (item as { condition: string }).condition !== "needs-repair" && (
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">
+                          🔧 {(item as { quantityNeedsRepair?: number }).quantityNeedsRepair} need repair
                         </span>
                       )}
                       {"condition" in item && (item as { condition: string }).condition !== "needs-repair" && (() => {

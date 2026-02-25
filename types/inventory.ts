@@ -82,6 +82,8 @@ export interface BaseInventoryItem {
   atCamp?: boolean;
   /** How many units of this item are currently at camp (only meaningful when atCamp is true) */
   quantityAtCamp?: number;
+  /** How many units of this item currently need repair (for multi-quantity items where only some units are damaged) */
+  quantityNeedsRepair?: number;
 }
 
 // Tent-specific properties

@@ -50,6 +50,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.capacity = parseInt(formData.get("capacity") as string);
       data.size = formData.get("size");
       data.condition = formData.get("condition");
+      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.brand = formData.get("brand") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
     } else if (category.value === "cooking") {
@@ -58,15 +59,18 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.fuelType = formData.get("fuelType") || undefined;
       data.capacity = formData.get("capacityField") || undefined;
       data.condition = formData.get("condition");
+      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
     } else if (category.value === "camping-tools") {
       data.toolType = formData.get("toolType");
       data.condition = formData.get("condition");
+      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.material = formData.get("material") || undefined;
       data.brand = formData.get("brand") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
     } else if (category.value === "games") {
       data.gameType = formData.get("gameType");
       data.condition = formData.get("condition");
+      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.playerCount = formData.get("playerCount") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
     } else if (category.value === "food") {
@@ -267,6 +271,10 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               </select>
             </div>
             <div>
+              <label class={labelClass}>Units needing repair</label>
+              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+            </div>
+            <div>
               <label class={labelClass}>Brand</label>
               <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
             </div>
@@ -303,6 +311,10 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
                 <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
                 <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
               </select>
+            </div>
+            <div>
+              <label class={labelClass}>Units needing repair</label>
+              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Material</label>
@@ -346,6 +358,10 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
                 <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
                 <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
               </select>
+            </div>
+            <div>
+              <label class={labelClass}>Units needing repair</label>
+              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Material</label>
@@ -433,6 +449,10 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
                 <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
                 <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
               </select>
+            </div>
+            <div>
+              <label class={labelClass}>Units needing repair</label>
+              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Player Count</label>

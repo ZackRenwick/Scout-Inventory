@@ -112,7 +112,7 @@ function applyItemToStats(stats: ComputedStats, item: InventoryItem, sign: 1 | -
   next.spaceBreakdown[sp].quantity     += sign * item.quantity;
 
   if (item.quantity <= item.minThreshold) next.lowStockItems += sign;
-  if (hasCondition(item) && item.condition === "needs-repair") next.needsRepairItems += sign;
+  if (hasCondition(item) && (item.condition === "needs-repair" || ((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0)) next.needsRepairItems += sign;
 
   return next;
 }

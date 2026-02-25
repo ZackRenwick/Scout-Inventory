@@ -30,7 +30,11 @@ export const handler: Handlers = {
       // Apply needs-repair filter
       const needsRepair = url.searchParams.get("needsrepair");
       if (needsRepair === "true") {
-        items = items.filter(item => "condition" in item && (item as { condition: string }).condition === "needs-repair");
+        items = items.filter(item => {
+          const condRepair = "condition" in item && (item as { condition: string }).condition === "needs-repair";
+          const partialRepair = ((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0;
+          return condRepair || partialRepair;
+        });
       }
       
       // Sort by name
