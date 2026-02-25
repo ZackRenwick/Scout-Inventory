@@ -2,7 +2,7 @@
 import type { Handlers } from "$fresh/server.ts";
 import type { Session } from "../../lib/auth.ts";
 import { csrfOk, csrfFailed } from "../../lib/auth.ts";
-import { checkAndNotifyLowStock, checkAndNotifyExpiry } from "../../lib/notifications.ts";
+import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "../../lib/notifications.ts";
 
 export const handler: Handlers = {
   async POST(req, ctx) {
@@ -23,10 +23,15 @@ export const handler: Handlers = {
         await checkAndNotifyExpiry();
         return Response.json({ ok: true, message: "Expiry check complete — email sent if any items expire within 30 days." });
       }
-      // No type — run both
+      if (type === "overdue-loans") {
+        await checkAndNotifyOverdueLoans();
+        return Response.json({ ok: true, message: "Overdue loans check complete — email sent if any loans are overdue." });
+      }
+      // No type — run all three
       await checkAndNotifyLowStock();
       await checkAndNotifyExpiry();
-      return Response.json({ ok: true, message: "Both checks complete — emails sent where thresholds are met." });
+      await checkAndNotifyOverdueLoans();
+      return Response.json({ ok: true, message: "All checks complete — emails sent where thresholds are met." });
     } catch (err) {
       console.error("[admin/notify] Error:", err);
       return Response.json({ ok: false, message: "An error occurred running the checks. See server logs." }, { status: 500 });

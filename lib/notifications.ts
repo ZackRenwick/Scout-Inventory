@@ -10,7 +10,7 @@
 // If RESEND_API_KEY or NOTIFY_EMAIL are unset the helpers are safe no-ops — they
 // log to console instead so local dev works without any configuration.
 
-import { getAllItems, getFoodItemsSortedByExpiry, getNeckerCount } from "../db/kv.ts";
+import { getAllItems, getFoodItemsSortedByExpiry, getNeckerCount, getAllCheckOuts } from "../db/kv.ts";
 import { getDaysUntil } from "./date-utils.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -167,4 +167,55 @@ function escHtml(str: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+/**
+ * Sends a summary email for any loans whose expected return date has passed.
+ */
+export async function checkAndNotifyOverdueLoans(): Promise<void> {
+  const all = await getAllCheckOuts();
+  const now = new Date();
+  const overdue = all.filter(
+    (l) => l.status === "checked-out" && new Date(l.expectedReturnDate) < now,
+  );
+  if (overdue.length === 0) return;
+
+  const rows = overdue
+    .sort((a, b) => new Date(a.expectedReturnDate).getTime() - new Date(b.expectedReturnDate).getTime())
+    .map((l) => {
+      const due = new Date(l.expectedReturnDate);
+      const daysLate = Math.floor((now.getTime() - due.getTime()) / 86400000);
+      return `<tr>
+        <td style="padding:6px 12px">${escHtml(l.itemName)}</td>
+        <td style="padding:6px 12px">${escHtml(l.borrower)}</td>
+        <td style="padding:6px 12px;text-align:center">${l.quantity}</td>
+        <td style="padding:6px 12px">${due.toISOString().slice(0, 10)}</td>
+        <td style="padding:6px 12px;color:#dc2626;font-weight:600">${daysLate} day${daysLate !== 1 ? "s" : ""} overdue</td>
+      </tr>`;
+    })
+    .join("\n");
+
+  const count = overdue.length;
+  const html = `
+    <h2 style="color:#7c3aed">📤 Overdue Loans — 7th Whitburn Scouts</h2>
+    <p>${count} loan${count !== 1 ? "s are" : " is"} overdue for return:</p>
+    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
+      <thead>
+        <tr style="background:#f9fafb">
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Item</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Borrower</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e7eb">Qty</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Due</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="color:#6b7280;font-size:13px;margin-top:16px">Sent by 7th Whitburn Scouts Inventory — <a href="https://7thwhitburnscoutsinventory.co.uk/loans">view loans</a>.</p>
+  `;
+
+  await sendEmail(
+    `📤 7th Whitburn Scouts: ${count} overdue loan${count !== 1 ? "s" : ""}`,
+    html,
+  );
 }
