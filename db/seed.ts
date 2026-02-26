@@ -250,7 +250,7 @@ export async function seedDatabase() {
       name: "Porridge Breakfast",
       description: "Simple hot oat porridge — quick to prepare for large groups",
       ingredients: [
-        { inventoryItemId: FOOD_IDS.oatmeal, name: "Instant Oatmeal Packets", servingsPerUnit: 1 },
+        { name: "Instant Oatmeal Packets", servingsPerUnit: 1 },
         { name: "Honey", servingsPerUnit: 20 },
         { name: "Raisins (handful)", servingsPerUnit: 10 },
       ],
@@ -259,7 +259,7 @@ export async function seedDatabase() {
       name: "Campfire Bean Stew",
       description: "Hearty one-pot stew, great over rice or with bread",
       ingredients: [
-        { inventoryItemId: FOOD_IDS.beans, name: "Canned Beans - Variety Pack", servingsPerUnit: 4 },
+        { name: "Canned Beans - Variety Pack", servingsPerUnit: 4 },
         { name: "Chopped Tomatoes (400g tin)", servingsPerUnit: 6 },
         { name: "Onion", servingsPerUnit: 8 },
         { name: "Vegetable Stock Cube", servingsPerUnit: 12 },
@@ -270,22 +270,22 @@ export async function seedDatabase() {
       name: "Afternoon Trail Snack",
       description: "Quick no-cook energy snack between activities",
       ingredients: [
-        { inventoryItemId: FOOD_IDS.trailMix, name: "Trail Mix - Bulk", servingsPerUnit: 6 },
-        { inventoryItemId: FOOD_IDS.apples, name: "Fresh Apples", servingsPerUnit: 1 },
+        { name: "Trail Mix - Bulk", servingsPerUnit: 6 },
+        { name: "Fresh Apples", servingsPerUnit: 1 },
       ],
     },
     {
       name: "Freeze-Dried Camp Dinner",
       description: "No-fuss hot dinner — just add boiling water",
       ingredients: [
-        { inventoryItemId: FOOD_IDS.freezeDried, name: "Freeze-Dried Camping Meals", servingsPerUnit: 1 },
+        { name: "Freeze-Dried Camping Meals", servingsPerUnit: 1 },
       ],
     },
     {
       name: "Evening Hot Chocolate",
       description: "Warm wind-down drink around the campfire",
       ingredients: [
-        { inventoryItemId: FOOD_IDS.hotChoc, name: "Hot Chocolate Mix", servingsPerUnit: 20 },
+        { name: "Hot Chocolate Mix", servingsPerUnit: 20 },
         { name: "Milk (pint)", servingsPerUnit: 4 },
       ],
     },

@@ -2,13 +2,9 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
 import MealForm from "../../islands/MealForm.tsx";
-import { getItemsByCategory } from "../../db/kv.ts";
 import { type Session } from "../../lib/auth.ts";
-import type { FoodItem } from "../../types/inventory.ts";
-import type { FoodItemSummary } from "../../types/meals.ts";
 
 interface NewMealPageData {
-  foodItems: FoodItemSummary[];
   session: Session;
   csrfToken: string;
 }
@@ -19,17 +15,7 @@ export const handler: Handlers<NewMealPageData> = {
     if (session.role !== "admin" && session.role !== "manager") {
       return new Response(null, { status: 302, headers: { location: "/meals" } });
     }
-    const rawFood = await getItemsByCategory("food");
-    const foodItems: FoodItemSummary[] = rawFood
-      .map((i) => ({
-        id: i.id,
-        name: i.name,
-        quantity: i.quantity,
-        expiryDate: (i as FoodItem).expiryDate?.toISOString(),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-
-    return ctx.render({ foodItems, session, csrfToken: session.csrfToken });
+    return ctx.render({ session, csrfToken: session.csrfToken });
   },
 };
 
@@ -42,7 +28,7 @@ export default function NewMealPage({ data }: PageProps<NewMealPageData>) {
             ← Back to meals
           </a>
         </div>
-        <MealForm foodItems={data.foodItems} csrfToken={data.csrfToken} />
+        <MealForm csrfToken={data.csrfToken} />
       </div>
     </Layout>
   );

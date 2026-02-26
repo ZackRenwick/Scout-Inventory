@@ -1,22 +1,20 @@
 // Create / edit a meal recipe — admin only
 import { useState } from "preact/hooks";
-import type { Meal, MealIngredient, FoodItemSummary } from "../types/meals.ts";
+import type { Meal, MealIngredient } from "../types/meals.ts";
 
 interface Props {
   meal?: Meal;
-  foodItems: FoodItemSummary[];
   csrfToken: string;
 }
 
 type Status = { type: "success" | "error"; message: string } | null;
 
 const emptyIngredient = (): MealIngredient => ({
-  inventoryItemId: undefined,
   name: "",
   servingsPerUnit: 1,
 });
 
-export default function MealForm({ meal, foodItems, csrfToken }: Props) {
+export default function MealForm({ meal, csrfToken }: Props) {
   const isEdit = !!meal;
 
   const [name, setName] = useState(meal?.name ?? "");
@@ -27,36 +25,8 @@ export default function MealForm({ meal, foodItems, csrfToken }: Props) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<Status>(null);
 
-  // Group food items by name so we can show combined stock for items like
-  // "Passata" that have multiple batches with different expiry dates.
-  const foodByName = foodItems.reduce<Record<string, { total: number; batches: typeof foodItems }>>(
-    (acc, f) => {
-      if (!acc[f.name]) acc[f.name] = { total: 0, batches: [] };
-      acc[f.name].total += f.quantity;
-      acc[f.name].batches.push(f);
-      return acc;
-    },
-    {},
-  );
-  const nameGroups = Object.entries(foodByName).sort(([a], [b]) => a.localeCompare(b));
-
   function updateIngredient(index: number, patch: Partial<MealIngredient>) {
     setIngredients((prev) => prev.map((ing, i) => (i === index ? { ...ing, ...patch } : ing)));
-  }
-
-  function pickItem(index: number, value: string) {
-    if (!value) {
-      updateIngredient(index, { inventoryItemId: undefined, inventoryItemName: undefined });
-      return;
-    }
-    if (value.startsWith("name:")) {
-      const itemName = value.slice(5);
-      updateIngredient(index, { inventoryItemId: undefined, inventoryItemName: itemName, name: itemName });
-    } else if (value.startsWith("id:")) {
-      const itemId = value.slice(3);
-      const item = foodItems.find((f) => f.id === itemId);
-      updateIngredient(index, { inventoryItemId: itemId, inventoryItemName: item?.name, name: item?.name ?? "" });
-    }
   }
 
   function addIngredient() {
@@ -75,7 +45,7 @@ export default function MealForm({ meal, foodItems, csrfToken }: Props) {
     }
     const validIngredients = ingredients
       .filter((i) => i.name.trim() && i.servingsPerUnit > 0)
-      .map((i) => ({ ...i, inventoryItemId: i.inventoryItemId || undefined }));
+      .map((i) => ({ name: i.name.trim(), servingsPerUnit: i.servingsPerUnit }));
     if (validIngredients.length === 0) {
       setStatus({ type: "error", message: "At least one named ingredient is required." });
       return;
@@ -187,94 +157,11 @@ export default function MealForm({ meal, foodItems, csrfToken }: Props) {
             </button>
           </div>
 
-          {foodItems.length === 0 && (
-            <p class="text-sm text-amber-600 dark:text-amber-400 mb-3">
-              ⚠️ No food items in inventory yet. Ingredients can still be added manually — link them to inventory items later for stock tracking.
-            </p>
-          )}
-
           <div class="space-y-3">
             {ingredients.map((ing, i) => {
-              // Resolve current stock for display
-              const totalStock = ing.inventoryItemName
-                ? (foodByName[ing.inventoryItemName]?.total ?? 0)
-                : ing.inventoryItemId
-                ? (foodItems.find((f) => f.id === ing.inventoryItemId)?.quantity ?? 0)
-                : null;
-
-              // Current select value uses a prefix to distinguish link type
-              const selectValue = ing.inventoryItemId
-                ? `id:${ing.inventoryItemId}`
-                : ing.inventoryItemName
-                ? `name:${ing.inventoryItemName}`
-                : "";
-
-              // For a specific-batch link, show the expiry date if available
-              const batchItem = ing.inventoryItemId
-                ? foodItems.find((f) => f.id === ing.inventoryItemId)
-                : undefined;
-
               return (
               <div key={i} class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <div class="flex gap-2 items-start">
-                  {/* Item picker */}
-                  <div class="flex-1 min-w-0">
-                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      Inventory item <span class="text-gray-400 font-normal">(optional)</span>
-                    </label>
-                    <select
-                      value={selectValue}
-                      onChange={(e) => pickItem(i, (e.target as HTMLSelectElement).value)}
-                      class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                    >
-                      <option value="">— unlinked / manual —</option>
-                      {nameGroups.map(([name, { total, batches }]) => {
-                        if (batches.length === 1) {
-                          // Single batch — simple flat option
-                          return (
-                            <option key={`name:${name}`} value={`name:${name}`}>
-                              {name} ({total} in stock)
-                            </option>
-                          );
-                        }
-                        // Multiple batches — group with "all batches" + individual batch options
-                        return (
-                          <optgroup key={name} label={name}>
-                            <option value={`name:${name}`}>All batches — {total} total in stock</option>
-                            {batches.map((b) => (
-                              <option key={b.id} value={`id:${b.id}`}>
-                                {b.expiryDate
-                                  ? `exp. ${new Date(b.expiryDate).toLocaleDateString("en-GB")} — ${b.quantity} in stock`
-                                  : `${b.quantity} in stock`}
-                              </option>
-                            ))}
-                          </optgroup>
-                        );
-                      })}
-                    </select>
-                    {totalStock !== null ? (
-                      <p class={`mt-1 text-xs font-medium ${
-                        totalStock > 0
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-red-500 dark:text-red-400"
-                      }`}>
-                        📦 {totalStock} in stock
-                        {ing.inventoryItemId && batchItem?.expiryDate && (
-                          <span class="ml-1 text-gray-400 dark:text-gray-500 font-normal">
-                            (exp. {new Date(batchItem.expiryDate).toLocaleDateString("en-GB")})
-                          </span>
-                        )}
-                        {ing.inventoryItemName && !ing.inventoryItemId && (foodByName[ing.inventoryItemName]?.batches.length ?? 0) > 1 && (
-                          <span class="ml-1 text-gray-400 dark:text-gray-500 font-normal">
-                            across {foodByName[ing.inventoryItemName]?.batches.length} batches
-                          </span>
-                        )}
-                      </p>
-                    ) : (
-                      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Not linked to inventory</p>
-                    )}
-                  </div>
-
                   {/* Name */}
                   <div class="flex-1 min-w-0">
                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">

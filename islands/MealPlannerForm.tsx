@@ -10,16 +10,16 @@ interface Props {
 
 interface PlannerRow {
   key: string;
-  inventoryItemId?: string;
-  inventoryItemName?: string;
+  /** Inventory item name this was linked to (for display) */
+  linkedInventoryName?: string;
   name: string;
   unitsNeeded: number;
-  /** null when not linked to an inventory item */
+  /** null when not linked to any inventory item */
   inStock: number | null;
-  /** null when not linked to an inventory item */
+  /** null when not linked to any inventory item */
   toBuy: number | null;
   tracked: boolean;
-  /** Number of distinct batches contributing to inStock (for name-based links) */
+  /** Number of distinct batches contributing to inStock */
   batchCount?: number;
 }
 
@@ -30,8 +30,8 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
   );
   const [headcount, setHeadcount] = useState<number>(0);
   const [results, setResults] = useState<PlannerRow[] | null>(null);
-
-  const stockMap = new Map(foodItems.map((f) => [f.id, f]));
+  // Ephemeral per-session links: ingredient name → inventory food name (or "" for unlinked)
+  const [links, setLinks] = useState<Record<string, string>>({});
 
   // Name-based stock map: aggregates quantity across all items sharing the same name
   const stockByName = new Map<string, { total: number; batchCount: number }>();
@@ -50,71 +50,56 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
     setCounts((prev) => ({ ...prev, [mealId]: Math.max(0, value) }));
   }
 
+  // Unique ingredient names across all selected meals, sorted alphabetically
+  const activeIngredientNames = Array.from(
+    new Set(
+      meals
+        .filter((m) => (counts[m.id] ?? 0) > 0)
+        .flatMap((m) => m.ingredients.map((i) => i.name)),
+    ),
+  ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  // Sorted unique inventory food names for the link dropdowns
+  const foodNames = Array.from(new Set(foodItems.map((f) => f.name))).sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true }),
+  );
+
   function calculate() {
     if (headcount < 1) return;
 
-    // Accumulate units needed per ingredient
-    // Specific-batch links keyed by id:, name-based links keyed by name:, unlinked by __name__
-    const needed = new Map<string, { name: string; units: number; inventoryItemId?: string; inventoryItemName?: string }>();
+    // Accumulate units needed per ingredient name
+    const needed = new Map<string, number>();
 
     for (const meal of meals) {
       const count = counts[meal.id] ?? 0;
       if (count === 0) continue;
       for (const ing of meal.ingredients) {
-        const unitsForThisMeal = Math.ceil((headcount * count) / ing.servingsPerUnit);
-        const key = ing.inventoryItemId
-          ? `id:${ing.inventoryItemId}`
-          : ing.inventoryItemName
-          ? `name:${ing.inventoryItemName.toLowerCase().trim()}`
-          : `__name__${ing.name.toLowerCase().trim()}`;
-        const existing = needed.get(key);
-        if (existing) {
-          existing.units += unitsForThisMeal;
-        } else {
-          needed.set(key, {
-            name: ing.name,
-            units: unitsForThisMeal,
-            inventoryItemId: ing.inventoryItemId,
-            inventoryItemName: ing.inventoryItemName,
-          });
-        }
+        const units = Math.ceil((headcount * count) / ing.servingsPerUnit);
+        needed.set(ing.name, (needed.get(ing.name) ?? 0) + units);
       }
     }
 
     const rows: PlannerRow[] = [];
-    for (const [key, { name, units, inventoryItemId, inventoryItemName }] of needed.entries()) {
-      if (inventoryItemId) {
-        // Specific batch link
-        const item = stockMap.get(inventoryItemId);
-        const inStock = item?.quantity ?? 0;
-        rows.push({
-          key,
-          inventoryItemId,
-          name: item?.name ?? name,
-          unitsNeeded: units,
-          inStock,
-          toBuy: Math.max(0, units - inStock),
-          tracked: true,
-        });
-      } else if (inventoryItemName) {
-        // Name-based link — aggregate across all batches
-        const stockEntry = stockByName.get(inventoryItemName.toLowerCase());
+    for (const [ingName, unitsNeeded] of needed.entries()) {
+      const linkedName = links[ingName]; // inventory food name, or "" / undefined
+      if (linkedName) {
+        const stockEntry = stockByName.get(linkedName.toLowerCase());
         const inStock = stockEntry?.total ?? 0;
         rows.push({
-          key,
-          inventoryItemName,
-          name: inventoryItemName,
-          unitsNeeded: units,
+          key: ingName,
+          linkedInventoryName: linkedName,
+          name: ingName,
+          unitsNeeded,
           inStock,
-          toBuy: Math.max(0, units - inStock),
+          toBuy: Math.max(0, unitsNeeded - inStock),
           tracked: true,
           batchCount: stockEntry?.batchCount,
         });
       } else {
         rows.push({
-          key,
-          name,
-          unitsNeeded: units,
+          key: ingName,
+          name: ingName,
+          unitsNeeded,
           inStock: null,
           toBuy: null,
           tracked: false,
@@ -123,7 +108,6 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
     }
 
     rows.sort((a, b) => {
-      // Tracked items first, then untracked; each group sorted by name
       if (a.tracked !== b.tracked) return a.tracked ? -1 : 1;
       return a.name.localeCompare(b.name, undefined, { numeric: true });
     });
@@ -203,6 +187,45 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
           </div>
         </div>
 
+        {/* Ingredient → inventory links (shown once any meal is selected) */}
+        {activeIngredientNames.length > 0 && (
+          <div>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Link ingredients to inventory
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Match each recipe ingredient to an inventory item so stock levels can be checked. Leave blank to treat as untracked.
+            </p>
+            <div class="space-y-2">
+              {activeIngredientNames.map((ingName) => (
+                <div key={ingName} class="flex items-center gap-3">
+                  <span class="text-sm text-gray-700 dark:text-gray-200 w-40 shrink-0 truncate" title={ingName}>
+                    {ingName}
+                  </span>
+                  <select
+                    value={links[ingName] ?? ""}
+                    onChange={(e) => {
+                      const val = (e.target as HTMLSelectElement).value;
+                      setLinks((prev) => ({ ...prev, [ingName]: val }));
+                    }}
+                    class="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                  >
+                    <option value="">— not tracked —</option>
+                    {foodNames.map((fn) => {
+                      const stock = stockByName.get(fn.toLowerCase());
+                      return (
+                        <option key={fn} value={fn}>
+                          {fn}{stock ? ` (${stock.total} in stock${stock.batchCount > 1 ? `, ${stock.batchCount} batches` : ""})` : " (0 in stock)"}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Calculate button */}
         <button
           type="button"
@@ -265,8 +288,11 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                           >
                             <td class="px-4 py-3 text-gray-800 dark:text-gray-100">
                               {row.name}
+                              {row.tracked && row.linkedInventoryName && row.linkedInventoryName !== row.name && (
+                                <span class="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">→ {row.linkedInventoryName}</span>
+                              )}
                               {!row.tracked && (
-                                <span class="ml-2 text-xs text-amber-600 dark:text-amber-400 font-normal">(not in inventory)</span>
+                                <span class="ml-2 text-xs text-amber-600 dark:text-amber-400 font-normal">(not tracked)</span>
                               )}
                               {row.tracked && row.batchCount && row.batchCount > 1 && (
                                 <span class="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">({row.batchCount} batches)</span>
@@ -312,7 +338,7 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                                 <span class="text-sm text-gray-800 dark:text-gray-100 truncate">{row.name}</span>
                                 {!row.tracked && (
                                   <span class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
-                                    not in inventory
+                                    not tracked
                                   </span>
                                 )}
                               </div>
