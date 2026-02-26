@@ -31,7 +31,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   cooking: "🍳",
   food: "🥫",
   "camping-tools": "🪓",
-  games: "🎮",
+  games: "⚽",
 };
 
 const inputClass =

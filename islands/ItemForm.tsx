@@ -178,7 +178,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </>
           ) : (
             <>
-              <option value="games">🎮 Games Equipment</option>
+              <option value="games">⚽ Games Equipment</option>
             </>
           )}
         </select>

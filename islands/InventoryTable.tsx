@@ -308,7 +308,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                 <option value="camping-tools">🪓 Camping Tools</option>
               </optgroup>
               <optgroup label="🏠 Scout Post Loft">
-                <option value="games">🎮 Games</option>
+                <option value="games">⚽ Games</option>
               </optgroup>
             </select>
           </div>

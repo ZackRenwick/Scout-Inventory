@@ -173,7 +173,7 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
         <div>
           <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🏠 Scout Post Loft — Categories</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <CategoryCard title="🎮 Games" value={c.games.quantity} color="indigo" href="/inventory?category=games" />
+            <CategoryCard title="⚽ Games" value={c.games.quantity} color="indigo" href="/inventory?category=games" />
           </div>
         </div>
       )}
