@@ -30,7 +30,11 @@ function toImportShape(item: InventoryItem): Record<string, any> {
 }
 
 export const handler: Handlers = {
-  async GET(_req, _ctx) {
+  async GET(_req, ctx) {
+    const session = ctx.state.session as { role?: string } | undefined;
+    if (!session || session.role !== "admin") {
+      return new Response(null, { status: 302, headers: { location: "/admin/admin-panel" } });
+    }
     const items = await getAllItems();
     items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 

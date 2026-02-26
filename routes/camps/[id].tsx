@@ -39,12 +39,6 @@ export default function CampDetailPage({ data }: PageProps<CampDetailPageData>) 
       username={data.session?.username}
       role={data.session?.role}
     >
-      {/* Beta notice */}
-      <div class="mb-5 flex items-start gap-3 rounded-lg border border-yellow-300 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
-        <span class="text-base" aria-hidden="true">🧪</span>
-        <p><span class="font-semibold">Beta feature</span> — Camp Planning is still being developed. Feedback and bug reports are welcome.</p>
-      </div>
-
       <div class="mb-4 flex items-center justify-between gap-3">
         <a
           href="/camps"

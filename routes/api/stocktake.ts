@@ -15,7 +15,7 @@ interface StocktakeUpdate {
 export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role !== "admin") return forbidden();
+    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     let body: { updates: StocktakeUpdate[] };

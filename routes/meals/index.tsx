@@ -32,16 +32,10 @@ export const handler: Handlers<MealsPageData> = {
 
 export default function MealsPage({ data }: PageProps<MealsPageData>) {
   const { meals, foodItems, session, csrfToken } = data;
-  const isAdmin = session.role === "admin";
+  const isAdmin = session.role === "admin" || session.role === "manager";
 
   return (
     <Layout title="Meal Planner" username={session.username} role={session.role}>
-
-      {/* Beta notice */}
-      <div class="mb-6 flex items-start gap-3 rounded-lg border border-yellow-300 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-300">
-        <span class="text-base" aria-hidden="true">🧪</span>
-        <p><span class="font-semibold">Beta feature</span> — Meal Planning is still being developed. Feedback and bug reports are welcome.</p>
-      </div>
 
       {/* Meal list */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-8">

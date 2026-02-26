@@ -7,27 +7,66 @@ import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import CategoryIcon from "../../components/CategoryIcon.tsx";
 import { formatDate } from "../../lib/date-utils.ts";
 import type { Session } from "../../lib/auth.ts";
-import { getItemById } from "../../db/kv.ts";
+import { csrfFailed, forbidden } from "../../lib/auth.ts";
+import { getItemById, createItem } from "../../db/kv.ts";
+import { logActivity } from "../../lib/activityLog.ts";
 
 interface ItemDetailData {
   item: InventoryItem | null;
   session?: Session;
+  csrfToken?: string;
 }
 
 export const handler: Handlers<ItemDetailData> = {
   async GET(_req, ctx) {
     const { id } = ctx.params;
-    
+    const session = ctx.state.session as Session | undefined;
     try {
       const item = await getItemById(id);
       if (!item) {
-        return ctx.render({ item: null, session: ctx.state.session as Session });
+        return ctx.render({ item: null, session, csrfToken: session?.csrfToken });
       }
-      return ctx.render({ item, session: ctx.state.session as Session });
+      return ctx.render({ item, session, csrfToken: session?.csrfToken });
     } catch (error) {
       console.error("Failed to fetch item:", error);
-      return ctx.render({ item: null, session: ctx.state.session as Session });
+      return ctx.render({ item: null, session, csrfToken: session?.csrfToken });
     }
+  },
+
+  async POST(req, ctx) {
+    const session = ctx.state.session as Session | undefined;
+    if (!session || session.role === "viewer") return forbidden();
+
+    const formData = await req.formData();
+    const csrfToken = formData.get("csrf") as string | null;
+    if (!csrfToken || csrfToken !== session.csrfToken) return csrfFailed();
+
+    const { id } = ctx.params;
+    const item = await getItemById(id);
+    if (!item) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    const newItem: InventoryItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      name: `Copy of ${item.name}`,
+      addedDate: new Date(),
+      lastUpdated: new Date(),
+    };
+    await createItem(newItem);
+    await logActivity({
+      username: session.username,
+      action: "item.created",
+      resource: newItem.name,
+      resourceId: newItem.id,
+      details: `Duplicated from ${item.name} (${item.id})`,
+    });
+
+    return new Response(null, {
+      status: 303,
+      headers: { Location: `/inventory/edit/${newItem.id}` },
+    });
   },
 };
 
@@ -66,7 +105,7 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
               <p class="text-gray-600 dark:text-gray-400 capitalize">{item.category}</p>
             </div>
           </div>
-          <div class="flex gap-3 shrink-0">
+          <div class="flex gap-3 shrink-0 flex-wrap">
             {data.session?.role !== "viewer" && (
             <a
               href={`/inventory/edit/${item.id}`}
@@ -74,6 +113,17 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
             >
               ✏️ Edit
             </a>
+            )}
+            {data.session?.role !== "viewer" && (
+            <form method="POST" action={`/inventory/${item.id}`}>
+              <input type="hidden" name="csrf" value={data.csrfToken ?? ""} />
+              <button
+                type="submit"
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                📋 Duplicate
+              </button>
+            </form>
             )}
             {data.session?.role === "admin" && (
             <a

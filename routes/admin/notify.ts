@@ -7,6 +7,9 @@ import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoan
 export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session;
+    if (session.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { "Content-Type": "application/json" } });
+    }
     if (!csrfOk(req, session)) {
       return csrfFailed();
     }

@@ -1,6 +1,6 @@
 // GET    /api/meals/:id  — fetch a single meal (any authenticated user)
-// PUT    /api/meals/:id  — update a meal (admin only)
-// DELETE /api/meals/:id  — delete a meal (admin only)
+// PUT    /api/meals/:id  — update a meal (admin/manager only)
+// DELETE /api/meals/:id  — delete a meal (admin/manager only)
 import { Handlers } from "$fresh/server.ts";
 import { getMealById, updateMeal, deleteMeal } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
@@ -17,7 +17,7 @@ export const handler: Handlers = {
 
   async PUT(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role !== "admin") return forbidden();
+    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     try {
@@ -59,7 +59,7 @@ export const handler: Handlers = {
 
   async DELETE(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || session.role !== "admin") return forbidden();
+    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     const meal = await getMealById(ctx.params.id);

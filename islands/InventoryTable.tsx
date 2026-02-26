@@ -44,9 +44,11 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const locationGroups = ungroupedLocations.length > 0
     ? [...knownGroups, { group: "Other", options: ungroupedLocations }]
     : knownGroups;
+  const itemsSignal = useSignal(items);
   const confirmDeleteId = useSignal<string | null>(null);
+  const adjustingQtyId = useSignal<string | null>(null);
   const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
-  const atCampCount = useComputed(() => items.filter((i) => (i as { atCamp?: boolean }).atCamp).length);
+  const atCampCount = useComputed(() => itemsSignal.value.filter((i) => (i as { atCamp?: boolean }).atCamp).length);
   const loanedCount = loanedIdSet.size;
   
   // Human-readable labels for category slugs so "camping tools" or "first aid" match
@@ -62,7 +64,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   // Filter items based on search and filters — useComputed() memoises the result
   // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
   const filteredItems = useComputed(() => {
-    const filtered = items.filter((item) => {
+    const filtered = itemsSignal.value.filter((item) => {
     // Search filter
     const q = searchQuery.value.toLowerCase();
     const categoryLabel = categoryLabels[item.category] ?? item.category;
@@ -176,6 +178,30 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const showToast = (message: string, type: "success" | "error") => {
     toast.value = { message, type };
     setTimeout(() => { toast.value = null; }, 3500);
+  };
+
+  const handleAdjustQty = async (item: InventoryItem, delta: number) => {
+    const newQty = Math.max(0, item.quantity + delta);
+    if (newQty === item.quantity) return;
+    adjustingQtyId.value = item.id;
+    try {
+      const response = await fetch(`/api/items/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+        body: JSON.stringify({ quantity: newQty }),
+      });
+      if (response.ok) {
+        itemsSignal.value = itemsSignal.value.map((i) =>
+          i.id === item.id ? { ...i, quantity: newQty } : i
+        );
+      } else {
+        showToast("Failed to update quantity", "error");
+      }
+    } catch (_err) {
+      showToast("Network error — could not update quantity", "error");
+    } finally {
+      adjustingQtyId.value = null;
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -460,7 +486,27 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 px-4 pb-3 text-sm">
                   <div>
                     <span class="text-xs text-gray-500 dark:text-gray-400 block">Quantity</span>
-                    <span class="font-medium text-gray-900 dark:text-gray-100">{item.quantity}</span>
+                    {canEdit ? (
+                      <div class="flex items-center gap-1.5 mt-0.5">
+                        <button
+                          type="button"
+                          disabled={adjustingQtyId.value === item.id || item.quantity <= 0}
+                          onClick={(e) => { e.stopPropagation(); handleAdjustQty(item, -1); }}
+                          class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 text-base leading-none"
+                          aria-label="Decrease quantity"
+                        >−</button>
+                        <span class="font-semibold text-gray-900 dark:text-gray-100 min-w-[1.5rem] text-center">{item.quantity}</span>
+                        <button
+                          type="button"
+                          disabled={adjustingQtyId.value === item.id}
+                          onClick={(e) => { e.stopPropagation(); handleAdjustQty(item, 1); }}
+                          class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 text-base leading-none"
+                          aria-label="Increase quantity"
+                        >+</button>
+                      </div>
+                    ) : (
+                      <span class="font-medium text-gray-900 dark:text-gray-100">{item.quantity}</span>
+                    )}
                     <span class="text-gray-300 dark:text-gray-400 text-xs"> / {item.minThreshold} min</span>
                     {!!(item as { quantityAtCamp?: number }).quantityAtCamp && (
                       <span class="block text-xs text-amber-600 dark:text-amber-400 mt-0.5">
@@ -593,14 +639,44 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                   <td class="px-6 py-4 whitespace-nowrap">
                     <CategoryIcon category={item.category} size="md" />
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900 dark:text-gray-100">
-                      {item.quantity}
-                      {item.quantity <= item.minThreshold && (
-                        <span class="ml-2 text-red-600 font-semibold">⚠️ LOW</span>
-                      )}
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">Min: {item.minThreshold}</div>
+                  <td class="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                    {canEdit ? (
+                      <div class="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          disabled={adjustingQtyId.value === item.id || item.quantity <= 0}
+                          onClick={() => handleAdjustQty(item, -1)}
+                          class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 text-base leading-none"
+                          aria-label="Decrease quantity"
+                        >−</button>
+                        <div>
+                          <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {item.quantity}
+                            {item.quantity <= item.minThreshold && (
+                              <span class="ml-1 text-red-600">⚠️</span>
+                            )}
+                          </div>
+                          <div class="text-xs text-gray-500 dark:text-gray-400">Min: {item.minThreshold}</div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={adjustingQtyId.value === item.id}
+                          onClick={() => handleAdjustQty(item, 1)}
+                          class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 text-base leading-none"
+                          aria-label="Increase quantity"
+                        >+</button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                          {item.quantity}
+                          {item.quantity <= item.minThreshold && (
+                            <span class="ml-2 text-red-600 font-semibold">⚠️ LOW</span>
+                          )}
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Min: {item.minThreshold}</div>
+                      </div>
+                    )}
                     {!!(item as { quantityAtCamp?: number }).quantityAtCamp && (
                       <div class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                         🏕️ {(item as { quantityAtCamp?: number }).quantityAtCamp} at camp

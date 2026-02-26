@@ -43,7 +43,7 @@ export interface User {
   id: string;
   username: string;
   passwordHash: string;
-  role: "admin" | "editor" | "viewer";
+  role: "admin" | "manager" | "editor" | "viewer";
   createdAt: string;
 }
 
@@ -51,7 +51,7 @@ export interface Session {
   id: string;
   userId: string;
   username: string;
-  role: "admin" | "editor" | "viewer";
+  role: "admin" | "manager" | "editor" | "viewer";
   expiresAt: string;
   csrfToken: string;
 }
@@ -137,7 +137,7 @@ export async function getAllUsers(): Promise<User[]> {
 export async function createUser(
   username: string,
   password: string,
-  role: "admin" | "editor" | "viewer" = "viewer",
+  role: "admin" | "manager" | "editor" | "viewer" = "viewer",
 ): Promise<User> {
   const kv = await getKv();
   const user: User = {

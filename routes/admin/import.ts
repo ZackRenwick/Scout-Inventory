@@ -123,6 +123,9 @@ export const handler: Handlers = {
     if (!csrfToken || csrfToken !== session.csrfToken) {
       return Response.json({ error: "Invalid CSRF token" }, { status: 403 });
     }
+    if (session.role !== "admin") {
+      return Response.json({ error: "Admin only" }, { status: 403 });
+    }
 
     // File field
     const file = form.get("file");

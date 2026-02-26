@@ -53,11 +53,16 @@ export const handler: Handlers<UsersPageData> = {
       if (action === "create") {
         const username = (form.get("username") as string ?? "").trim().toLowerCase();
         const password = form.get("password") as string ?? "";
-        const role = (form.get("role") as "admin" | "viewer") ?? "viewer";
+        const role = (form.get("role") as User["role"]) ?? "viewer";
 
         if (!username || !password) throw new Error("Username and password are required.");
         const createErr = validatePassword(password);
         if (createErr) throw new Error(createErr);
+
+        const allowedRoles: User["role"][] = session.role === "admin"
+          ? ["admin", "manager", "editor", "viewer"]
+          : ["manager", "editor", "viewer"];
+        if (!allowedRoles.includes(role)) throw new Error("You cannot create a user with that role.");
 
         const existing = await getAllUsers();
         if (existing.some((u) => u.username === username)) throw new Error(`User "${username}" already exists.`);
@@ -68,6 +73,7 @@ export const handler: Handlers<UsersPageData> = {
       }
 
       if (action === "delete") {
+        if (session.role !== "admin") throw new Error("Only admins can delete users.");
         const username = form.get("username") as string;
         if (username === session.username) throw new Error("You cannot delete your own account.");
         const target = await getUserByUsername(username);
@@ -78,6 +84,7 @@ export const handler: Handlers<UsersPageData> = {
       }
 
       if (action === "change-password") {
+        if (session.role !== "admin") throw new Error("Only admins can change other users' passwords.");
         const username = form.get("username") as string;
         const newPassword = form.get("newPassword") as string ?? "";
         const pwErr = validatePassword(newPassword);
@@ -95,7 +102,13 @@ export const handler: Handlers<UsersPageData> = {
         const username = form.get("username") as string;
         const role = form.get("role") as User["role"];
         if (username === session.username) throw new Error("You cannot change your own role.");
-        if (!["admin", "editor", "viewer"].includes(role)) throw new Error("Invalid role.");
+        if (!["admin", "manager", "editor", "viewer"].includes(role)) throw new Error("Invalid role.");
+        // Managers cannot assign admin role or modify admin users
+        if (session.role === "manager") {
+          if (role === "admin") throw new Error("Managers cannot assign the admin role.");
+          const target = await getUserByUsername(username);
+          if (target?.role === "admin") throw new Error("Managers cannot modify admin users.");
+        }
         await updateUserRole(username, role);
         // Invalidate sessions so the new role takes effect immediately
         const target = await getUserByUsername(username);
@@ -116,6 +129,7 @@ export const handler: Handlers<UsersPageData> = {
 
 export default function UsersPage({ data }: PageProps<UsersPageData>) {
   const { users, session, csrfToken, message, error } = data;
+  const isAdmin = session.role === "admin";
 
   return (
     <Layout title="User Management" username={session.username} role={session.role}>
@@ -123,7 +137,8 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         <p class="text-gray-600 dark:text-gray-400">Manage who can access the inventory system</p>
       </div>
 
-      {/* Notifications */}
+      {/* Notifications — admin only */}
+      {isAdmin && (
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">🔔 Notifications</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
@@ -133,6 +148,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           <NotificationButtons csrfToken={csrfToken} />
         </div>
       </div>
+      )}
 
       {/* Stock-take */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
@@ -160,23 +176,30 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           >
             📥 Download Inventory CSV
           </a>
+          {isAdmin && (
           <a
             href="/admin/export-json"
             class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             📦 Download Inventory JSON
           </a>
+          )}
+          {isAdmin && (
           <a
             href="/admin/activity"
             class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             📋 Activity Log
           </a>
+          )}
         </div>
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">The JSON file is import-ready — use it directly with the Bulk Import below to seed another environment.</p>
+        {isAdmin && (
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">The JSON file is import-ready — use it directly with the Bulk Import below to seed another environment.</p>
+        )}
       </div>
 
-      {/* Bulk Import */}
+      {/* Bulk Import — admin only */}
+      {isAdmin && (
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">📤 Bulk Import</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
@@ -196,8 +219,10 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
 
         <BulkImport csrfToken={csrfToken} />
       </div>
+      )}
 
-      {/* Database Maintenance */}
+      {/* Database Maintenance — admin only */}
+      {isAdmin && (
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">🛠️ Database Maintenance</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
@@ -206,6 +231,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         </p>
         <RebuildIndexes csrfToken={csrfToken} />
       </div>
+      )}
 
       {message && (
         <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
@@ -233,6 +259,8 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                   <span class={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                     user.role === "admin"
                       ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
+                      : user.role === "manager"
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200"
                       : user.role === "editor"
                       ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                       : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
@@ -251,7 +279,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
               {/* Right: actions */}
               <div class="flex flex-wrap items-center gap-2 shrink-0">
                 {/* Role change */}
-                {user.username !== session.username && (
+                {user.username !== session.username && !(session.role === "manager" && user.role === "admin") && (
                   <form method="POST" class="flex items-center gap-1.5">
                     <input type="hidden" name="csrf_token" value={csrfToken} />
                     <input type="hidden" name="action" value="change-role" />
@@ -263,7 +291,8 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                     >
                       <option value="viewer">viewer</option>
                       <option value="editor">editor</option>
-                      <option value="admin">admin</option>
+                      <option value="manager">manager</option>
+                      {isAdmin && <option value="admin">admin</option>}
                     </select>
                     <button
                       type="submit"
@@ -275,11 +304,12 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                 )}
 
                 {/* Divider */}
-                {user.username !== session.username && (
+                {user.username !== session.username && !(session.role === "manager" && user.role === "admin") && (
                   <span class="hidden sm:block text-gray-300 dark:text-gray-600 select-none">|</span>
                 )}
 
-                {/* Change password */}
+                {/* Change password — admin only */}
+                {isAdmin && (
                 <details class="relative">
                   <summary class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer list-none select-none transition-colors">
                     Change password
@@ -308,8 +338,9 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                     </button>
                   </form>
                 </details>
+                )}
 
-                {user.username !== session.username && (
+                {isAdmin && user.username !== session.username && (
                   <ConfirmDeleteForm csrfToken={csrfToken} username={user.username} />
                 )}
               </div>
@@ -356,7 +387,8 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
               >
                 <option value="viewer">Viewer — read only</option>
                 <option value="editor">Editor — manage inventory</option>
-                <option value="admin">Admin — full access</option>
+                <option value="manager">Manager — stock-take, exports &amp; users</option>
+                {isAdmin && <option value="admin">Admin — full access</option>}
               </select>
             </div>
           </div>

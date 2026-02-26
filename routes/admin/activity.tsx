@@ -12,6 +12,9 @@ interface ActivityPageData {
 export const handler: Handlers<ActivityPageData> = {
   async GET(_req, ctx) {
     const session = ctx.state.session as Session;
+    if (session.role !== "admin") {
+      return new Response(null, { status: 302, headers: { location: "/admin/admin-panel" } });
+    }
     const entries = await getRecentActivity(200);
     return ctx.render({ entries, session });
   },

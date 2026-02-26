@@ -1,4 +1,4 @@
-// Edit an existing meal — admin only
+// Edit an existing meal — admin/manager only
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../../components/Layout.tsx";
 import MealForm from "../../../islands/MealForm.tsx";
@@ -17,7 +17,7 @@ interface EditMealPageData {
 export const handler: Handlers<EditMealPageData> = {
   async GET(_req, ctx) {
     const session = ctx.state.session as Session;
-    if (session.role !== "admin") {
+    if (session.role !== "admin" && session.role !== "manager") {
       return new Response(null, { status: 302, headers: { location: "/meals" } });
     }
     const [meal, rawFood] = await Promise.all([

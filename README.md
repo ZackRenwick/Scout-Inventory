@@ -14,9 +14,10 @@ Four item categories, each with their own tracked fields:
 | Category | Extra Fields |
 |---|---|
 | ⛺ **Tents** | Type, capacity, size, condition, brand, year purchased |
-| 🍳 **Cooking Equipment** | Equipment type, material, fuel type, capacity, condition |
+| 🍳 **Cooking Equipment** | Equipment type (incl. box/kit with contents list), material, fuel type, capacity, condition |
 | 🥫 **Food** | Food type, expiry date, storage requirements, allergens, weight, servings |
 | 🪓 **Camping Tools** | Tool type, condition, material, brand, year purchased |
+| 🎮 **Games** | Game type, condition, player count, year purchased |
 
 ### 🧣 Necker Tracking
 A dedicated counter on the dashboard tracks the number of neckers (scout neckerchiefs) in stock. The count updates instantly across tabs via a shared signal. An alert banner appears when stock falls at or below the threshold (default: 10, configurable via `NECKER_MIN_THRESHOLD`).
@@ -150,8 +151,15 @@ scout-inventory/
 │   ├── kv.ts                # All Deno KV operations (with in-memory cache)
 │   └── seed.ts              # Sample data seeder
 ├── islands/                 # Client-side interactive Preact components
-│   ├── InventoryTable.tsx   # Searchable, filterable inventory list
+│   ├── InventoryTable.tsx   # Searchable, filterable, sortable inventory list
 │   ├── ItemForm.tsx         # Add/edit item form with cascading location picker
+│   ├── CampChecklist.tsx    # Camp packing/return checklist
+│   ├── CampPlanForm.tsx     # Create/edit camp plan form
+│   ├── CampPlanList.tsx     # Camp plans grid with progress bars
+│   ├── TemplateBuilder.tsx  # Equipment template creator
+│   ├── MealForm.tsx         # Create/edit meal recipe
+│   ├── MealPlannerForm.tsx  # Interactive camp meal planner + shopping list
+│   ├── LoanForm.tsx         # Record a new equipment loan
 │   ├── MobileNav.tsx        # Mobile navigation drawer
 │   ├── ThemeToggle.tsx      # Dark/light mode toggle
 │   ├── PasswordInput.tsx    # Password field with show/hide toggle
@@ -170,7 +178,7 @@ scout-inventory/
 │   ├── date-utils.ts        # Date formatting and expiry calculations
 │   └── validation.ts        # Input validation helpers
 ├── routes/
-│   ├── _app.tsx             # HTML shell (lang, meta, theme-init script)
+│   ├── _app.tsx             # HTML shell (lang, meta, theme script)
 │   ├── _middleware.ts       # Auth guard, security headers, static asset cache
 │   ├── index.tsx            # Dashboard
 │   ├── login.tsx            # Login page
@@ -179,11 +187,23 @@ scout-inventory/
 │   │   ├── add.tsx          # Add item
 │   │   ├── [id].tsx         # Item detail view
 │   │   └── edit/[id].tsx    # Edit item
+│   ├── camps/
+│   │   ├── index.tsx        # Camp plans list
+│   │   ├── new.tsx          # New camp plan
+│   │   ├── templates.tsx    # Equipment templates
+│   │   ├── [id].tsx         # Camp detail / checklist
+│   │   └── [id]/
+│   │       ├── edit.tsx     # Edit camp plan
+│   │       └── print.tsx    # Print-friendly packing list
+│   ├── meals/
+│   │   ├── index.tsx        # Meal planner + recipe list
+│   │   ├── new.tsx          # New meal
+│   │   └── [id]/
+│   │       └── edit.tsx     # Edit meal
 │   ├── reports/
 │   │   └── expiring.tsx     # Expiring food report
 │   ├── admin/
 │   │   ├── admin-panel.tsx  # Admin overview
-│   │   ├── users.tsx        # User management
 │   │   ├── activity.tsx     # Activity log viewer
 │   │   ├── export.ts        # JSON export
 │   │   ├── import.ts        # JSON bulk import
@@ -195,15 +215,21 @@ scout-inventory/
 │       ├── items/
 │       │   ├── index.ts     # GET all / POST new item
 │       │   └── [id].ts      # GET / PUT / DELETE item by ID
+│       ├── camps/
+│       │   ├── index.ts     # GET all / POST new camp plan
+│       │   └── [id].ts      # GET / PATCH / DELETE camp plan
+│       ├── meals/
+│       │   ├── index.ts     # GET all / POST new meal
+│       │   └── [id].ts      # GET / PUT / DELETE meal
 │       ├── neckers.ts       # GET / POST necker count
 │       ├── stats.ts         # Dashboard statistics
 │       ├── logout.ts        # Session logout
 │       └── ping.ts          # Health check (used by warmup cron)
 ├── types/
-│   └── inventory.ts         # Item types, ItemLocation enum, ITEM_LOCATIONS
+│   ├── inventory.ts         # Item, camp plan, template types + location enums
+│   └── meals.ts             # Meal and ingredient types
 └── static/
     ├── styles.css           # Global styles
-    ├── theme-init.js        # Dark mode initialisation (loaded before render)
     └── inventory-import-template.json  # Template for bulk import
 ```
 
@@ -228,26 +254,22 @@ A third cron runs every 5 minutes to self-ping the app and keep the isolate warm
 - CSRF tokens validated on all state-mutating requests (`POST`, `PUT`, `DELETE`)
 - Session cookies are `HttpOnly`, `Secure`, and `SameSite=Strict`
 - Security headers on all responses: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy`
-- No inline JavaScript — all client-side interactivity is in Preact islands
-- All routes except `/login`, `/styles.css`, `/theme-init.js`, and `/api/ping` require an authenticated session
+- All client-side interactivity is in Preact islands; the only inline script is a minimal theme-detection snippet that runs before first paint to avoid flash of unstyled content
+- All routes except `/login`, `/styles.css`, and `/api/ping` require an authenticated session
 
 ---
 
 ## 💡 Ideas
 
-### 🏕️ Camp Planner
-A planning tool that lets leaders build a camp schedule and automatically checks the inventory to confirm all required equipment is available. Could support:
-- Creating a camp with a date range, expected headcount, and activity list
-- Mapping activities to required inventory categories (e.g. hiking → camping tools, cooking session → stoves + pots)
-- A readiness checklist showing which items are sufficiently stocked and flagging any shortfalls before the camp
-- Generating a kit list PDF or printable checklist for leaders to pack from
+### 📋 Stocktake Wizard
+A guided flow for running a periodic stock-take — walking through every item in turn, confirming quantities and conditions, and applying all changes in one atomic batch.
 
-### 🍽️ Meal Planner
-A meal planning tool that works directly from the food inventory, helping leaders plan meals for camps without over- or under-ordering. Could support:
-- Building a meal plan for a given number of days and people
-- Pulling current food stock quantities and expiry dates to suggest items to use first
-- Estimating servings remaining from inventory quantities and flagging items running low
-- Marking items as "allocated" to a meal plan so stock figures stay accurate
+### 📊 Expanded Reports
+- **Loans report** — items currently on loan, overdue returns, loan history per item
+- **Condition report** — all items needing repair grouped by category
+- **Space utilisation** — how full each physical storage location is
 
+### 📅 Calendar View
+A timeline view showing upcoming camps from camp plans, food expiry deadlines, and loan return dates on a single calendar.
 
 ---

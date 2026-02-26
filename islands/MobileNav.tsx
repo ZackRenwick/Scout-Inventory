@@ -4,7 +4,7 @@ import ThemeToggle from "./ThemeToggle.tsx";
 
 interface MobileNavProps {
   username?: string;
-  role?: "admin" | "editor" | "viewer";
+  role?: "admin" | "manager" | "editor" | "viewer";
 }
 
 export default function MobileNav({ username, role }: MobileNavProps) {
@@ -28,7 +28,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         <a href="/camps" class="hover:text-purple-200 transition-colors">Camp Planning</a>
         <a href="/meals" class="hover:text-purple-200 transition-colors">Meal Planner</a>
         <a href="/loans" class="hover:text-purple-200 transition-colors">Loans</a>
-        {role === "admin" && (
+        {(role === "admin" || role === "manager") && (
           <a href="/admin/admin-panel" class="hover:text-purple-200 transition-colors">Admin</a>
         )}
         <ThemeToggle />
@@ -52,7 +52,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           <a href="/camps" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🏕️ Camp Planning</a>
           <a href="/meals" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🍽️ Meal Planner</a>
           <a href="/loans" class="block px-6 py-3 hover:bg-purple-800 transition-colors">📤 Loans</a>
-          {role === "admin" && (
+          {(role === "admin" || role === "manager") && (
             <a href="/admin/admin-panel" class="block px-6 py-3 hover:bg-purple-800 transition-colors">⚙️ Admin</a>
           )}
           {username && (
