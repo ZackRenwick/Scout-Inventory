@@ -17,6 +17,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
   const success = useSignal("");
   const boxContents = useSignal<{ name: string; quantity: number }[]>(initialData?.contents ?? []);
   const equipmentType = useSignal<string>(initialData?.equipmentType ?? "stove");
+  const gameType = useSignal<string>(initialData?.gameType ?? "board-game");
 
   // Find the group that contains the initial location value (for edit mode)
   const initialLocationList = initialSpace === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS;
@@ -76,6 +77,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.playerCount = formData.get("playerCount") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.contents = boxContents.value.filter((c) => c.name.trim());
     } else if (category.value === "food") {
       data.foodType = formData.get("foodType");
       data.expiryDate = formData.get("expiryDate");
@@ -495,12 +497,13 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Game Type *</label>
-              <select name="gameType" required class={inputClass}>
+              <select name="gameType" required class={inputClass} onChange={(e) => { gameType.value = (e.target as HTMLSelectElement).value; }}>
                 <option value="board-game" selected={initialData?.gameType === "board-game"}>Board Game</option>
                 <option value="card-game" selected={initialData?.gameType === "card-game"}>Card Game</option>
                 <option value="outdoor-game" selected={initialData?.gameType === "outdoor-game"}>Outdoor Game</option>
                 <option value="sports" selected={initialData?.gameType === "sports"}>Sports Equipment</option>
                 <option value="puzzle" selected={initialData?.gameType === "puzzle"}>Puzzle</option>
+                <option value="box" selected={initialData?.gameType === "box"}>Box / Kit</option>
                 <option value="other" selected={initialData?.gameType === "other"}>Other</option>
               </select>
             </div>
@@ -526,10 +529,66 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
             </div>
           </div>
+
+          {/* Box contents editor — only for Box / Kit game type */}
+          {gameType.value === "box" && (
+          <div class="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-800">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-gray-700 dark:text-gray-200">Box Contents</h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track the individual items inside this box or kit (e.g. 4 skittles, 2 bats)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { boxContents.value = [...boxContents.value, { name: "", quantity: 1 }]; }}
+                class="shrink-0 text-sm px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800/60 font-medium"
+              >
+                + Add item
+              </button>
+            </div>
+            {boxContents.value.length === 0 ? (
+              <p class="text-sm text-gray-400 dark:text-gray-500 italic">No contents recorded yet.</p>
+            ) : (
+              <div class="space-y-2">
+                {boxContents.value.map((row, i) => (
+                  <div key={i} class="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      value={row.quantity}
+                      min={1}
+                      onInput={(e) => {
+                        const copy = [...boxContents.value];
+                        copy[i] = { ...copy[i], quantity: parseInt((e.target as HTMLInputElement).value) || 1 };
+                        boxContents.value = copy;
+                      }}
+                      class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Item name (e.g. Bat)"
+                      value={row.name}
+                      onInput={(e) => {
+                        const copy = [...boxContents.value];
+                        copy[i] = { ...copy[i], name: (e.target as HTMLInputElement).value };
+                        boxContents.value = copy;
+                      }}
+                      class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { boxContents.value = boxContents.value.filter((_, j) => j !== i); }}
+                      class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
+                      title="Remove"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          )}
         </div>
       )}
 
-      {/* Notes */}
       <div class="mb-6">
         <label class={labelClass}>
           Notes

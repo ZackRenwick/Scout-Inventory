@@ -16,7 +16,7 @@ export default function CategoryIcon({ category, size = "md" }: CategoryIconProp
     cooking: "🍳",
     food: "🥫",
     "camping-tools": "🪓",
-    games: "🎮",
+    games: "⚽",
   };
   
   const labels: Record<string, string> = {

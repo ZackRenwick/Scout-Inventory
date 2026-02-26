@@ -139,10 +139,12 @@ export interface CampingToolItem extends BaseInventoryItem {
 // Games equipment properties
 export interface GamesItem extends BaseInventoryItem {
   category: "games";
-  gameType: "board-game" | "card-game" | "outdoor-game" | "sports" | "puzzle" | "other";
+  gameType: "board-game" | "card-game" | "outdoor-game" | "sports" | "puzzle" | "box" | "other";
   condition: "excellent" | "good" | "fair" | "needs-repair";
   playerCount?: string;
   yearPurchased?: number;
+  /** Individual items tracked inside this box (only relevant when gameType === "box") */
+  contents?: BoxContentItem[];
 }
 
 // Union type for all inventory items

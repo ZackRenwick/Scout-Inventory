@@ -22,7 +22,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   cooking: "🍳",
   food: "🥫",
   "camping-tools": "🪓",
-  games: "🎮",
+  games: "⚽",
 };
 
 export const handler: Handlers<PrintPageData> = {

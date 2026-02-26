@@ -319,7 +319,7 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Game Type</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.gameType.replace(/-/g, ' ')}</p>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.gameType === "box" ? "Box / Kit" : item.gameType.replace(/-/g, ' ')}</p>
               </div>
               <div>
                 <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
@@ -338,6 +338,35 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 </div>
               )}
             </div>
+            {item.contents && item.contents.length > 0 && (
+              <div class="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Box Contents</h3>
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="border-b border-indigo-200 dark:border-indigo-700">
+                      <th class="text-left py-1.5 pr-4 font-medium text-gray-600 dark:text-gray-300">Item</th>
+                      <th class="text-right py-1.5 font-medium text-gray-600 dark:text-gray-300">Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {item.contents.map((c, i) => (
+                      <tr key={i} class="border-b border-indigo-100 dark:border-indigo-900/40 last:border-0">
+                        <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">{c.name}</td>
+                        <td class="py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">{c.quantity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr class="border-t border-indigo-200 dark:border-indigo-700">
+                      <td class="py-1.5 pr-4 text-xs text-gray-500 dark:text-gray-400">Total items</td>
+                      <td class="py-1.5 text-right font-semibold text-gray-700 dark:text-gray-200">
+                        {item.contents.reduce((sum, c) => sum + c.quantity, 0)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
