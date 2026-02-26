@@ -300,7 +300,7 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                             </td>
                             <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{row.unitsNeeded}</td>
                             <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                              {row.tracked ? row.inStock : <span class="text-gray-400 dark:text-gray-500">—</span>}
+                              {row.tracked ? row.inStock : <span class="text-gray-400 dark:text-gray-500">0</span>}
                             </td>
                             <td class="px-4 py-3 text-right">
                               {!row.tracked ? (
