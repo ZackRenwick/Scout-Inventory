@@ -304,11 +304,11 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                             </td>
                             <td class="px-4 py-3 text-right">
                               {!row.tracked ? (
-                                <span class="text-gray-400 dark:text-gray-500">—</span>
+                                <span class="font-semibold text-amber-600 dark:text-amber-400">{row.unitsNeeded}</span>
                               ) : (row.toBuy ?? 0) > 0 ? (
                                 <span class="font-semibold text-red-600 dark:text-red-400">{row.toBuy}</span>
                               ) : (
-                                <span class="text-green-600 dark:text-green-400">✓</span>
+                                <span class="font-semibold text-green-600 dark:text-green-400">0</span>
                               )}
                             </td>
                           </tr>
