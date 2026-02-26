@@ -36,6 +36,9 @@ export default function MealsPage({ data }: PageProps<MealsPageData>) {
 
   return (
     <Layout title="Meal Planner" username={session.username} role={session.role}>
+      <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-amber-800 dark:text-amber-300 text-sm">
+        🚧 <strong>Beta feature</strong> — Meal Planner is still in development. Please report any issues.
+      </div>
 
       {/* Meal list */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-8">

@@ -27,6 +27,9 @@ export default function CampsPage({ data }: PageProps<CampsPageData>) {
   const canEdit = data.session?.role !== "viewer";
   return (
     <Layout title="Camp Planning" username={data.session?.username} role={data.session?.role}>
+      <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-amber-800 dark:text-amber-300 text-sm">
+        🚧 <strong>Beta feature</strong> — Camp Planning is still in development. Please report any issues.
+      </div>
       <div class="mb-6">
         <div class="flex justify-between items-center">
           <p class="text-gray-600 dark:text-gray-400">
