@@ -2,12 +2,9 @@
   <rect width="32" height="32" rx="7" fill="#7c3aed"/>
   <text
     x="16"
-    y="22.5"
+    y="23"
     font-family="system-ui, -apple-system, sans-serif"
-    font-size="14"
-    font-weight="700"
-    fill="white"
+    font-size="20"
     text-anchor="middle"
-    letter-spacing="-0.5"
-  >ZR</text>
+  >⛺</text>
 </svg>

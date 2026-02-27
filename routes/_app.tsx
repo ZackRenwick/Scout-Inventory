@@ -14,7 +14,7 @@ export default function App({ Component }: PageProps) {
         <title>scout-inventory</title>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="alternate icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/logo.svg" />
+        <link rel="apple-touch-icon" href="/appicons/Assets.xcassets/AppIcon.appiconset/180.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="preload" href="/styles.css" as="style" />
         <link rel="stylesheet" href="/styles.css" />
