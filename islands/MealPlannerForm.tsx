@@ -269,8 +269,8 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                     )}
                   </div>
 
-                  {/* Table */}
-                  <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                  {/* Table — desktop */}
+                  <div class="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                     <table class="w-full text-sm">
                       <thead>
                         <tr class="bg-gray-50 dark:bg-gray-700/50 text-left">
@@ -315,6 +315,46 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Cards — mobile */}
+                  <div class="sm:hidden rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden">
+                    {results.map((row) => (
+                      <div
+                        key={row.key}
+                        class={`px-4 py-3 bg-white dark:bg-gray-800 ${!row.tracked ? "opacity-70" : (row.toBuy ?? 0) > 0 ? "bg-red-50/40 dark:bg-red-900/10" : ""}`}
+                      >
+                        <div class="font-medium text-gray-800 dark:text-gray-100 text-sm mb-1">
+                          {row.name}
+                          {!row.tracked && (
+                            <span class="ml-2 text-xs text-amber-600 dark:text-amber-400 font-normal">(not tracked)</span>
+                          )}
+                        </div>
+                        {row.tracked && row.linkedInventoryName && row.linkedInventoryName !== row.name && (
+                          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1.5">→ {row.linkedInventoryName}</div>
+                        )}
+                        <div class="flex gap-4 text-xs mt-1">
+                          <span class="text-gray-500 dark:text-gray-400">
+                            Needed: <span class="font-medium text-gray-700 dark:text-gray-200">{row.unitsNeeded}</span>
+                          </span>
+                          <span class="text-gray-500 dark:text-gray-400">
+                            In loft: <span class="font-medium text-gray-700 dark:text-gray-200">
+                              {row.tracked ? row.inStock : <span class="text-gray-400 dark:text-gray-500">0</span>}
+                            </span>
+                          </span>
+                          <span class="text-gray-500 dark:text-gray-400">
+                            To buy:{" "}
+                            {!row.tracked ? (
+                              <span class="font-semibold text-amber-600 dark:text-amber-400">{row.unitsNeeded}</span>
+                            ) : (row.toBuy ?? 0) > 0 ? (
+                              <span class="font-semibold text-red-600 dark:text-red-400">{row.toBuy}</span>
+                            ) : (
+                              <span class="font-semibold text-green-600 dark:text-green-400">0</span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Buy list */}
