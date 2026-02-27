@@ -10,8 +10,6 @@ const PUBLIC_PATHS = [
   "/robots.txt",
   "/manifest.json",
   "/sw.js",
-  "/icon-192.png",
-  "/icon-512.png",
   "/api/joke",
   "/api/ping",
 ];
