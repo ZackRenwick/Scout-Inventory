@@ -32,6 +32,28 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
   const [results, setResults] = useState<PlannerRow[] | null>(null);
   // Ephemeral per-session links: ingredient name → inventory food name (or "" for unlinked)
   const [links, setLinks] = useState<Record<string, string>>({});
+  const [copied, setCopied] = useState(false);
+  const canShare = typeof navigator !== "undefined" && !!navigator.share;
+
+  function buildBuyText(toBuyList: PlannerRow[]): string {
+    const lines = [`Shopping list for ${headcount} people`, ""];
+    for (const row of toBuyList) {
+      const qty = row.tracked ? row.toBuy : row.unitsNeeded;
+      const note = !row.tracked ? " (not tracked)" : "";
+      lines.push(`• ${row.name}: ×${qty}${note}`);
+    }
+    return lines.join("\n");
+  }
+
+  function copyBuyList(toBuyList: PlannerRow[]) {
+    navigator.clipboard.writeText(buildBuyText(toBuyList));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function shareBuyList(toBuyList: PlannerRow[]) {
+    navigator.share({ title: "Scout Shopping List", text: buildBuyText(toBuyList) });
+  }
 
   // Name-based stock map: aggregates quantity across all items sharing the same name
   const stockByName = new Map<string, { total: number; batchCount: number }>();
@@ -367,9 +389,29 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                     );
                     return (
                       <div class="mt-6">
-                        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
-                          🛒 What to buy
-                        </h4>
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                          <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                            🛒 What to buy
+                          </h4>
+                          <div class="flex gap-2">
+                            {canShare && (
+                              <button
+                                type="button"
+                                onClick={() => shareBuyList(toBuyList)}
+                                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <span>↑</span> Share
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => copyBuyList(toBuyList)}
+                              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                              {copied ? "✓ Copied" : "⎘ Copy"}
+                            </button>
+                          </div>
+                        </div>
                         <ul class="divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                           {toBuyList.map((row) => (
                             <li key={row.key} class="flex items-center justify-between gap-4 px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
