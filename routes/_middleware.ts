@@ -4,7 +4,17 @@ import { getSessionCookie, getSession, extendSession, makeSessionCookie, type Se
 import { preloadCaches } from "../db/kv.ts";
 
 // Routes that don't require authentication
-const PUBLIC_PATHS = ["/login", "/styles.css", "/api/joke", "/api/ping"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/styles.css",
+  "/robots.txt",
+  "/manifest.json",
+  "/sw.js",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/api/joke",
+  "/api/ping",
+];
 
 // True when running on Deno Deploy
 const IS_DEPLOYED = !!Deno.env.get("DENO_DEPLOYMENT_ID");
