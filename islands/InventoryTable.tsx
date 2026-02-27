@@ -645,7 +645,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                         <button
                           type="button"
                           disabled={adjustingQtyId.value === item.id || item.quantity <= 0}
-                          onClick={() => handleAdjustQty(item, -1)}
+                          onClick={(e) => { e.stopPropagation(); handleAdjustQty(item, -1); }}
                           class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 text-base leading-none"
                           aria-label="Decrease quantity"
                         >−</button>
@@ -661,7 +661,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                         <button
                           type="button"
                           disabled={adjustingQtyId.value === item.id}
-                          onClick={() => handleAdjustQty(item, 1)}
+                          onClick={(e) => { e.stopPropagation(); handleAdjustQty(item, 1); }}
                           class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 text-base leading-none"
                           aria-label="Increase quantity"
                         >+</button>
