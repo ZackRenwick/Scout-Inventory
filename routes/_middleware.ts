@@ -10,6 +10,9 @@ const PUBLIC_PATHS = [
   "/robots.txt",
   "/manifest.json",
   "/sw.js",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
   "/api/joke",
   "/api/ping",
 ];
@@ -61,7 +64,6 @@ export async function handler(req: Request, ctx: FreshContext) {
     PUBLIC_PATHS.includes(path) ||
     path.startsWith("/_fresh/") ||
     path.startsWith("/static/") ||
-    path.startsWith("/appicons/") ||
     /\.(png|ico|svg|webp)$/i.test(path)
   ) {
     const res = await ctx.next();
