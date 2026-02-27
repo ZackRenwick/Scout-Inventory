@@ -1,0 +1,43 @@
+{
+  "name": "7th Whitburn Scouts Inventory",
+  "short_name": "Scout Inventory",
+  "description": "Scout troop inventory management — track gear, supplies, and equipment.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#7c3aed",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Inventory",
+      "url": "/inventory",
+      "description": "View and manage inventory items"
+    },
+    {
+      "name": "Camp Planning",
+      "url": "/camps",
+      "description": "Plan and manage camps"
+    },
+    {
+      "name": "Loans",
+      "url": "/loans",
+      "description": "View equipment loans"
+    }
+  ]
+}
