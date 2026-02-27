@@ -52,6 +52,7 @@ import * as $meals_index from "./routes/meals/index.tsx";
 import * as $meals_new from "./routes/meals/new.tsx";
 import * as $reports_expiring from "./routes/reports/expiring.tsx";
 import * as $BulkImport from "./islands/BulkImport.tsx";
+import * as $CampCalendar from "./islands/CampCalendar.tsx";
 import * as $CampChecklist from "./islands/CampChecklist.tsx";
 import * as $CampPlanForm from "./islands/CampPlanForm.tsx";
 import * as $CampPlanList from "./islands/CampPlanList.tsx";
@@ -131,6 +132,7 @@ const manifest = {
   },
   islands: {
     "./islands/BulkImport.tsx": $BulkImport,
+    "./islands/CampCalendar.tsx": $CampCalendar,
     "./islands/CampChecklist.tsx": $CampChecklist,
     "./islands/CampPlanForm.tsx": $CampPlanForm,
     "./islands/CampPlanList.tsx": $CampPlanList,

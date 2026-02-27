@@ -240,11 +240,13 @@ export async function ensureDefaultAdmin(): Promise<void> {
   await createUser(username, password, "admin");
   console.log(`[auth] Created default admin user: ${username}`);
 
-  // Warn loudly in production if the fallback default password is in use
+  // Refuse to start in production with no ADMIN_PASSWORD set — the fallback
+  // is a well-known default and would leave the app completely unprotected.
   if (IS_DEPLOYED && !Deno.env.get("ADMIN_PASSWORD")) {
-    console.warn(
-      "[auth] WARNING: ADMIN_PASSWORD env var is not set. The default admin account uses the "
-      + "built-in fallback password. Set ADMIN_PASSWORD in your deployment environment immediately.",
+    throw new Error(
+      "[auth] ADMIN_PASSWORD environment variable is not set. "
+      + "Refusing to start in production with the default fallback password. "
+      + "Set ADMIN_PASSWORD in your Deno Deploy project settings.",
     );
   }
 }
