@@ -60,7 +60,9 @@ export async function handler(req: Request, ctx: FreshContext) {
   if (
     PUBLIC_PATHS.includes(path) ||
     path.startsWith("/_fresh/") ||
-    path.startsWith("/static/")
+    path.startsWith("/static/") ||
+    path.startsWith("/appicons/") ||
+    /\.(png|ico|svg|webp)$/i.test(path)
   ) {
     const res = await ctx.next();
     if (path.startsWith("/_fresh/")) {
