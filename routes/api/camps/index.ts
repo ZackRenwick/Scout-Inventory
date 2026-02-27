@@ -9,14 +9,9 @@ export const handler: Handlers = {
   async GET(_req, _ctx) {
     try {
       const plans = await getAllCampPlans();
-      return new Response(JSON.stringify(plans), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(plans);
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to fetch camp plans" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to fetch camp plans" }, { status: 500 });
     }
   },
 
@@ -55,15 +50,9 @@ export const handler: Handlers = {
       };
 
       const created = await createCampPlan(newPlan);
-      return new Response(JSON.stringify(created), {
-        status: 201,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(created, { status: 201 });
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to create camp plan" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to create camp plan" }, { status: 500 });
     }
   },
 };

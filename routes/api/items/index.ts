@@ -40,14 +40,9 @@ export const handler: Handlers = {
       // Sort by name
       items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
       
-      return new Response(JSON.stringify(items), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(items);
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to fetch items" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to fetch items" }, { status: 500 });
     }
   },
   
@@ -66,19 +61,13 @@ export const handler: Handlers = {
       // Validate base fields
       const baseErr = validateItemBase(body);
       if (baseErr) {
-        return new Response(
-          JSON.stringify({ error: baseErr }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
-        );
+        return Response.json({ error: baseErr }, { status: 400 });
       }
       // Validate food-specific fields
       if (body.category === "food") {
         const foodErr = validateFoodItem(body);
         if (foodErr) {
-          return new Response(
-            JSON.stringify({ error: foodErr }),
-            { status: 400, headers: { "Content-Type": "application/json" } },
-          );
+          return Response.json({ error: foodErr }, { status: 400 });
         }
       }
       
@@ -105,15 +94,9 @@ export const handler: Handlers = {
         details: `${newItem.category} · qty ${newItem.quantity}`,
       });
 
-      return new Response(JSON.stringify(newItem), {
-        status: 201,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(newItem, { status: 201 });
     } catch (_error) {
-      return new Response(
-        JSON.stringify({ error: "Failed to create item" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
+      return Response.json({ error: "Failed to create item" }, { status: 500 });
     }
   },
 };

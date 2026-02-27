@@ -9,14 +9,9 @@ export const handler: Handlers = {
   async GET() {
     try {
       const count = await getNeckerCount();
-      return new Response(JSON.stringify({ count }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ count });
     } catch (_e) {
-      return new Response(JSON.stringify({ error: "Failed to fetch necker count" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to fetch necker count" }, { status: 500 });
     }
   },
 
@@ -38,20 +33,12 @@ export const handler: Handlers = {
       } else if (typeof body.delta === "number") {
         count = await adjustNeckerCount(body.delta);
       } else {
-        return new Response(JSON.stringify({ error: "Provide 'delta' or 'value'" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Provide 'delta' or 'value'" }, { status: 400 });
       }
 
-      return new Response(JSON.stringify({ count }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ count });
     } catch (_e) {
-      return new Response(JSON.stringify({ error: "Failed to update necker count" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to update necker count" }, { status: 500 });
     }
   },
 };

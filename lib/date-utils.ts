@@ -1,21 +1,17 @@
 // Date utility functions for inventory management
 
-export function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+/** Formats a date as "27 Feb 2026" (en-GB short). Accepts a Date, ISO string, or undefined. */
+export function formatDate(date: Date | string | undefined): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function formatDateTime(date: Date): string {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+/** Formats a date + time as "27 Feb 2026, 14:30" (en-GB). */
+export function formatDateTime(date: Date | string | undefined): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 export function getDaysUntil(targetDate: Date): number {

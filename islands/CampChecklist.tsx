@@ -2,6 +2,7 @@
 import { useSignal, useComputed } from "@preact/signals";
 import type { CampPlan, CampPlanItem, CampPlanStatus, CampTemplate, InventoryItem } from "../types/inventory.ts";
 import { ITEM_LOCATIONS } from "../types/inventory.ts";
+import { formatDate } from "../lib/date-utils.ts";
 
 interface CampChecklistProps {
   plan: CampPlan;
@@ -32,14 +33,6 @@ const STATUS_COLORS: Record<CampPlanStatus, string> = {
 const STATUS_ORDER: CampPlanStatus[] = ["planning", "packing", "active", "returning", "completed"];
 
 type Tab = "pack" | "return";
-
-function formatDate(d: Date | string | undefined): string {
-  if (!d) {
-    return "";
-  }
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
 
 export default function CampChecklist({ plan: initialPlan, allItems, templates: initialTemplates, canEdit, csrfToken }: CampChecklistProps) {
   const plan = useSignal<CampPlan>(initialPlan);

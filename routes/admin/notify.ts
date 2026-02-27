@@ -1,14 +1,14 @@
 // POST /admin/notify — manually trigger notification emails
 import type { Handlers } from "$fresh/server.ts";
 import type { Session } from "../../lib/auth.ts";
-import { csrfOk, csrfFailed } from "../../lib/auth.ts";
+import { csrfOk, csrfFailed, forbidden } from "../../lib/auth.ts";
 import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "../../lib/notifications.ts";
 
 export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session;
     if (session.role !== "admin") {
-      return new Response(JSON.stringify({ error: "Admin only" }), { status: 403, headers: { "Content-Type": "application/json" } });
+      return forbidden();
     }
     if (!csrfOk(req, session)) {
       return csrfFailed();

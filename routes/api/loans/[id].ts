@@ -16,16 +16,10 @@ export const handler: Handlers = {
     try {
       const existing = await getCheckOutById(id);
       if (!existing) {
-        return new Response(JSON.stringify({ error: "Loan not found." }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Loan not found." }, { status: 404 });
       }
       if (existing.status === "returned") {
-        return new Response(JSON.stringify({ error: "Loan has already been returned." }), {
-          status: 409,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Loan has already been returned." }, { status: 409 });
       }
 
       const updated = await returnCheckOut(id);
@@ -41,15 +35,10 @@ export const handler: Handlers = {
         details: `Returned ${updated.quantity}× "${updated.itemName}" from ${updated.borrower}`,
       });
 
-      return new Response(JSON.stringify(updated), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(updated);
     } catch (e) {
       console.error("Failed to return loan:", e);
-      return new Response(JSON.stringify({ error: "Failed to mark loan as returned." }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to mark loan as returned." }, { status: 500 });
     }
   },
 
@@ -63,10 +52,7 @@ export const handler: Handlers = {
     try {
       const existing = await getCheckOutById(id);
       if (!existing) {
-        return new Response(JSON.stringify({ error: "Loan not found." }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Loan not found." }, { status: 404 });
       }
 
       await deleteCheckOut(id);
@@ -82,10 +68,7 @@ export const handler: Handlers = {
       return new Response(null, { status: 204 });
     } catch (e) {
       console.error("Failed to cancel loan:", e);
-      return new Response(JSON.stringify({ error: "Failed to cancel loan." }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to cancel loan." }, { status: 500 });
     }
   },
 };

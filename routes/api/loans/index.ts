@@ -15,10 +15,7 @@ export const handler: Handlers = {
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
     const { itemId, borrower, quantity, expectedReturnDate, notes } = body as Record<string, unknown>;
@@ -31,58 +28,55 @@ export const handler: Handlers = {
       typeof expectedReturnDate !== "string" ||
       !expectedReturnDate
     ) {
-      return new Response(
-        JSON.stringify({ error: "itemId, borrower, quantity, and expectedReturnDate are required." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+      return Response.json(
+        { error: "itemId, borrower, quantity, and expectedReturnDate are required." },
+        { status: 400 },
       );
     }
 
     const item = await getItemById(itemId);
     if (!item) {
-      return new Response(JSON.stringify({ error: "Item not found." }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Item not found." }, { status: 404 });
     }
 
     const qty = Number(quantity);
     if (!Number.isInteger(qty) || qty < 1 || qty > item.quantity) {
-      return new Response(
-        JSON.stringify({ error: `Quantity must be between 1 and ${item.quantity}.` }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+      return Response.json(
+        { error: `Quantity must be between 1 and ${item.quantity}.` },
+        { status: 400 },
       );
     }
 
     // Enforce length limits to prevent oversized KV records
     const borrowerStr = (borrower as string).trim();
     if (borrowerStr.length > 100) {
-      return new Response(
-        JSON.stringify({ error: "Borrower name must be 100 characters or fewer." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+      return Response.json(
+        { error: "Borrower name must be 100 characters or fewer." },
+        { status: 400 },
       );
     }
     if (notes !== undefined && notes !== null) {
       if (typeof notes !== "string" || (notes as string).length > 500) {
-        return new Response(
-          JSON.stringify({ error: "Notes must be 500 characters or fewer." }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
+        return Response.json(
+          { error: "Notes must be 500 characters or fewer." },
+          { status: 400 },
         );
       }
     }
 
     // Reject food items — they are consumable and shouldn't be loaned
     if (item.category === "food") {
-      return new Response(
-        JSON.stringify({ error: "Food items cannot be loaned." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+      return Response.json(
+        { error: "Food items cannot be loaned." },
+        { status: 400 },
       );
     }
 
     const returnDate = new Date(expectedReturnDate);
     if (isNaN(returnDate.getTime()) || returnDate <= new Date()) {
-      return new Response(
-        JSON.stringify({ error: "expectedReturnDate must be a valid date in the future." }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+      return Response.json(
+        { error: "expectedReturnDate must be a valid date in the future." },
+        { status: 400 },
       );
     }
 
@@ -109,16 +103,10 @@ export const handler: Handlers = {
         details: `Loaned ${qty}× "${item.name}" to ${checkout.borrower}, due ${expectedReturnDate}`,
       });
 
-      return new Response(JSON.stringify(checkout), {
-        status: 201,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(checkout, { status: 201 });
     } catch (e) {
       console.error("Failed to create loan:", e);
-      return new Response(JSON.stringify({ error: "Failed to create loan." }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to create loan." }, { status: 500 });
     }
   },
 };

@@ -13,20 +13,12 @@ export const handler: Handlers = {
       const item = await getItemById(id);
       
       if (!item) {
-        return new Response(JSON.stringify({ error: "Item not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Item not found" }, { status: 404 });
       }
       
-      return new Response(JSON.stringify(item), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(item);
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to fetch item" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to fetch item" }, { status: 500 });
     }
   },
   
@@ -52,10 +44,7 @@ export const handler: Handlers = {
       const updatedItem = await updateItem(id, updates);
       
       if (!updatedItem) {
-        return new Response(JSON.stringify({ error: "Item not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Item not found" }, { status: 404 });
       }
       
       await logActivity({
@@ -66,14 +55,9 @@ export const handler: Handlers = {
         details: `${updatedItem.category} · qty ${updatedItem.quantity}`,
       });
 
-      return new Response(JSON.stringify(updatedItem), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(updatedItem);
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to update item" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to update item" }, { status: 500 });
     }
   },
   
@@ -94,10 +78,7 @@ export const handler: Handlers = {
       const success = await deleteItem(id);
       
       if (!success) {
-        return new Response(JSON.stringify({ error: "Item not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Item not found" }, { status: 404 });
       }
 
       await logActivity({
@@ -108,14 +89,9 @@ export const handler: Handlers = {
         details: existing ? `${existing.category} · qty was ${existing.quantity}` : undefined,
       });
 
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ success: true });
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to delete item" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to delete item" }, { status: 500 });
     }
   },
 };

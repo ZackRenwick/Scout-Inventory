@@ -53,14 +53,9 @@ export const handler: Handlers = {
         expiringFood,
       };
 
-      return new Response(JSON.stringify(stats), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(stats);
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to fetch stats" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to fetch stats" }, { status: 500 });
     }
   },
 };

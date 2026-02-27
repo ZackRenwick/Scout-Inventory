@@ -1,16 +1,12 @@
 // Interactive loan list island — shows active/overdue loans and return history
 import { useSignal } from "@preact/signals";
 import type { CheckOut } from "../types/inventory.ts";
+import { formatDate } from "../lib/date-utils.ts";
 
 interface LoanListProps {
   loans: CheckOut[];
   canEdit: boolean;
   csrfToken?: string;
-}
-
-function formatDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function daysUntil(d: Date | string): number {

@@ -22,18 +22,12 @@ export const handler: Handlers = {
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
     const { updates } = body;
     if (!Array.isArray(updates) || updates.length === 0) {
-      return new Response(JSON.stringify({ error: "No updates provided." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "No updates provided." }, { status: 400 });
     }
 
     let applied = 0;
@@ -67,8 +61,6 @@ export const handler: Handlers = {
       details: `Stock-take applied ${applied} correction${applied !== 1 ? "s" : ""}${errors.length > 0 ? ` (${errors.length} error${errors.length !== 1 ? "s" : ""})` : ""}`,
     });
 
-    return new Response(JSON.stringify({ applied, errors }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return Response.json({ applied, errors });
   },
 };

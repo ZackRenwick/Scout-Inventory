@@ -98,19 +98,11 @@ export const handler: Handlers = {
     try {
       const plan = await getCampPlanById(id);
       if (!plan) {
-        return new Response(JSON.stringify({ error: "Camp plan not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Camp plan not found" }, { status: 404 });
       }
-      return new Response(JSON.stringify(plan), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(plan);
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to fetch camp plan" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to fetch camp plan" }, { status: 500 });
     }
   },
 
@@ -135,10 +127,7 @@ export const handler: Handlers = {
       // a redundant second read inside updateCampPlan.
       const existing = await getCampPlanById(id);
       if (!existing) {
-        return new Response(JSON.stringify({ error: "Camp plan not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Camp plan not found" }, { status: 404 });
       }
 
       if (body.items) {
@@ -147,19 +136,11 @@ export const handler: Handlers = {
 
       const updated = await updateCampPlan(id, body, existing);
       if (!updated) {
-        return new Response(JSON.stringify({ error: "Camp plan not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Camp plan not found" }, { status: 404 });
       }
-      return new Response(JSON.stringify(updated), {  // updated is always set when existing was found
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json(updated);
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to update camp plan" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to update camp plan" }, { status: 500 });
     }
   },
 
@@ -179,19 +160,11 @@ export const handler: Handlers = {
     try {
       const success = await deleteCampPlan(id);
       if (!success) {
-        return new Response(JSON.stringify({ error: "Camp plan not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+        return Response.json({ error: "Camp plan not found" }, { status: 404 });
       }
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ success: true });
     } catch (_error) {
-      return new Response(JSON.stringify({ error: "Failed to delete camp plan" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return Response.json({ error: "Failed to delete camp plan" }, { status: 500 });
     }
   },
 };

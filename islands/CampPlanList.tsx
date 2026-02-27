@@ -1,6 +1,7 @@
 // Camp plan list island — interactive list with delete and status badges
 import { useSignal } from "@preact/signals";
 import type { CampPlan, CampPlanStatus } from "../types/inventory.ts";
+import { formatDate } from "../lib/date-utils.ts";
 
 interface CampPlanListProps {
   plans: CampPlan[];
@@ -23,11 +24,6 @@ const STATUS_COLORS: Record<CampPlanStatus, string> = {
   returning: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
   completed: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
-
-function formatDate(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
 
 export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }: CampPlanListProps) {
   const plans = useSignal<CampPlan[]>(initialPlans);
