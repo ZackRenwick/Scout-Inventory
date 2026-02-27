@@ -198,8 +198,8 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
             </p>
             <div class="space-y-2">
               {activeIngredientNames.map((ingName) => (
-                <div key={ingName} class="flex items-center gap-3">
-                  <span class="text-sm text-gray-700 dark:text-gray-200 w-40 shrink-0 truncate" title={ingName}>
+                <div key={ingName} class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-200 sm:w-40 sm:shrink-0 sm:truncate" title={ingName}>
                     {ingName}
                   </span>
                   <select
@@ -208,7 +208,7 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                       const val = (e.target as HTMLSelectElement).value;
                       setLinks((prev) => ({ ...prev, [ingName]: val }));
                     }}
-                    class="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                    class="w-full sm:flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
                   >
                     <option value="">— not tracked —</option>
                     {foodNames.map((fn) => {
