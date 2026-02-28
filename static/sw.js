@@ -4,7 +4,7 @@
 //   - Navigation/HTML pages: network-first, cached opportunistically
 //   - API / admin routes: network-only (never cache sensitive data)
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const STATIC_CACHE  = `scouts-static-${CACHE_VERSION}`;
 const PAGE_CACHE    = `scouts-pages-${CACHE_VERSION}`;
 
@@ -48,6 +48,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Non-hashed Fresh JS (island entrypoints, main.js, signals.js, etc.):
+  // always try network first so redeployments are picked up immediately.
+  // Fall back to cache only when offline.
+  if (url.pathname.startsWith("/_fresh/") && /\.js$/i.test(url.pathname)) {
+    event.respondWith(networkFirstStatic(request));
+    return;
+  }
+
   if (request.mode === "navigate") {
     event.respondWith(networkFirstPage(request));
     return;
@@ -56,9 +64,33 @@ self.addEventListener("fetch", (event) => {
 
 function isStaticAsset(pathname) {
   return (
-    pathname.startsWith("/_fresh/") ||
-    /\.(css|js|svg|png|ico|woff2?|ttf)$/i.test(pathname)
+    isHashedChunk(pathname) ||
+    /\.(css|svg|png|ico|woff2?|ttf)$/i.test(pathname)
   );
+}
+
+// Content-hashed Fresh chunks are immutable — safe to cache forever.
+// Island entrypoints (island-*.js, main.js, signals.js, deserializer.js) are
+// NOT hashed and must NOT be served cache-first, otherwise a redeployment
+// causes the stale entrypoint to reference chunk hashes that no longer exist,
+// breaking island hydration (e.g. the mobile nav menu stops working).
+function isHashedChunk(pathname) {
+  return pathname.startsWith("/_fresh/") &&
+    /\/chunk-[A-Z0-9]{8,}\.(js|css)$/i.test(pathname);
+}
+
+async function networkFirstStatic(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(STATIC_CACHE);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await caches.match(request);
+    return cached ?? new Response("Offline", { status: 503 });
+  }
 }
 
 async function cacheFirst(request, cacheName) {
