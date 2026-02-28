@@ -129,7 +129,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Sign In · 7th Whitburn Scouts Inventory</title>
         <link rel="stylesheet" href="/styles.css" />
-        <script src="/theme-init.js" />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var s=localStorage.getItem("theme");if(s==="dark"||(!s&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark");}})();` }} />
       </head>
       <body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
         <div class="w-full max-w-sm">
