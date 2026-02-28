@@ -16,6 +16,10 @@ import {
 import { logActivity } from "../lib/activityLog.ts";
 import PasswordInput from "../islands/PasswordInput.tsx";
 
+// This page renders its own full HTML document, so skip the _app.tsx wrapper
+// to avoid nested <html>/<body> tags that break island hydration in production.
+export const config = { skipAppWrapper: true };
+
 interface LoginData {
   error?: string;
 }
