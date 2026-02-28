@@ -11,6 +11,7 @@ import {
   checkRateLimit,
   recordFailedLogin,
   resetRateLimit,
+  deleteAllSessionsForUser,
 } from "../lib/auth.ts";
 import { logActivity } from "../lib/activityLog.ts";
 import PasswordInput from "../islands/PasswordInput.tsx";
@@ -64,6 +65,10 @@ export const handler: Handlers<LoginData> = {
     if (newHash) {
       await updateUserPassword(user.username, undefined, newHash);
     }
+
+    // Destroy any existing sessions for this user before creating a new one.
+    // Prevents session accumulation and ensures only one active session per user.
+    await deleteAllSessionsForUser(user.id);
 
     const session = await createSession(user);
 
