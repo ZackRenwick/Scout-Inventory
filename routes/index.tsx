@@ -202,7 +202,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
       </div>
       
       {/* Overview Stats */}
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-8">
         <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
           <StatCard
             title="Expired Food"
