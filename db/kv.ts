@@ -781,3 +781,61 @@ export async function deleteMeal(id: string): Promise<boolean> {
   await db.delete([...KEYS.meals, id]);
   return true;
 }
+
+// ===== DATABASE CLEANUP =====
+
+export interface CleanUpReport {
+  /** Secondary index entries that pointed to deleted items, now removed. */
+  orphanedIndexes: number;
+  /** Returned loan records older than retainMonths, now purged. */
+  oldReturnedLoans: number;
+}
+
+/**
+ * Removes stale data that accumulates over time:
+ *  1. Orphaned secondary index entries (item deleted but index entry left behind)
+ *  2. Returned loan records older than `retainMonths` months (default: 6)
+ *
+ * Safe to run at any time — does not touch active items, active loans, or stats.
+ */
+export async function cleanUpDb(retainMonths = 6): Promise<CleanUpReport> {
+  const db = await initKv();
+  let orphanedIndexes = 0;
+  let oldReturnedLoans = 0;
+
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - retainMonths);
+
+  const deleteOps: Promise<void>[] = [];
+
+  // 1. Orphaned secondary indexes — item ID is always the last key segment
+  for await (const entry of db.list({ prefix: ["inventory", "idx"] })) {
+    const itemId = entry.key[entry.key.length - 1] as string;
+    const item = await db.get([...KEYS.items, itemId]);
+    if (!item.value) {
+      deleteOps.push(db.delete(entry.key));
+      orphanedIndexes++;
+    }
+  }
+
+  // 2. Old returned loans
+  for await (const entry of db.list<CheckOut>({ prefix: KEYS.checkouts })) {
+    const checkout = deserializeCheckOut(entry.value);
+    if (
+      checkout.status === "returned" &&
+      checkout.actualReturnDate &&
+      new Date(checkout.actualReturnDate as unknown as string) < cutoff
+    ) {
+      deleteOps.push(db.delete(entry.key));
+      oldReturnedLoans++;
+    }
+  }
+
+  await Promise.all(deleteOps);
+
+  if (oldReturnedLoans > 0) {
+    invalidateCheckoutsCache();
+  }
+
+  return { orphanedIndexes, oldReturnedLoans };
+}

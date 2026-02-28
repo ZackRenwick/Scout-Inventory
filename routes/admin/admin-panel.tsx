@@ -4,6 +4,7 @@ import Layout from "../../components/Layout.tsx";
 import NotificationButtons from "../../islands/NotificationButtons.tsx";
 import BulkImport from "../../islands/BulkImport.tsx";
 import RebuildIndexes from "../../islands/RebuildIndexes.tsx";
+import DbCleanup from "../../islands/DbCleanup.tsx";
 import PasswordInput from "../../islands/PasswordInput.tsx";
 import ConfirmDeleteForm from "../../islands/ConfirmDeleteForm.tsx";
 import {
@@ -230,6 +231,22 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           Only needed after a manual data migration or if stats appear incorrect.
         </p>
         <RebuildIndexes csrfToken={csrfToken} />
+      </div>
+      )}
+
+      {/* Database Cleanup — admin only */}
+      {isAdmin && (
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">🧹 Database Cleanup</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          Removes stale data that accumulates over time:
+        </p>
+        <ul class="text-sm text-gray-500 dark:text-gray-400 list-disc list-inside mb-4 space-y-1">
+          <li>Orphaned secondary index entries (pointing to deleted items)</li>
+          <li>Returned loan records older than 6 months</li>
+          <li>Orphaned session index entries (TTL-expired sessions)</li>
+        </ul>
+        <DbCleanup csrfToken={csrfToken} />
       </div>
       )}
 

@@ -329,6 +329,27 @@ export async function deleteAllSessionsForUser(userId: string): Promise<void> {
   await Promise.all(deletes);
 }
 
+/**
+ * Removes orphaned user_sessions index entries where the referenced session
+ * no longer exists (e.g. expired and was evicted by KV TTL but the index
+ * entry somehow survived). Returns the number of entries removed.
+ */
+export async function cleanUpOrphanedSessions(): Promise<number> {
+  const kv = await getKv();
+  let count = 0;
+  const deletes: Promise<void>[] = [];
+  for await (const entry of kv.list<boolean>({ prefix: ["auth", "user_sessions"] })) {
+    const sessionId = entry.key[entry.key.length - 1] as string;
+    const session = await kv.get<Session>(["auth", "sessions", sessionId]);
+    if (!session.value) {
+      deletes.push(kv.delete(entry.key));
+      count++;
+    }
+  }
+  await Promise.all(deletes);
+  return count;
+}
+
 // ===== COOKIE HELPERS =====
 
 export function getSessionCookie(req: Request): string | null {
