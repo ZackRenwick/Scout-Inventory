@@ -423,7 +423,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                 <button
                   type="button"
                   onClick={() => { addMode.value = "item"; selectedBox.value = ""; }}
-                  class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                  class={`flex-1 text-sm px-2 py-2 rounded-md border transition-colors text-center leading-tight ${
                     addMode.value === "item"
                       ? "bg-purple-600 text-white border-purple-600"
                       : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -434,7 +434,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                 <button
                   type="button"
                   onClick={() => { addMode.value = "box"; addingItem.value = ""; itemSearch.value = ""; selectedTemplateId.value = ""; }}
-                  class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                  class={`flex-1 text-sm px-2 py-2 rounded-md border transition-colors text-center leading-tight ${
                     addMode.value === "box"
                       ? "bg-purple-600 text-white border-purple-600"
                       : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -446,7 +446,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                   <button
                     type="button"
                     onClick={() => { addMode.value = "template"; addingItem.value = ""; itemSearch.value = ""; selectedBox.value = ""; }}
-                    class={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                    class={`flex-1 text-sm px-2 py-2 rounded-md border transition-colors text-center leading-tight ${
                       addMode.value === "template"
                         ? "bg-purple-600 text-white border-purple-600"
                         : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -594,11 +594,15 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                         addingItem.value === inv.id ? "bg-purple-50 dark:bg-purple-900/30" : ""
                       }`}
                     >
-                      <span class="font-medium text-gray-800 dark:text-gray-100">{inv.name}</span>
-                      <span class="text-gray-500 dark:text-gray-400 ml-2 text-xs">
-                        {inv.category} · {inv.location} · qty in stock: {inv.quantity}
-                        {inv.category === "food" && <span class="ml-1 text-orange-500 font-medium">🍽️ food</span>}
-                      </span>
+                      <div class="flex items-baseline justify-between gap-2">
+                        <span class="font-medium text-gray-800 dark:text-gray-100 truncate">{inv.name}</span>
+                        <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">
+                          qty: {inv.quantity}{inv.category === "food" && <span class="ml-1 text-orange-500">🍽️</span>}
+                        </span>
+                      </div>
+                      <div class="text-gray-400 dark:text-gray-500 text-xs truncate mt-0.5">
+                        {inv.category} · {inv.location}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -616,20 +620,20 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                       </span>
                     </div>
                   )}
-                  <div class="flex flex-wrap items-end gap-3">
-                    <div>
+                  <div class="flex items-end gap-2">
+                    <div class="shrink-0 w-24">
                       <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        Quantity {selectedIsFood.value ? "(to take)" : "(to pack)"}
+                        {selectedIsFood.value ? "Qty (to take)" : "Qty (to pack)"}
+                        <span class="font-normal text-gray-400 dark:text-gray-500 ml-1">· {selectedInv.value.quantity} in stock</span>
                       </label>
                       <input
                         type="number"
                         min={1}
                         max={selectedInv.value.quantity}
-                        class={`${inputClass} w-24`}
+                        class={`${inputClass} w-full`}
                         value={addQty.value}
                         onInput={(e) => (addQty.value = parseInt((e.target as HTMLInputElement).value) || 1)}
                       />
-                      <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{selectedInv.value.quantity} in stock</p>
                     </div>
                     <div class="flex-1 min-w-0">
                       <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Note (optional)</label>
@@ -645,7 +649,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                       type="button"
                       onClick={addItem}
                       disabled={saving.value}
-                      class="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors shrink-0"
+                      class="shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors"
                     >
                       {saving.value ? "…" : "Add"}
                     </button>
