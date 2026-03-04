@@ -11,7 +11,7 @@ interface ItemFormProps {
 export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
   const initialSpace = initialData?.space ?? (initialData?.category === "games" ? "scout-post-loft" : "camp-store");
   const space = useSignal<"camp-store" | "scout-post-loft">(initialSpace);
-  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games">(initialData?.category || "tent");
+  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games" | "kit">(initialData?.category || "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
   const success = useSignal("");
@@ -76,6 +76,13 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.condition = formData.get("condition");
       data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.playerCount = formData.get("playerCount") || undefined;
+      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.contents = boxContents.value.filter((c) => c.name.trim());
+    } else if (category.value === "kit") {
+      data.kitType = formData.get("kitType");
+      data.condition = formData.get("condition");
+      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.brand = formData.get("brand") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
       data.contents = boxContents.value.filter((c) => c.name.trim());
     } else if (category.value === "food") {
@@ -175,10 +182,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               <option value="cooking">🍳 Cooking Equipment</option>
               <option value="food">🥫 Food</option>
               <option value="camping-tools">🪓 Camping Tools</option>
+              <option value="kit">📦 Box / Kit</option>
             </>
           ) : (
             <>
               <option value="games">⚽ Games Equipment</option>
+              <option value="kit">📦 Box / Kit</option>
             </>
           )}
         </select>
@@ -586,6 +595,103 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             )}
           </div>
           )}
+        </div>
+      )}
+
+      {/* Kit / Box-specific fields */}
+      {category.value === "kit" && (
+        <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Box / Kit Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Kit Type *</label>
+              <select name="kitType" required class={inputClass}>
+                <option value="general" selected={initialData?.kitType === "general"}>General</option>
+                <option value="cooking-kit" selected={initialData?.kitType === "cooking-kit"}>Cooking Kit</option>
+                <option value="first-aid" selected={initialData?.kitType === "first-aid"}>First Aid</option>
+                <option value="tool-kit" selected={initialData?.kitType === "tool-kit"}>Tool Kit</option>
+                <option value="craft-kit" selected={initialData?.kitType === "craft-kit"}>Craft Kit</option>
+                <option value="emergency" selected={initialData?.kitType === "emergency"}>Emergency Kit</option>
+                <option value="other" selected={initialData?.kitType === "other"}>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Condition *</label>
+              <select name="condition" required class={inputClass}>
+                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
+                <option value="good" selected={initialData?.condition === "good"}>Good</option>
+                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
+                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Units needing repair</label>
+              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Brand</label>
+              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Year Purchased</label>
+              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+            </div>
+          </div>
+
+          {/* Box contents editor */}
+          <div class="mt-4 pt-4 border-t border-amber-200 dark:border-amber-800">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-gray-700 dark:text-gray-200">Contents</h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track the individual items inside this box or kit</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { boxContents.value = [...boxContents.value, { name: "", quantity: 1 }]; }}
+                class="shrink-0 text-sm px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-800/60 font-medium"
+              >
+                + Add item
+              </button>
+            </div>
+            {boxContents.value.length === 0 ? (
+              <p class="text-sm text-gray-400 dark:text-gray-500 italic">No contents recorded yet.</p>
+            ) : (
+              <div class="space-y-2">
+                {boxContents.value.map((row, i) => (
+                  <div key={i} class="flex gap-2 items-center">
+                    <input
+                      type="number"
+                      value={row.quantity}
+                      min={1}
+                      onInput={(e) => {
+                        const copy = [...boxContents.value];
+                        copy[i] = { ...copy[i], quantity: parseInt((e.target as HTMLInputElement).value) || 1 };
+                        boxContents.value = copy;
+                      }}
+                      class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Item name (e.g. First aid manual)"
+                      value={row.name}
+                      onInput={(e) => {
+                        const copy = [...boxContents.value];
+                        copy[i] = { ...copy[i], name: (e.target as HTMLInputElement).value };
+                        boxContents.value = copy;
+                      }}
+                      class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { boxContents.value = boxContents.value.filter((_, j) => j !== i); }}
+                      class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
+                      title="Remove"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

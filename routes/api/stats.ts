@@ -11,6 +11,7 @@ interface Stats {
     cooking: { count: number; quantity: number };
     food: { count: number; quantity: number };
     "camping-tools": { count: number; quantity: number };
+    kit: { count: number; quantity: number };
   };
   lowStockItems: number;
   needsRepairItems: number;
@@ -47,6 +48,7 @@ export const handler: Handlers = {
           cooking:         computed.categoryBreakdown.cooking,
           food:            computed.categoryBreakdown.food,
           "camping-tools": computed.categoryBreakdown["camping-tools"],
+          kit:             computed.categoryBreakdown.kit,
         },
         lowStockItems:    computed.lowStockItems,
         needsRepairItems: computed.needsRepairItems,

@@ -1,9 +1,9 @@
 // Print-optimised equipment list for a camp plan
 import { Handlers, PageProps } from "$fresh/server.ts";
-import type { CampPlan } from "../../../types/inventory.ts";
+import type { CampPlan, CampPlanItem } from "../../../types/inventory.ts";
 import { ITEM_LOCATIONS } from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
-import { getCampPlanById } from "../../../db/kv.ts";
+import { getCampPlanById, getItemById } from "../../../db/kv.ts";
 import PrintButton from "../../../islands/PrintButton.tsx";
 
 interface PrintPageData {
@@ -23,6 +23,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   food: "🥫",
   "camping-tools": "🪓",
   games: "⚽",
+  kit: "📦",
 };
 
 export const handler: Handlers<PrintPageData> = {
@@ -33,7 +34,21 @@ export const handler: Handlers<PrintPageData> = {
       return new Response(null, { status: 302, headers: { location: "/camps" } });
     }
     const session = ctx.state.session as Session;
-    return ctx.render({ plan, session });
+
+    // Enrich plan items that are missing contents by looking up the inventory item.
+    // This covers items added before the contents field was introduced.
+    const enrichedItems: CampPlanItem[] = await Promise.all(
+      plan.items.map(async (item) => {
+        if (item.contents !== undefined) return item;
+        const inv = await getItemById(item.itemId);
+        if (!inv) return item;
+        const contents = (inv as { contents?: { name: string; quantity: number }[] }).contents;
+        if (!contents || contents.length === 0) return item;
+        return { ...item, contents };
+      }),
+    );
+
+    return ctx.render({ plan: { ...plan, items: enrichedItems }, session });
   },
 };
 
@@ -162,13 +177,25 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.itemId}>
-                      <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
-                      <td><span class={`check${item.returnedStatus ? " ticked" : ""}`} /></td>
-                      <td>{item.itemName}</td>
-                      <td style="text-align:right">{item.quantityPlanned}</td>
-                      <td class="notes">{item.notes ?? ""}</td>
-                    </tr>
+                    <>
+                      <tr key={item.itemId}>
+                        <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
+                        <td><span class={`check${item.returnedStatus ? " ticked" : ""}`} /></td>
+                        <td>{item.itemName}</td>
+                        <td style="text-align:right">{item.quantityPlanned}</td>
+                        <td class="notes">{item.notes ?? ""}</td>
+                      </tr>
+                      {item.contents && item.contents.length > 0 && (
+                        <tr key={`${item.itemId}-contents`}>
+                          <td colspan={2} />
+                          <td colspan={3} style="padding-top:0;padding-bottom:0.4rem">
+                            <span style="font-size:0.7rem;color:#888">
+                              {item.contents.map((c) => `${c.quantity}× ${c.name}`).join(" · ")}
+                            </span>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
@@ -192,14 +219,26 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <tr key={item.itemId}>
-                      <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
-                      <td><span class={`check${item.returnedStatus ? " ticked" : ""}`} /></td>
-                      <td>{item.itemName}</td>
-                      <td style="text-align:right">{item.quantityPlanned}</td>
-                      <td class="notes">{item.itemLocation}</td>
-                      <td class="notes">{item.notes ?? ""}</td>
-                    </tr>
+                    <>
+                      <tr key={item.itemId}>
+                        <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
+                        <td><span class={`check${item.returnedStatus ? " ticked" : ""}`} /></td>
+                        <td>{item.itemName}</td>
+                        <td style="text-align:right">{item.quantityPlanned}</td>
+                        <td class="notes">{item.itemLocation}</td>
+                        <td class="notes">{item.notes ?? ""}</td>
+                      </tr>
+                      {item.contents && item.contents.length > 0 && (
+                        <tr key={`${item.itemId}-contents`}>
+                          <td colspan={2} />
+                          <td colspan={4} style="padding-top:0;padding-bottom:0.4rem">
+                            <span style="font-size:0.7rem;color:#888">
+                              {item.contents.map((c) => `${c.quantity}× ${c.name}`).join(" · ")}
+                            </span>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>

@@ -11,6 +11,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
   food: "🥫",
   "camping-tools": "🪓",
   games: "⚽",
+  kit: "📦",
 };
 
 interface QrPageData {

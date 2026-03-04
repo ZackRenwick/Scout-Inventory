@@ -20,6 +20,7 @@ interface DashboardData {
       food: { count: number; quantity: number };
       "camping-tools": { count: number; quantity: number };
       games: { count: number; quantity: number };
+      kit: { count: number; quantity: number };
     };
     spaceBreakdown: {
       "camp-store": { count: number; quantity: number };
@@ -92,6 +93,7 @@ export const handler: Handlers<DashboardData> = {
             food: { count: 0, quantity: 0 },
             "camping-tools": { count: 0, quantity: 0 },
             games: { count: 0, quantity: 0 },
+            kit: { count: 0, quantity: 0 },
           },
           spaceBreakdown: {
             "camp-store": { count: 0, quantity: 0 },

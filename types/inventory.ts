@@ -1,5 +1,5 @@
 // Base inventory item interface
-export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games";
+export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit";
 
 export type ItemSpace = "camp-store" | "scout-post-loft";
 
@@ -136,6 +136,17 @@ export interface CampingToolItem extends BaseInventoryItem {
   yearPurchased?: number;
 }
 
+// Kit / Box properties — a self-contained collection of items stored together
+export interface KitItem extends BaseInventoryItem {
+  category: "kit";
+  kitType: "cooking-kit" | "first-aid" | "tool-kit" | "craft-kit" | "emergency" | "general" | "other";
+  condition: "excellent" | "good" | "fair" | "needs-repair";
+  contents?: BoxContentItem[];
+  brand?: string;
+  yearPurchased?: number;
+  quantityNeedsRepair?: number;
+}
+
 // Games equipment properties
 export interface GamesItem extends BaseInventoryItem {
   category: "games";
@@ -148,7 +159,7 @@ export interface GamesItem extends BaseInventoryItem {
 }
 
 // Union type for all inventory items
-export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem;
+export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | KitItem;
 
 // Helper type guards
 export function isTentItem(item: InventoryItem): item is TentItem {
@@ -169,6 +180,10 @@ export function isCampingToolItem(item: InventoryItem): item is CampingToolItem 
 
 export function isGamesItem(item: InventoryItem): item is GamesItem {
   return item.category === "games";
+}
+
+export function isKitItem(item: InventoryItem): item is KitItem {
+  return item.category === "kit";
 }
 
 // Expiry status for food items
@@ -208,6 +223,8 @@ export interface CampPlanItem {
   packedStatus: boolean;
   returnedStatus: boolean;
   notes?: string;
+  /** Contents of the box/kit at the time it was added to the plan */
+  contents?: BoxContentItem[];
 }
 
 export type CampPlanStatus = "planning" | "packing" | "active" | "returning" | "completed";

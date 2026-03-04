@@ -70,6 +70,7 @@ function emptyStats(): ComputedStats {
       food: { count: 0, quantity: 0 },
       "camping-tools": { count: 0, quantity: 0 },
       games: { count: 0, quantity: 0 },
+      kit: { count: 0, quantity: 0 },
     },
     spaceBreakdown: {
       "camp-store": { count: 0, quantity: 0 },

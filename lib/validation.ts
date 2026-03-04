@@ -3,7 +3,7 @@
 
 import type { ItemCategory, ItemSpace } from "../types/inventory.ts";
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games"]);
+const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft"]);
 const VALID_FOOD_TYPES = new Set(["canned", "jarred", "dried", "packaged", "fresh", "frozen"]);
 

@@ -14,7 +14,7 @@ import { logActivity } from "../../lib/activityLog.ts";
 
 // ===== CONSTANTS =====
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games"]);
+const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft"]);
 
 // Required extra fields per category (beyond the base fields)
@@ -24,6 +24,7 @@ const CATEGORY_REQUIRED: Record<ItemCategory, string[]> = {
   food:            ["foodType", "expiryDate"],
   "camping-tools": ["toolType", "condition"],
   games:           ["gameType", "condition"],
+  kit:             ["kitType", "condition"],
 };
 
 // ===== VALIDATION =====
@@ -101,8 +102,11 @@ function validateItem(raw: RawItem, index: number): ValidationResult | Validatio
   if (category === "camping-tools") {
     return { ok: true, item: { ...base, category: "camping-tools", toolType: raw.toolType, condition: raw.condition, material: raw.material, brand: raw.brand, yearPurchased: raw.yearPurchased } };
   }
-  // games
-  return { ok: true, item: { ...base, category: "games", gameType: raw.gameType, condition: raw.condition, playerCount: raw.playerCount, yearPurchased: raw.yearPurchased } };
+  if (category === "games") {
+    return { ok: true, item: { ...base, category: "games", gameType: raw.gameType, condition: raw.condition, playerCount: raw.playerCount, yearPurchased: raw.yearPurchased } };
+  }
+  // kit
+  return { ok: true, item: { ...base, category: "kit", kitType: raw.kitType, condition: raw.condition, contents: raw.contents, brand: raw.brand, yearPurchased: raw.yearPurchased } };
 }
 
 // ===== HANDLER =====

@@ -145,6 +145,9 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
       packedStatus: false,
       returnedStatus: false,
       notes: addNote.value.trim() || undefined,
+      contents: ("contents" in inv && Array.isArray(inv.contents) && inv.contents.length > 0)
+        ? (inv.contents as { name: string; quantity: number }[])
+        : undefined,
     };
     const items = [...plan.value.items, newEntry];
     await patch({ items });
@@ -766,6 +769,9 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
     const isFood = item.itemCategory === "food";
     const isConsumed = isFood && mode === "return";
     const checked = mode === "pack" ? item.packedStatus : item.returnedStatus;
+    // Use stored contents, or fall back to looking up the live inventory item
+    const invItem = allItems.find((i) => i.id === item.itemId);
+    const contents = item.contents ?? (invItem && "contents" in invItem ? (invItem as { contents?: { name: string; quantity: number }[] }).contents : undefined);
     return (
       <div key={item.itemId} class={`flex items-start gap-3 px-4 py-3 transition-colors ${(checked || isConsumed) ? "bg-green-50/50 dark:bg-green-900/10" : ""}`}>
         {isConsumed ? (
@@ -794,6 +800,20 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
           </p>
           <p class="text-xs text-gray-500 dark:text-gray-400">{item.itemCategory} · {item.itemLocation}</p>
           {item.notes && <p class="text-xs text-purple-600 dark:text-purple-400 mt-0.5 italic">{item.notes}</p>}
+          {contents && contents.length > 0 && (
+            <details class="mt-1.5">
+              <summary class="text-xs text-gray-400 dark:text-gray-500 cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300">
+                📋 {contents.length} item{contents.length !== 1 ? "s" : ""} inside
+              </summary>
+              <ul class="mt-1 ml-3 space-y-0.5">
+                {contents.map((c, i) => (
+                  <li key={i} class="text-xs text-gray-500 dark:text-gray-400">
+                    · {c.quantity}× {c.name}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
           <div class="flex flex-wrap gap-2 mt-1">
             {isFood ? (
               <span class={`text-xs px-1.5 py-0.5 rounded ${item.packedStatus ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"}`}>

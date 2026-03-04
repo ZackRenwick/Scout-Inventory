@@ -22,7 +22,7 @@ export const handler: Handlers = {
       }
       
       // Apply category filter
-      const validCategories = ["tent", "cooking", "food", "camping-tools", "games"];
+      const validCategories = ["tent", "cooking", "food", "camping-tools", "games", "kit"];
       if (category && validCategories.includes(category)) {
         items = items.filter(item => item.category === category);
       }
