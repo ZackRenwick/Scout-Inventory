@@ -1,7 +1,7 @@
 // Individual item details page
 import { Handlers, PageProps } from "$fresh/server.ts";
-import type { InventoryItem, TentItem, CookingEquipment, FoodItem, GamesItem } from "../../types/inventory.ts";
-import { isTentItem, isCookingEquipment, isFoodItem, isGamesItem } from "../../types/inventory.ts";
+import type { InventoryItem, TentItem, CookingEquipment, FoodItem, GamesItem, KitItem } from "../../types/inventory.ts";
+import { isTentItem, isCookingEquipment, isFoodItem, isGamesItem, isKitItem } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import CategoryIcon from "../../components/CategoryIcon.tsx";
@@ -358,6 +358,63 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                   </tbody>
                   <tfoot>
                     <tr class="border-t border-indigo-200 dark:border-indigo-700">
+                      <td class="py-1.5 pr-4 text-xs text-gray-500 dark:text-gray-400">Total items</td>
+                      <td class="py-1.5 text-right font-semibold text-gray-700 dark:text-gray-200">
+                        {item.contents.reduce((sum, c) => sum + c.quantity, 0)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {isKitItem(item) && (
+          <div class="mt-6 p-4 bg-teal-50 dark:bg-teal-950/40 rounded-lg">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Kit / Box Details</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Kit Type</h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.kitType.replace(/-/g, ' ')}</p>
+              </div>
+              <div>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>
+              </div>
+              {item.brand && (
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Brand</h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.brand}</p>
+                </div>
+              )}
+              {item.yearPurchased && (
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.yearPurchased}</p>
+                </div>
+              )}
+            </div>
+            {item.contents && item.contents.length > 0 && (
+              <div class="mt-4 pt-4 border-t border-teal-200 dark:border-teal-700">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Box Contents</h3>
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="border-b border-teal-200 dark:border-teal-700">
+                      <th class="text-left py-1.5 pr-4 font-medium text-gray-600 dark:text-gray-300">Item</th>
+                      <th class="text-right py-1.5 font-medium text-gray-600 dark:text-gray-300">Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {item.contents.map((c, i) => (
+                      <tr key={i} class="border-b border-teal-100 dark:border-teal-900/40 last:border-0">
+                        <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">{c.name}</td>
+                        <td class="py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">{c.quantity}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr class="border-t border-teal-200 dark:border-teal-700">
                       <td class="py-1.5 pr-4 text-xs text-gray-500 dark:text-gray-400">Total items</td>
                       <td class="py-1.5 text-right font-semibold text-gray-700 dark:text-gray-200">
                         {item.contents.reduce((sum, c) => sum + c.quantity, 0)}
