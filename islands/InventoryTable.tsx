@@ -1,5 +1,14 @@
 // Interactive inventory table with search and filtering
 import { useComputed, useSignal } from "@preact/signals";
+
+// Module-level constant — never changes, no need to recreate on every render
+const categoryLabels: Record<string, string> = {
+  "tent": "tents",
+  "cooking": "cooking",
+  "food": "food",
+  "camping-tools": "camping tools",
+  "games": "games",
+};
 import type { InventoryItem } from "../types/inventory.ts";
 import {
   isFoodItem,
@@ -57,29 +66,32 @@ export default function InventoryTable(
   );
   const sortDir = useSignal<"asc" | "desc">("asc");
 
-  const uniqueLocations = [
-    ...new Set(items.map((i) => i.location)),
-  ] as string[];
-  const allDefinedLocations = new Set(
-    [...ITEM_LOCATIONS, ...LOFT_LOCATIONS].flatMap((g) =>
-      g.options as string[]
-    ),
-  );
-  const knownGroups = [...ITEM_LOCATIONS, ...LOFT_LOCATIONS]
-    .map((group) => ({
-      ...group,
-      options: group.options.filter((o) =>
-        uniqueLocations.includes(o as string)
-      ),
-    }))
-    .filter((group) => group.options.length > 0);
-  const ungroupedLocations = uniqueLocations.filter((l) =>
-    !allDefinedLocations.has(l)
-  ).sort();
-  const locationGroups = ungroupedLocations.length > 0
-    ? [...knownGroups, { group: "Other", options: ungroupedLocations }]
-    : knownGroups;
   const itemsSignal = useSignal(items);
+
+  const locationGroups = useComputed(() => {
+    const uniqueLocations = [
+      ...new Set(itemsSignal.value.map((i) => i.location)),
+    ] as string[];
+    const allDefinedLocations = new Set(
+      [...ITEM_LOCATIONS, ...LOFT_LOCATIONS].flatMap((g) =>
+        g.options as string[]
+      ),
+    );
+    const knownGroups = [...ITEM_LOCATIONS, ...LOFT_LOCATIONS]
+      .map((group) => ({
+        ...group,
+        options: group.options.filter((o) =>
+          uniqueLocations.includes(o as string)
+        ),
+      }))
+      .filter((group) => group.options.length > 0);
+    const ungroupedLocations = uniqueLocations.filter((l) =>
+      !allDefinedLocations.has(l)
+    ).sort();
+    return ungroupedLocations.length > 0
+      ? [...knownGroups, { group: "Other", options: ungroupedLocations }]
+      : knownGroups;
+  });
   const confirmDeleteId = useSignal<string | null>(null);
   const adjustingQtyId = useSignal<string | null>(null);
   const toast = useSignal<
@@ -89,15 +101,6 @@ export default function InventoryTable(
     itemsSignal.value.filter((i) => (i as { atCamp?: boolean }).atCamp).length
   );
   const loanedCount = loanedIdSet.size;
-
-  // Human-readable labels for category slugs so "camping tools" or "first aid" match
-  const categoryLabels: Record<string, string> = {
-    "tent": "tents",
-    "cooking": "cooking",
-    "food": "food",
-    "camping-tools": "camping tools",
-    "games": "games",
-  };
 
   // Filter items based on search and filters — useComputed() memoises the result
   // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
@@ -280,9 +283,9 @@ export default function InventoryTable(
       });
 
       if (response.ok) {
+        itemsSignal.value = itemsSignal.value.filter((i) => i.id !== id);
         confirmDeleteId.value = null;
         showToast("Item deleted successfully", "success");
-        setTimeout(() => globalThis.location.reload(), 1000);
       } else {
         confirmDeleteId.value = null;
         showToast("Failed to delete item", "error");
@@ -453,7 +456,7 @@ export default function InventoryTable(
               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="all">All Locations</option>
-              {locationGroups.map((group) => (
+              {locationGroups.value.map((group) => (
                 <optgroup key={group.group} label={group.group}>
                   {group.options.map((loc) => (
                     <option key={loc} value={loc}>{loc}</option>

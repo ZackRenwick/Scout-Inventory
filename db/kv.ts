@@ -251,6 +251,10 @@ function removeFromIndex(op: Deno.AtomicOperation, item: InventoryItem): void {
 // ===== INVENTORY ITEMS OPERATIONS =====
 
 export async function getItemById(id: string): Promise<InventoryItem | null> {
+  if (itemsCache) {
+    const cached = itemsCache.items.find((i) => i.id === id);
+    if (cached) return cached;
+  }
   const db = await initKv();
   const result = await db.get<InventoryItem>([...KEYS.items, id]);
   return result.value ? deserializeItem(result.value) : null;
