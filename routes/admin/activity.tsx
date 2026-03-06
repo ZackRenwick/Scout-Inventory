@@ -94,7 +94,6 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
               id="user-filter"
               name="user"
               class="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              onChange={(e) => (e.currentTarget.form as HTMLFormElement).submit()}
             >
               <option value="" selected={!userFilter}>All users</option>
               {users.map((u) => (
@@ -103,6 +102,12 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
                 </option>
               ))}
             </select>
+            <button
+              type="submit"
+              class="text-sm px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium"
+            >
+              Filter
+            </button>
           </form>
           {userFilter && (
             <a
