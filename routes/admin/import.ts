@@ -43,7 +43,34 @@ interface ValidationError {
   error: string;
 }
 
-function validateItem(raw: RawItem, index: number): ValidationResult | ValidationError {
+// Validate and coerce a contents array, or return an error string.
+function parseContents(
+  raw: unknown,
+): { name: string; quantity: number }[] | string {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) return '"contents" must be an array';
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (typeof c !== "object" || c === null) {
+      return `"contents[${i}]" must be an object with name and quantity`;
+    }
+    if (typeof c.name !== "string" || !c.name.trim()) {
+      return `"contents[${i}].name" must be a non-empty string`;
+    }
+    if (
+      typeof c.quantity !== "number" || !Number.isInteger(c.quantity) ||
+      c.quantity < 0
+    ) {
+      return `"contents[${i}].quantity" must be a non-negative integer`;
+    }
+  }
+  return raw as { name: string; quantity: number }[];
+}
+
+function validateItem(
+  raw: RawItem,
+  index: number,
+): ValidationResult | ValidationError {
   const err = (msg: string): ValidationError => ({ ok: false, error: msg });
 
   // Base required fields
@@ -90,7 +117,23 @@ function validateItem(raw: RawItem, index: number): ValidationResult | Validatio
     return { ok: true, item: { ...base, category: "tent", tentType: raw.tentType, capacity: raw.capacity, size: raw.size, condition: raw.condition, brand: raw.brand, yearPurchased: raw.yearPurchased } };
   }
   if (category === "cooking") {
-    return { ok: true, item: { ...base, category: "cooking", equipmentType: raw.equipmentType, condition: raw.condition, material: raw.material, fuelType: raw.fuelType, capacity: raw.capacity } };
+    const contents = parseContents(raw.contents);
+    if (typeof contents === "string") {
+      return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+    }
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "cooking",
+        equipmentType: raw.equipmentType,
+        condition: raw.condition,
+        material: raw.material,
+        fuelType: raw.fuelType,
+        capacity: raw.capacity,
+        contents: contents.length ? contents : undefined,
+      },
+    };
   }
   if (category === "food") {
     const expiryDate = new Date(raw.expiryDate);
@@ -103,10 +146,40 @@ function validateItem(raw: RawItem, index: number): ValidationResult | Validatio
     return { ok: true, item: { ...base, category: "camping-tools", toolType: raw.toolType, condition: raw.condition, material: raw.material, brand: raw.brand, yearPurchased: raw.yearPurchased } };
   }
   if (category === "games") {
-    return { ok: true, item: { ...base, category: "games", gameType: raw.gameType, condition: raw.condition, playerCount: raw.playerCount, yearPurchased: raw.yearPurchased } };
+    const contents = parseContents(raw.contents);
+    if (typeof contents === "string") {
+      return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+    }
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "games",
+        gameType: raw.gameType,
+        condition: raw.condition,
+        playerCount: raw.playerCount,
+        yearPurchased: raw.yearPurchased,
+        contents: contents.length ? contents : undefined,
+      },
+    };
   }
   // kit
-  return { ok: true, item: { ...base, category: "kit", kitType: raw.kitType, condition: raw.condition, contents: raw.contents, brand: raw.brand, yearPurchased: raw.yearPurchased } };
+  const contents = parseContents(raw.contents);
+  if (typeof contents === "string") {
+    return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+  }
+  return {
+    ok: true,
+    item: {
+      ...base,
+      category: "kit",
+      kitType: raw.kitType,
+      condition: raw.condition,
+      contents: contents.length ? contents : undefined,
+      brand: raw.brand,
+      yearPurchased: raw.yearPurchased,
+    },
+  };
 }
 
 // ===== HANDLER =====

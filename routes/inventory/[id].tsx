@@ -70,6 +70,56 @@ export const handler: Handlers<ItemDetailData> = {
   },
 };
 
+function ContentsTable(
+  { contents, borderColor, dividerColor }: {
+    contents?: { name: string; quantity: number }[];
+    borderColor: string;
+    dividerColor: string;
+  },
+) {
+  if (!contents || contents.length === 0) {
+    return (
+      <p class="text-sm text-gray-400 dark:text-gray-500 italic">
+        No contents recorded.
+      </p>
+    );
+  }
+  return (
+    <table class="w-full text-sm">
+      <thead>
+        <tr class={`border-b ${borderColor}`}>
+          <th class="text-left py-1.5 pr-4 font-medium text-gray-600 dark:text-gray-300">
+            Item
+          </th>
+          <th class="text-right py-1.5 font-medium text-gray-600 dark:text-gray-300">
+            Qty
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {contents.map((c, i) => (
+          <tr key={i} class={`border-b ${dividerColor} last:border-0`}>
+            <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">{c.name}</td>
+            <td class="py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">
+              {c.quantity}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr class={`border-t ${borderColor}`}>
+          <td class="py-1.5 pr-4 text-xs text-gray-500 dark:text-gray-400">
+            Total items
+          </td>
+          <td class="py-1.5 text-right font-semibold text-gray-700 dark:text-gray-200">
+            {contents.reduce((sum, c) => sum + c.quantity, 0)}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  );
+}
+
 export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
   if (!data.item) {
     return (
@@ -241,33 +291,16 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 </div>
               )}
             </div>
-            {item.contents && item.contents.length > 0 && (
+            {item.equipmentType === "box" && (
               <div class="mt-4 pt-4 border-t border-orange-200 dark:border-orange-700">
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Box Contents</h3>
-                <table class="w-full text-sm">
-                  <thead>
-                    <tr class="border-b border-orange-200 dark:border-orange-700">
-                      <th class="text-left py-1.5 pr-4 font-medium text-gray-600 dark:text-gray-300">Item</th>
-                      <th class="text-right py-1.5 font-medium text-gray-600 dark:text-gray-300">Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {item.contents.map((c, i) => (
-                      <tr key={i} class="border-b border-orange-100 dark:border-orange-900/40 last:border-0">
-                        <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">{c.name}</td>
-                        <td class="py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">{c.quantity}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr class="border-t border-orange-200 dark:border-orange-700">
-                      <td class="py-1.5 pr-4 text-xs text-gray-500 dark:text-gray-400">Total items</td>
-                      <td class="py-1.5 text-right font-semibold text-gray-700 dark:text-gray-200">
-                        {item.contents.reduce((sum, c) => sum + c.quantity, 0)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">
+                  Box Contents
+                </h3>
+                <ContentsTable
+                  contents={item.contents}
+                  borderColor="border-orange-200 dark:border-orange-700"
+                  dividerColor="border-orange-100 dark:border-orange-900/40"
+                />
               </div>
             )}
           </div>
@@ -338,33 +371,16 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 </div>
               )}
             </div>
-            {item.contents && item.contents.length > 0 && (
+            {item.gameType === "box" && (
               <div class="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Box Contents</h3>
-                <table class="w-full text-sm">
-                  <thead>
-                    <tr class="border-b border-indigo-200 dark:border-indigo-700">
-                      <th class="text-left py-1.5 pr-4 font-medium text-gray-600 dark:text-gray-300">Item</th>
-                      <th class="text-right py-1.5 font-medium text-gray-600 dark:text-gray-300">Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {item.contents.map((c, i) => (
-                      <tr key={i} class="border-b border-indigo-100 dark:border-indigo-900/40 last:border-0">
-                        <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">{c.name}</td>
-                        <td class="py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">{c.quantity}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr class="border-t border-indigo-200 dark:border-indigo-700">
-                      <td class="py-1.5 pr-4 text-xs text-gray-500 dark:text-gray-400">Total items</td>
-                      <td class="py-1.5 text-right font-semibold text-gray-700 dark:text-gray-200">
-                        {item.contents.reduce((sum, c) => sum + c.quantity, 0)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">
+                  Box Contents
+                </h3>
+                <ContentsTable
+                  contents={item.contents}
+                  borderColor="border-indigo-200 dark:border-indigo-700"
+                  dividerColor="border-indigo-100 dark:border-indigo-900/40"
+                />
               </div>
             )}
           </div>
@@ -395,35 +411,16 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 </div>
               )}
             </div>
-            {item.contents && item.contents.length > 0 && (
-              <div class="mt-4 pt-4 border-t border-teal-200 dark:border-teal-700">
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Box Contents</h3>
-                <table class="w-full text-sm">
-                  <thead>
-                    <tr class="border-b border-teal-200 dark:border-teal-700">
-                      <th class="text-left py-1.5 pr-4 font-medium text-gray-600 dark:text-gray-300">Item</th>
-                      <th class="text-right py-1.5 font-medium text-gray-600 dark:text-gray-300">Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {item.contents.map((c, i) => (
-                      <tr key={i} class="border-b border-teal-100 dark:border-teal-900/40 last:border-0">
-                        <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">{c.name}</td>
-                        <td class="py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">{c.quantity}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr class="border-t border-teal-200 dark:border-teal-700">
-                      <td class="py-1.5 pr-4 text-xs text-gray-500 dark:text-gray-400">Total items</td>
-                      <td class="py-1.5 text-right font-semibold text-gray-700 dark:text-gray-200">
-                        {item.contents.reduce((sum, c) => sum + c.quantity, 0)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            )}
+            <div class="mt-4 pt-4 border-t border-teal-200 dark:border-teal-700">
+              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">
+                Kit Contents
+              </h3>
+              <ContentsTable
+                contents={item.contents}
+                borderColor="border-teal-200 dark:border-teal-700"
+                dividerColor="border-teal-100 dark:border-teal-900/40"
+              />
+            </div>
           </div>
         )}
 
