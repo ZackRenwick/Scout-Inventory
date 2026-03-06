@@ -5,6 +5,7 @@ import NotificationButtons from "../../islands/NotificationButtons.tsx";
 import BulkImport from "../../islands/BulkImport.tsx";
 import RebuildIndexes from "../../islands/RebuildIndexes.tsx";
 import DbCleanup from "../../islands/DbCleanup.tsx";
+import DbClear from "../../islands/DbClear.tsx";
 import PasswordInput from "../../islands/PasswordInput.tsx";
 import ConfirmDeleteForm from "../../islands/ConfirmDeleteForm.tsx";
 import {
@@ -344,6 +345,21 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
             stats appear incorrect.
           </p>
           <RebuildIndexes csrfToken={csrfToken} />
+        </div>
+      )}
+
+      {/* Clear All Data — admin only */}
+      {isAdmin && (
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-red-200 dark:border-red-900 p-6 mb-8">
+          <h2 class="text-base font-semibold text-red-700 dark:text-red-400 mb-1">
+            🗑️ Clear All Data
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Permanently deletes all inventory items and resets the necker count
+            and computed stats to zero. Loans, camp plans, meals, user accounts,
+            and the activity log are not affected.
+          </p>
+          <DbClear csrfToken={csrfToken} />
         </div>
       )}
 

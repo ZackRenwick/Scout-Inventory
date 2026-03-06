@@ -933,3 +933,85 @@ export async function cleanUpDb(retainMonths = 6): Promise<CleanUpReport> {
 
   return { orphanedIndexes, oldReturnedLoans };
 }
+
+// ===== CLEAR DATA =====
+
+export interface ClearReport {
+  items: number;
+  indexes: number;
+}
+
+/**
+ * Deletes all inventory items and their secondary indexes.
+ * Resets the necker count and computed stats to zero.
+ */
+export async function clearInventoryData(): Promise<ClearReport> {
+  const db = await initKv();
+  const report: ClearReport = { items: 0, indexes: 0 };
+
+  const deleteOps: Promise<void>[] = [];
+
+  for await (const entry of db.list({ prefix: KEYS.items })) {
+    deleteOps.push(db.delete(entry.key));
+    report.items++;
+  }
+
+  for await (const entry of db.list({ prefix: ["inventory", "idx"] })) {
+    deleteOps.push(db.delete(entry.key));
+    report.indexes++;
+  }
+
+  // Reset scalar keys
+  deleteOps.push(db.delete(KEYS.neckers));
+  deleteOps.push(db.set(KEYS.computedStats, emptyStats()) as Promise<void>);
+
+  await Promise.all(deleteOps);
+
+  return report;
+}
+
+/** Deletes all loan/checkout records and resets the active loans count. */
+export async function clearLoans(): Promise<number> {
+  const db = await initKv();
+  const deleteOps: Promise<void>[] = [];
+  for await (const entry of db.list({ prefix: KEYS.checkouts })) {
+    deleteOps.push(db.delete(entry.key));
+  }
+  // Reset activeLoansCount in computed stats
+  const current = await db.get<ComputedStats>(KEYS.computedStats);
+  const stats = current.value ?? emptyStats();
+  deleteOps.push(
+    db.set(KEYS.computedStats, {
+      ...stats,
+      activeLoansCount: 0,
+    }) as unknown as Promise<void>,
+  );
+  await Promise.all(deleteOps);
+  invalidateCheckoutsCache();
+  return deleteOps.length - 1; // exclude the stats set
+}
+
+/** Deletes all camp plans and templates. */
+export async function clearCamps(): Promise<number> {
+  const db = await initKv();
+  const deleteOps: Promise<void>[] = [];
+  for await (const entry of db.list({ prefix: KEYS.camps })) {
+    deleteOps.push(db.delete(entry.key));
+  }
+  for await (const entry of db.list({ prefix: KEYS.templates })) {
+    deleteOps.push(db.delete(entry.key));
+  }
+  await Promise.all(deleteOps);
+  return deleteOps.length;
+}
+
+/** Deletes all meal records. */
+export async function clearMeals(): Promise<number> {
+  const db = await initKv();
+  const deleteOps: Promise<void>[] = [];
+  for await (const entry of db.list({ prefix: KEYS.meals })) {
+    deleteOps.push(db.delete(entry.key));
+  }
+  await Promise.all(deleteOps);
+  return deleteOps.length;
+}

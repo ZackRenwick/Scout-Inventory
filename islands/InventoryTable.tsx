@@ -759,27 +759,7 @@ export default function InventoryTable(
                     )}
                     {canEdit && (
                       confirmDeleteId.value === item.id
-                        ? (
-                          <span class="flex items-center gap-2 ml-auto">
-                            <span class="text-gray-500 dark:text-gray-400 text-xs">
-                              Delete?
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(item.id)}
-                              class="text-red-600 hover:text-red-800 font-semibold text-xs"
-                            >
-                              Yes
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => confirmDeleteId.value = null}
-                              class="text-gray-400 hover:text-gray-600 text-xs"
-                            >
-                              No
-                            </button>
-                          </span>
-                        )
+                        ? null
                         : (
                           <button
                             type="button"
@@ -791,6 +771,30 @@ export default function InventoryTable(
                         )
                     )}
                   </div>
+                  {/* Confirmation panel — appears below the card when delete is pending */}
+                  {canEdit && confirmDeleteId.value === item.id && (
+                    <div class="border-t border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 rounded-b-lg px-4 py-3 space-y-2">
+                      <p class="text-xs font-medium text-red-700 dark:text-red-300">
+                        Permanently delete <strong>{item.name}</strong>? This cannot be undone.
+                      </p>
+                      <div class="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors"
+                        >
+                          🗑️ Delete permanently
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => confirmDeleteId.value = null}
+                          class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -881,6 +885,7 @@ export default function InventoryTable(
               )
               : (
                 filteredItems.value.map((item) => (
+                  <>
                   <tr
                     key={item.id}
                     class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
@@ -1048,41 +1053,47 @@ export default function InventoryTable(
                           </a>
                         )}
                         {canEdit && (
-                          confirmDeleteId.value === item.id
-                            ? (
-                              <span class="inline-flex items-center gap-2">
-                                <span class="text-gray-500 dark:text-gray-400 text-xs">
-                                  Delete?
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(item.id)}
-                                  class="text-red-600 hover:text-red-800 font-semibold text-xs"
-                                >
-                                  Yes
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => confirmDeleteId.value = null}
-                                  class="text-gray-400 hover:text-gray-600 text-xs"
-                                >
-                                  No
-                                </button>
-                              </span>
-                            )
-                            : (
-                              <button
-                                type="button"
-                                onClick={() => confirmDeleteId.value = item.id}
-                                class="text-red-600 hover:text-red-900"
-                              >
-                                Delete
-                              </button>
-                            )
+                          <button
+                            type="button"
+                            onClick={() =>
+                              confirmDeleteId.value =
+                                confirmDeleteId.value === item.id
+                                  ? null
+                                  : item.id}
+                            class={`transition-colors ${
+                              confirmDeleteId.value === item.id
+                                ? "text-gray-400 hover:text-gray-600 text-xs"
+                                : "text-red-600 hover:text-red-900"
+                            }`}
+                          >
+                            {confirmDeleteId.value === item.id ? "Cancel" : "Delete"}
+                          </button>
                         )}
                       </div>
                     </td>
                   </tr>
+                  {canEdit && confirmDeleteId.value === item.id && (
+                    <tr class="bg-red-50 dark:bg-red-950/40">
+                      <td
+                        colSpan={99}
+                        class="px-4 py-3 border-b border-red-200 dark:border-red-900"
+                      >
+                        <div class="flex items-center gap-4">
+                          <p class="text-xs font-medium text-red-700 dark:text-red-300">
+                            Permanently delete <strong>{item.name}</strong>? This cannot be undone.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors shrink-0"
+                          >
+                            🗑️ Delete permanently
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </>
                 ))
               )}
           </tbody>
