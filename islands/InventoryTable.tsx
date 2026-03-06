@@ -469,8 +469,36 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     {partialRepairQty > 0 && (
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">🔧 {partialRepairQty} need repair</span>
                     )}
-                    {needsRepair && partialRepairQty <= 0 && (
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700">🔧 Repair</span>
+                  </div>
+                  {/* Footer actions */}
+                  <div class="flex items-center gap-4 px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg text-sm">
+                    <a
+                      href={`/inventory/${item.id}`}
+                      class="font-medium text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200"
+                    >
+                      View
+                    </a>
+                    {canEdit && (
+                      <a
+                        href={`/inventory/edit/${item.id}`}
+                        class="font-medium text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-200"
+                      >
+                        Edit
+                      </a>
+                    )}
+                    {canEdit && (
+                      confirmDeleteId.value === item.id
+                        ? null
+                        : (
+                          <button
+                            type="button"
+                            onClick={() => confirmDeleteId.value = item.id}
+                            class="ml-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                          >
+                            Delete
+                          </button>
+                        )
+                    )}
                     )}
                     {"condition" in item && !needsRepair && (() => {
                       const cond = (item as { condition: string }).condition;
@@ -481,6 +509,30 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                       return <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${condColor}`}>{condLabel}</span>;
                     })()}
                   </div>
+                  {/* Confirmation panel — appears below the card when delete is pending */}
+                  {canEdit && confirmDeleteId.value === item.id && (
+                    <div class="border-t border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 rounded-b-lg px-4 py-3 space-y-2">
+                      <p class="text-xs font-medium text-red-700 dark:text-red-300">
+                        Permanently delete <strong>{item.name}</strong>? This cannot be undone.
+                      </p>
+                      <div class="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors"
+                        >
+                          🗑️ Delete permanently
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => confirmDeleteId.value = null}
+                          class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {/* Meta grid */}
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 px-4 pb-3 text-sm">
@@ -767,8 +819,30 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
+                  {canEdit && confirmDeleteId.value === item.id && (
+                    <tr class="bg-red-50 dark:bg-red-950/40">
+                      <td
+                        colSpan={99}
+                        class="px-4 py-3 border-b border-red-200 dark:border-red-900"
+                      >
+                        <div class="flex items-center gap-4">
+                          <p class="text-xs font-medium text-red-700 dark:text-red-300">
+                            Permanently delete <strong>{item.name}</strong>? This cannot be undone.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors shrink-0"
+                          >
+                            🗑️ Delete permanently
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </>
+                ))
+              )}
           </tbody>
         </table>
       </div>
