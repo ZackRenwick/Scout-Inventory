@@ -7,7 +7,9 @@
     "build": "vite build",
     "preview": "deno serve -A --unstable-kv _fresh/server.js",
     "update": "deno run -A -r jsr:@fresh/update .",
-    "seed": "deno run -A --unstable-kv db/seed.ts"
+    "seed": "deno run -A --unstable-kv db/seed.ts",
+    "brand:upgrade": "bash scripts/set-branding.sh upgrade",
+    "brand:production": "bash scripts/set-branding.sh production"
   },
   "lint": { "rules": { "tags": ["fresh", "recommended"] } },
   "exclude": ["**/_fresh/*", "**/node_modules/*"],

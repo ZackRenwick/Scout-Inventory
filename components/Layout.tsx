@@ -29,6 +29,11 @@ export default function Layout(
         </div>
       </nav>
 
+      {/* Upgrade branch notice */}
+      <div class="bg-yellow-400 text-yellow-900 text-center text-sm font-medium py-1.5 px-4">
+        🚧 You are on the <strong>upgrade</strong> branch — this may differ from production
+      </div>
+
       <main class="container mx-auto px-4 py-6 sm:py-8">
         {title && (
           <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-4 sm:mb-6">

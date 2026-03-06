@@ -9,7 +9,7 @@ export default function App({ Component }: PageProps) {
           name="description"
           content="Scout troop inventory management — track gear, supplies, and equipment."
         />
-        <meta name="theme-color" content="#7c3aed" />
+        <meta name="theme-color" content="#d97706" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
