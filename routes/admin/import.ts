@@ -248,6 +248,14 @@ export const handler = {
         status: 400,
       });
     }
+    // Reject oversized uploads before buffering into memory (~1 MB limit)
+    const MAX_BYTES = 1 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      return Response.json(
+        { error: "File too large. Maximum upload size is 1 MB." },
+        { status: 413 },
+      );
+    }
 
     // Parse JSON
     let rows: RawItem[];

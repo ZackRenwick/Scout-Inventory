@@ -48,6 +48,13 @@ function applySecurityHeaders(headers: Headers): void {
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   // Disable browser features not needed by this app
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  // Enforce HTTPS for 1 year (including subdomains) on deployed instances
+  if (IS_DEPLOYED) {
+    headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
   // Content Security Policy — allow only same-origin resources plus the CDNs used for Preact/Signals
   headers.set(
     "Content-Security-Policy",

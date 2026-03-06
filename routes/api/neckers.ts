@@ -34,12 +34,12 @@ export const handler = {
       const body = await req.json();
       let count: number;
 
-      if (typeof body.value === "number") {
+      if (typeof body.value === "number" && Number.isFinite(body.value) && Number.isInteger(body.value)) {
         count = await setNeckerCount(body.value);
-      } else if (typeof body.delta === "number") {
+      } else if (typeof body.delta === "number" && Number.isFinite(body.delta) && Number.isInteger(body.delta)) {
         count = await adjustNeckerCount(body.delta);
       } else {
-        return Response.json({ error: "Provide 'delta' or 'value'" }, {
+        return Response.json({ error: "Provide integer 'delta' or 'value'" }, {
           status: 400,
         });
       }
