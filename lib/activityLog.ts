@@ -89,7 +89,9 @@ export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
   const entries: ActivityEntry[] = [];
   const effectiveLimit = Math.min(limit, 500);
   for await (
-    const entry of kv.list<ActivityEntry>({ prefix: LOG_PREFIX }, { limit: effectiveLimit })
+    const entry of kv.list<ActivityEntry>({ prefix: LOG_PREFIX }, {
+      limit: effectiveLimit,
+    })
   ) {
     entries.push(entry.value);
   }

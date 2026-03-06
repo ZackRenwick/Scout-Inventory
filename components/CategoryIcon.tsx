@@ -4,13 +4,15 @@ interface CategoryIconProps {
   size?: "sm" | "md" | "lg";
 }
 
-export default function CategoryIcon({ category, size = "md" }: CategoryIconProps) {
+export default function CategoryIcon(
+  { category, size = "md" }: CategoryIconProps,
+) {
   const sizeClasses = {
     sm: "text-xl",
     md: "text-2xl",
     lg: "text-4xl",
   };
-  
+
   const icons: Record<string, string> = {
     tent: "⛺",
     cooking: "🍳",
@@ -19,7 +21,7 @@ export default function CategoryIcon({ category, size = "md" }: CategoryIconProp
     games: "⚽",
     kit: "📦",
   };
-  
+
   const labels: Record<string, string> = {
     tent: "Tent",
     cooking: "Cooking",
@@ -28,9 +30,12 @@ export default function CategoryIcon({ category, size = "md" }: CategoryIconProp
     games: "Games",
     kit: "Box / Kit",
   };
-  
+
   return (
-    <span class={`inline-flex items-center ${sizeClasses[size]}`} title={labels[category]}>
+    <span
+      class={`inline-flex items-center ${sizeClasses[size]}`}
+      title={labels[category]}
+    >
       {icons[category]}
     </span>
   );

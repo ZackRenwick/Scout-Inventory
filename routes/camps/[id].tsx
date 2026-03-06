@@ -1,10 +1,18 @@
 // Camp plan detail / checklist page
-import { Handlers, PageProps } from "$fresh/server.ts";
-import type { CampPlan, CampTemplate, InventoryItem } from "../../types/inventory.ts";
+import { page, PageProps } from "fresh";
+import type {
+  CampPlan,
+  CampTemplate,
+  InventoryItem,
+} from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import CampChecklist from "../../islands/CampChecklist.tsx";
 import type { Session } from "../../lib/auth.ts";
-import { getCampPlanById, getAllItems, getAllCampTemplates } from "../../db/kv.ts";
+import {
+  getAllCampTemplates,
+  getAllItems,
+  getCampPlanById,
+} from "../../db/kv.ts";
 
 interface CampDetailPageData {
   plan: CampPlan;
@@ -13,8 +21,8 @@ interface CampDetailPageData {
   session?: Session;
 }
 
-export const handler: Handlers<CampDetailPageData> = {
-  async GET(_req, ctx) {
+export const handler = {
+  async GET(ctx) {
     const { id } = ctx.params;
     const [plan, allItems, templates] = await Promise.all([
       getCampPlanById(id),
@@ -23,15 +31,27 @@ export const handler: Handlers<CampDetailPageData> = {
     ]);
 
     if (!plan) {
-      return new Response(null, { status: 302, headers: { location: "/camps" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/camps" },
+      });
     }
 
-    allItems.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    return ctx.render({ plan, allItems, templates, session: ctx.state.session as Session });
+    allItems.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true })
+    );
+    return page({
+      plan,
+      allItems,
+      templates,
+      session: ctx.state.session as Session,
+    });
   },
 };
 
-export default function CampDetailPage({ data }: PageProps<CampDetailPageData>) {
+export default function CampDetailPage(
+  { data }: PageProps<CampDetailPageData>,
+) {
   const canEdit = data.session?.role !== "viewer";
   return (
     <Layout

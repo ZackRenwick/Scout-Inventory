@@ -1,5 +1,5 @@
 // Loans listing page
-import { Handlers, PageProps } from "$fresh/server.ts";
+import { page, PageProps } from "fresh";
 import Layout from "../../components/Layout.tsx";
 import LoanList from "../../islands/LoanList.tsx";
 import type { CheckOut } from "../../types/inventory.ts";
@@ -11,16 +11,18 @@ interface LoansPageData {
   session?: Session;
 }
 
-export const handler: Handlers<LoansPageData> = {
-  async GET(_req, ctx) {
+export const handler = {
+  async GET(ctx) {
     try {
       const loans = await getAllCheckOuts();
       // Newest first
-      loans.sort((a, b) => new Date(b.checkOutDate).getTime() - new Date(a.checkOutDate).getTime());
-      return ctx.render({ loans, session: ctx.state.session as Session });
+      loans.sort((a, b) =>
+        new Date(b.checkOutDate).getTime() - new Date(a.checkOutDate).getTime()
+      );
+      return page({ loans, session: ctx.state.session as Session });
     } catch (error) {
       console.error("Failed to fetch loans:", error);
-      return ctx.render({ loans: [], session: ctx.state.session as Session });
+      return page({ loans: [], session: ctx.state.session as Session });
     }
   },
 };
@@ -33,7 +35,11 @@ export default function LoansPage({ data }: PageProps<LoansPageData>) {
   ).length;
 
   return (
-    <Layout title="Loans" username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title="Loans"
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p class="text-gray-600 dark:text-gray-400">

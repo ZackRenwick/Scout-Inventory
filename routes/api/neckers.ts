@@ -1,21 +1,27 @@
 // API route for necker count management
 // GET  /api/neckers          → { count: number }
 // POST /api/neckers          → { delta?: number; value?: number } → { count: number }
-import { Handlers } from "$fresh/server.ts";
-import { getNeckerCount, adjustNeckerCount, setNeckerCount } from "../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../lib/auth.ts";
+import {
+  adjustNeckerCount,
+  getNeckerCount,
+  setNeckerCount,
+} from "../../db/kv.ts";
+import { csrfFailed, csrfOk, forbidden, type Session } from "../../lib/auth.ts";
 
-export const handler: Handlers = {
+export const handler = {
   async GET() {
     try {
       const count = await getNeckerCount();
       return Response.json({ count });
     } catch (_e) {
-      return Response.json({ error: "Failed to fetch necker count" }, { status: 500 });
+      return Response.json({ error: "Failed to fetch necker count" }, {
+        status: 500,
+      });
     }
   },
 
-  async POST(req, ctx) {
+  async POST(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") {
       return forbidden();
@@ -33,12 +39,16 @@ export const handler: Handlers = {
       } else if (typeof body.delta === "number") {
         count = await adjustNeckerCount(body.delta);
       } else {
-        return Response.json({ error: "Provide 'delta' or 'value'" }, { status: 400 });
+        return Response.json({ error: "Provide 'delta' or 'value'" }, {
+          status: 400,
+        });
       }
 
       return Response.json({ count });
     } catch (_e) {
-      return Response.json({ error: "Failed to update necker count" }, { status: 500 });
+      return Response.json({ error: "Failed to update necker count" }, {
+        status: 500,
+      });
     }
   },
 };

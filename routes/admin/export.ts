@@ -3,7 +3,6 @@
 //
 // Uses plain CSV with a UTF-8 BOM so Excel auto-detects encoding and opens
 // the file directly without an import wizard. No npm dependencies needed.
-import type { Handlers } from "$fresh/server.ts";
 import { getAllItems } from "../../db/kv.ts";
 import type { InventoryItem } from "../../types/inventory.ts";
 
@@ -35,8 +34,8 @@ function buildRow(item: InventoryItem): string {
 
 const HEADERS = ["Name", "Category", "Quantity", "Location", "Year Purchased"];
 
-export const handler: Handlers = {
-  async GET(_req, _ctx) {
+export const handler = {
+  async GET(_ctx) {
     const items = await getAllItems();
 
     const today = new Date().toISOString().slice(0, 10);

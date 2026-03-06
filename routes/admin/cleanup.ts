@@ -1,10 +1,16 @@
 // POST /admin/cleanup — purges orphaned KV data and old returned loans
-import type { Handlers } from "$fresh/server.ts";
 import { cleanUpDb } from "../../db/kv.ts";
-import { cleanUpOrphanedSessions, type Session, csrfOk, csrfFailed, forbidden } from "../../lib/auth.ts";
+import {
+  cleanUpOrphanedSessions,
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../lib/auth.ts";
 
-export const handler: Handlers = {
-  async POST(req, ctx) {
+export const handler = {
+  async POST(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session;
     if (session.role !== "admin") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
@@ -14,7 +20,8 @@ export const handler: Handlers = {
         cleanUpDb(),
         cleanUpOrphanedSessions(),
       ]);
-      const total = report.orphanedIndexes + report.oldReturnedLoans + orphanedSessions;
+      const total = report.orphanedIndexes + report.oldReturnedLoans +
+        orphanedSessions;
       return Response.json({
         ok: true,
         ...report,

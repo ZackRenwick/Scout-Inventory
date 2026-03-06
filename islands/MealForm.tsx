@@ -1,5 +1,6 @@
 // Create / edit a meal recipe — admin only
 import { useState } from "preact/hooks";
+
 import type { Meal, MealIngredient } from "../types/meals.ts";
 
 interface Props {
@@ -26,7 +27,9 @@ export default function MealForm({ meal, csrfToken }: Props) {
   const [status, setStatus] = useState<Status>(null);
 
   function updateIngredient(index: number, patch: Partial<MealIngredient>) {
-    setIngredients((prev) => prev.map((ing, i) => (i === index ? { ...ing, ...patch } : ing)));
+    setIngredients((prev) =>
+      prev.map((ing, i) => (i === index ? { ...ing, ...patch } : ing))
+    );
   }
 
   function addIngredient() {
@@ -45,9 +48,15 @@ export default function MealForm({ meal, csrfToken }: Props) {
     }
     const validIngredients = ingredients
       .filter((i) => i.name.trim() && i.servingsPerUnit > 0)
-      .map((i) => ({ name: i.name.trim(), servingsPerUnit: i.servingsPerUnit }));
+      .map((i) => ({
+        name: i.name.trim(),
+        servingsPerUnit: i.servingsPerUnit,
+      }));
     if (validIngredients.length === 0) {
-      setStatus({ type: "error", message: "At least one named ingredient is required." });
+      setStatus({
+        type: "error",
+        message: "At least one named ingredient is required.",
+      });
       return;
     }
 
@@ -63,17 +72,27 @@ export default function MealForm({ meal, csrfToken }: Props) {
           "Content-Type": "application/json",
           "X-CSRF-Token": csrfToken,
         },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, ingredients: validIngredients }),
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          ingredients: validIngredients,
+        }),
       });
 
       if (res.ok) {
         globalThis.location.href = "/meals";
       } else {
         const data = await res.json().catch(() => ({}));
-        setStatus({ type: "error", message: (data as { error?: string }).error ?? "Failed to save meal." });
+        setStatus({
+          type: "error",
+          message: (data as { error?: string }).error ?? "Failed to save meal.",
+        });
       }
     } catch {
-      setStatus({ type: "error", message: "Network error — please try again." });
+      setStatus({
+        type: "error",
+        message: "Network error — please try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -94,7 +113,10 @@ export default function MealForm({ meal, csrfToken }: Props) {
         setStatus({ type: "error", message: "Failed to delete meal." });
       }
     } catch {
-      setStatus({ type: "error", message: "Network error — please try again." });
+      setStatus({
+        type: "error",
+        message: "Network error — please try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -107,7 +129,13 @@ export default function MealForm({ meal, csrfToken }: Props) {
       </h2>
 
       {status && (
-        <div class={`mb-4 p-3 rounded-lg text-sm ${status.type === "success" ? "bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700" : "bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700"}`}>
+        <div
+          class={`mb-4 p-3 rounded-lg text-sm ${
+            status.type === "success"
+              ? "bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-700"
+              : "bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700"
+          }`}
+        >
           {status.message}
         </div>
       )}
@@ -131,12 +159,14 @@ export default function MealForm({ meal, csrfToken }: Props) {
         {/* Description */}
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Description <span class="text-gray-400 font-normal">(optional)</span>
+            Description{" "}
+            <span class="text-gray-400 font-normal">(optional)</span>
           </label>
           <input
             type="text"
             value={description}
-            onInput={(e) => setDescription((e.target as HTMLInputElement).value)}
+            onInput={(e) =>
+              setDescription((e.target as HTMLInputElement).value)}
             placeholder="e.g. Classic pasta with meat sauce"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
           />
@@ -160,52 +190,69 @@ export default function MealForm({ meal, csrfToken }: Props) {
           <div class="space-y-3">
             {ingredients.map((ing, i) => {
               return (
-              <div key={i} class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <div class="flex gap-2 items-start">
-                  {/* Name */}
-                  <div class="flex-1 min-w-0">
-                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                      Name <span class="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={ing.name}
-                      placeholder="e.g. Passata"
-                      onInput={(e) => updateIngredient(i, { name: (e.target as HTMLInputElement).value })}
-                      class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                    />
-                  </div>
+                <div
+                  key={i}
+                  class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                >
+                  <div class="flex gap-2 items-start">
+                    {/* Name */}
+                    <div class="flex-1 min-w-0">
+                      <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Name <span class="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={ing.name}
+                        placeholder="e.g. Passata"
+                        onInput={(e) =>
+                          updateIngredient(i, {
+                            name: (e.target as HTMLInputElement).value,
+                          })}
+                        class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
 
-                  {/* Servings per unit */}
-                  <div class="w-36 shrink-0">
-                    <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Servings per unit</label>
-                    <input
-                      type="number"
-                      value={ing.servingsPerUnit}
-                      min={1}
-                      onInput={(e) => updateIngredient(i, { servingsPerUnit: Math.max(1, parseInt((e.target as HTMLInputElement).value) || 1) })}
-                      class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
-                    />
-                  </div>
+                    {/* Servings per unit */}
+                    <div class="w-36 shrink-0">
+                      <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Servings per unit
+                      </label>
+                      <input
+                        type="number"
+                        value={ing.servingsPerUnit}
+                        min={1}
+                        onInput={(e) =>
+                          updateIngredient(i, {
+                            servingsPerUnit: Math.max(
+                              1,
+                              parseInt((e.target as HTMLInputElement).value) ||
+                                1,
+                            ),
+                          })}
+                        class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
 
-                  {/* Remove */}
-                  <div class="pt-5">
-                    <button
-                      type="button"
-                      onClick={() => removeIngredient(i)}
-                      class="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-lg leading-none"
-                      aria-label="Remove ingredient"
-                      disabled={ingredients.length === 1}
-                    >
-                      ✕
-                    </button>
+                    {/* Remove */}
+                    <div class="pt-5">
+                      <button
+                        type="button"
+                        onClick={() => removeIngredient(i)}
+                        class="text-red-400 hover:text-red-600 dark:hover:text-red-300 text-lg leading-none"
+                        aria-label="Remove ingredient"
+                        disabled={ingredients.length === 1}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );})}
+              );
+            })}
           </div>
           <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">
-            "Servings per unit" = how many people one unit of this item feeds. E.g. a 500ml jar of passata serves 6.
+            "Servings per unit" = how many people one unit of this item feeds.
+            E.g. a 500ml jar of passata serves 6.
           </p>
         </div>
 

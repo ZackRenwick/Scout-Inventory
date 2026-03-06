@@ -20,7 +20,10 @@ export default function RebuildIndexes({ csrfToken }: Props) {
         headers: { "X-CSRF-Token": csrfToken },
       });
       const json = await res.json();
-      setStatus({ ok: res.ok, message: res.ok ? json.message : json.error ?? "An error occurred." });
+      setStatus({
+        ok: res.ok,
+        message: res.ok ? json.message : json.error ?? "An error occurred.",
+      });
     } catch {
       setStatus({ ok: false, message: "Request failed." });
     } finally {
@@ -39,7 +42,13 @@ export default function RebuildIndexes({ csrfToken }: Props) {
         {loading ? "⏳ Rebuilding…" : "🔄 Rebuild Indexes"}
       </button>
       {status && (
-        <p class={`mt-3 text-sm ${status.ok ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+        <p
+          class={`mt-3 text-sm ${
+            status.ok
+              ? "text-green-700 dark:text-green-400"
+              : "text-red-700 dark:text-red-400"
+          }`}
+        >
           {status.ok ? "✅" : "❌"} {status.message}
         </p>
       )}

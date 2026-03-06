@@ -1,16 +1,12 @@
-/// <reference no-default-lib="true" />
-/// <reference lib="dom" />
-/// <reference lib="dom.iterable" />
-/// <reference lib="dom.asynciterable" />
-/// <reference lib="deno.ns" />
+import "jsr:@std/dotenv@^0.224.0/load";
 
-import "$std/dotenv/load.ts";
-
-import { start } from "$fresh/server.ts";
-import manifest from "./fresh.gen.ts";
-import config from "./fresh.config.ts";
+import { App, staticFiles } from "fresh";
 import { ensureDefaultAdmin } from "./lib/auth.ts";
-import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "./lib/notifications.ts";
+import {
+  checkAndNotifyExpiry,
+  checkAndNotifyLowStock,
+  checkAndNotifyOverdueLoans,
+} from "./lib/notifications.ts";
 import { initKv } from "./db/kv.ts";
 
 // Always ensure a default admin account exists — locally and on Deploy
@@ -44,16 +40,23 @@ async function runNotifications(source: string) {
   }
   console.log(`[${source}] Claimed notification run — sending checks.`);
   await Promise.all([
-    checkAndNotifyLowStock().catch((e) => console.error(`[${source}] notify-low-stock failed:`, e)),
-    checkAndNotifyExpiry().catch((e) => console.error(`[${source}] notify-expiry failed:`, e)),
-    checkAndNotifyOverdueLoans().catch((e) => console.error(`[${source}] notify-overdue-loans failed:`, e)),
+    checkAndNotifyLowStock().catch((e) =>
+      console.error(`[${source}] notify-low-stock failed:`, e)
+    ),
+    checkAndNotifyExpiry().catch((e) =>
+      console.error(`[${source}] notify-expiry failed:`, e)
+    ),
+    checkAndNotifyOverdueLoans().catch((e) =>
+      console.error(`[${source}] notify-overdue-loans failed:`, e)
+    ),
   ]);
 }
 
 if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   // Self-ping every 5 minutes to keep the isolate warm and avoid cold starts.
   // Set APP_URL to your deployment URL in Deno Deploy environment variables.
-  const appUrl = Deno.env.get("APP_URL") ?? "https://7thwhitburnscoutsinventory.co.uk";
+  const appUrl = Deno.env.get("APP_URL") ??
+    "https://7thwhitburnscoutsinventory.co.uk";
   Deno.cron("warmup-ping", "*/5 * * * *", async () => {
     try {
       await fetch(`${appUrl}/api/ping`);
@@ -76,9 +79,13 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   const utcMin = now.getUTCMinutes();
   const minuteOfDay = utcHour * 60 + utcMin;
   const isNotificationDay = dayOfWeek === 3 || dayOfWeek === 5;
-  const inCatchUpWindow = minuteOfDay >= 8 * 60 + 30 && minuteOfDay < 9 * 60 + 30;
+  const inCatchUpWindow = minuteOfDay >= 8 * 60 + 30 &&
+    minuteOfDay < 9 * 60 + 30;
   if (isNotificationDay && inCatchUpWindow) {
     runNotifications("startup-catchup");
   }
 }
-await start(manifest, config);
+
+export const app = new App()
+  .use(staticFiles())
+  .fsRoutes();

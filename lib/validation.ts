@@ -3,9 +3,23 @@
 
 import type { ItemCategory, ItemSpace } from "../types/inventory.ts";
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
+const VALID_CATEGORIES = new Set<ItemCategory>([
+  "tent",
+  "cooking",
+  "food",
+  "camping-tools",
+  "games",
+  "kit",
+]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft"]);
-const VALID_FOOD_TYPES = new Set(["canned", "jarred", "dried", "packaged", "fresh", "frozen"]);
+const VALID_FOOD_TYPES = new Set([
+  "canned",
+  "jarred",
+  "dried",
+  "packaged",
+  "fresh",
+  "frozen",
+]);
 
 export function validateQuantity(quantity: number): string | null {
   if (quantity < 0) {
@@ -24,14 +38,20 @@ export function validateExpiryDate(expiryDate: Date): string | null {
   return null;
 }
 
-export function validateRequiredField(value: string | undefined, fieldName: string): string | null {
+export function validateRequiredField(
+  value: string | undefined,
+  fieldName: string,
+): string | null {
   if (!value || value.trim() === "") {
     return `${fieldName} is required`;
   }
   return null;
 }
 
-export function validateMinThreshold(threshold: number, quantity: number): string | null {
+export function validateMinThreshold(
+  threshold: number,
+  quantity: number,
+): string | null {
   if (threshold < 0) {
     return "Minimum threshold cannot be negative";
   }
@@ -52,7 +72,9 @@ export function validateItemBase(body: Record<string, any>): string | null {
     return nameErr;
   }
   if (!VALID_CATEGORIES.has(body.category)) {
-    return `Invalid category "${body.category}" — must be one of: ${[...VALID_CATEGORIES].join(", ")}`;
+    return `Invalid category "${body.category}" — must be one of: ${
+      [...VALID_CATEGORIES].join(", ")
+    }`;
   }
   if (typeof body.quantity !== "number") {
     return "quantity must be a number";
@@ -84,7 +106,9 @@ export function validateItemBase(body: Record<string, any>): string | null {
 // deno-lint-ignore no-explicit-any
 export function validateFoodItem(body: Record<string, any>): string | null {
   if (!VALID_FOOD_TYPES.has(body.foodType)) {
-    return `Invalid foodType "${body.foodType}" — must be one of: ${[...VALID_FOOD_TYPES].join(", ")}`;
+    return `Invalid foodType "${body.foodType}" — must be one of: ${
+      [...VALID_FOOD_TYPES].join(", ")
+    }`;
   }
   if (!body.expiryDate) {
     return "expiryDate is required for food items";

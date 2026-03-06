@@ -1,12 +1,17 @@
 // POST /api/loans — create a new loan record
-import { Handlers } from "$fresh/server.ts";
 import { createCheckOut, getItemById } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 import type { CheckOut } from "../../../types/inventory.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 
-export const handler: Handlers = {
-  async POST(req, ctx) {
+export const handler = {
+  async POST(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
@@ -18,7 +23,8 @@ export const handler: Handlers = {
       return Response.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
-    const { itemId, borrower, quantity, expectedReturnDate, notes } = body as Record<string, unknown>;
+    const { itemId, borrower, quantity, expectedReturnDate, notes } =
+      body as Record<string, unknown>;
 
     if (
       typeof itemId !== "string" ||
@@ -29,7 +35,10 @@ export const handler: Handlers = {
       !expectedReturnDate
     ) {
       return Response.json(
-        { error: "itemId, borrower, quantity, and expectedReturnDate are required." },
+        {
+          error:
+            "itemId, borrower, quantity, and expectedReturnDate are required.",
+        },
         { status: 400 },
       );
     }
@@ -90,7 +99,9 @@ export const handler: Handlers = {
         checkOutDate: new Date(),
         expectedReturnDate: returnDate,
         status: "checked-out",
-        notes: typeof notes === "string" && notes.trim() ? notes.trim() : undefined,
+        notes: typeof notes === "string" && notes.trim()
+          ? notes.trim()
+          : undefined,
       };
 
       await createCheckOut(checkout);
@@ -100,13 +111,16 @@ export const handler: Handlers = {
         action: "loan.created",
         resource: item.name,
         resourceId: checkout.id,
-        details: `Loaned ${qty}× "${item.name}" to ${checkout.borrower}, due ${expectedReturnDate}`,
+        details:
+          `Loaned ${qty}× "${item.name}" to ${checkout.borrower}, due ${expectedReturnDate}`,
       });
 
       return Response.json(checkout, { status: 201 });
     } catch (e) {
       console.error("Failed to create loan:", e);
-      return Response.json({ error: "Failed to create loan." }, { status: 500 });
+      return Response.json({ error: "Failed to create loan." }, {
+        status: 500,
+      });
     }
   },
 };

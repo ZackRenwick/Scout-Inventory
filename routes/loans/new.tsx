@@ -1,5 +1,5 @@
 // New loan page — pick an item, enter borrower details and expected return date
-import { Handlers, PageProps } from "$fresh/server.ts";
+import { page, PageProps } from "fresh";
 import Layout from "../../components/Layout.tsx";
 import LoanForm, { type LoanableItem } from "../../islands/LoanForm.tsx";
 import type { Session } from "../../lib/auth.ts";
@@ -10,11 +10,14 @@ interface NewLoanPageData {
   session?: Session;
 }
 
-export const handler: Handlers<NewLoanPageData> = {
-  async GET(_req, ctx) {
+export const handler = {
+  async GET(ctx) {
     const session = ctx.state.session as Session;
     if (session.role === "viewer") {
-      return new Response(null, { status: 302, headers: { location: "/loans" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/loans" },
+      });
     }
 
     // Only non-food items can be loaned (food is consumable).
@@ -29,22 +32,29 @@ export const handler: Handlers<NewLoanPageData> = {
         quantity: i.quantity,
         location: i.location,
       }))
-      .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+      );
 
-    return ctx.render({ items: loanable, session });
+    return page({ items: loanable, session });
   },
 };
 
 export default function NewLoanPage({ data }: PageProps<NewLoanPageData>) {
   return (
-    <Layout title="" username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title=""
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="flex flex-col items-center">
         <div class="w-full max-w-2xl mb-6 text-center">
           <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-1">
             Record a Loan
           </h2>
           <p class="text-gray-600 dark:text-gray-400">
-            Log equipment being loaned to another group. Stock will be adjusted when the loan is recorded.
+            Log equipment being loaned to another group. Stock will be adjusted
+            when the loan is recorded.
           </p>
         </div>
         <div class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">

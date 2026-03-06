@@ -28,7 +28,10 @@ export default function ConfirmDeleteForm({ csrfToken, username }: Props) {
         <input type="hidden" name="csrf_token" value={csrfToken} />
         <input type="hidden" name="action" value="delete" />
         <input type="hidden" name="username" value={username} />
-        <button type="submit" class="text-xs text-red-600 dark:text-red-400 font-semibold hover:underline">
+        <button
+          type="submit"
+          class="text-xs text-red-600 dark:text-red-400 font-semibold hover:underline"
+        >
           Yes
         </button>
       </form>
@@ -42,4 +45,3 @@ export default function ConfirmDeleteForm({ csrfToken, username }: Props) {
     </div>
   );
 }
-

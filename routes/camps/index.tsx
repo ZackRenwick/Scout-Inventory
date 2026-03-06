@@ -1,5 +1,5 @@
 // Camp plans listing page
-import { Handlers, PageProps } from "$fresh/server.ts";
+import { page, PageProps } from "fresh";
 import type { CampPlan } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import CampPlanList from "../../islands/CampPlanList.tsx";
@@ -15,16 +15,24 @@ interface CampsPageData {
   view: ViewMode;
 }
 
-export const handler: Handlers<CampsPageData> = {
-  async GET(req, ctx) {
+export const handler = {
+  async GET(ctx) {
+    const req = ctx.req;
+
     try {
       const url = new URL(req.url);
-      const view: ViewMode = url.searchParams.get("view") === "calendar" ? "calendar" : "list";
+      const view: ViewMode = url.searchParams.get("view") === "calendar"
+        ? "calendar"
+        : "list";
       const plans = await getAllCampPlans();
-      return ctx.render({ plans, session: ctx.state.session as Session, view });
+      return page({ plans, session: ctx.state.session as Session, view });
     } catch (error) {
       console.error("Failed to fetch camp plans:", error);
-      return ctx.render({ plans: [], session: ctx.state.session as Session, view: "list" });
+      return page({
+        plans: [],
+        session: ctx.state.session as Session,
+        view: "list",
+      });
     }
   },
 };
@@ -32,7 +40,9 @@ export const handler: Handlers<CampsPageData> = {
 /** Returns the CSS classes for a view-toggle tab link. */
 function viewTabClass(active: boolean, hasBorderLeft = false): string {
   const base = "px-3 py-2 transition-colors";
-  const border = hasBorderLeft ? " border-l border-gray-300 dark:border-gray-600" : "";
+  const border = hasBorderLeft
+    ? " border-l border-gray-300 dark:border-gray-600"
+    : "";
   const state = active
     ? " bg-purple-600 text-white"
     : " text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700";
@@ -40,13 +50,18 @@ function viewTabClass(active: boolean, hasBorderLeft = false): string {
 }
 
 export default function CampsPage({ data }: PageProps<CampsPageData>) {
-  const canEdit    = data.session?.role !== "viewer";
+  const canEdit = data.session?.role !== "viewer";
   const isCalendar = data.view === "calendar";
 
   return (
-    <Layout title="Camp Planning" username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title="Camp Planning"
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-amber-800 dark:text-amber-300 text-sm">
-        🚧 <strong>Beta feature</strong> — Camp Planning is still in development. Please report any issues.
+        🚧 <strong>Beta feature</strong>{" "}
+        — Camp Planning is still in development. Please report any issues.
       </div>
 
       <div class="mb-6">
@@ -58,8 +73,13 @@ export default function CampsPage({ data }: PageProps<CampsPageData>) {
           <div class="flex gap-2 flex-wrap items-center">
             {/* List / Calendar toggle */}
             <div class="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium">
-              <a href="/camps"              class={viewTabClass(!isCalendar)}>☰ List</a>
-              <a href="/camps?view=calendar" class={viewTabClass(isCalendar, true)}>📅 Calendar</a>
+              <a href="/camps" class={viewTabClass(!isCalendar)}>☰ List</a>
+              <a
+                href="/camps?view=calendar"
+                class={viewTabClass(isCalendar, true)}
+              >
+                📅 Calendar
+              </a>
             </div>
 
             {canEdit && (
@@ -82,9 +102,13 @@ export default function CampsPage({ data }: PageProps<CampsPageData>) {
         </div>
       </div>
 
-      {isCalendar
-        ? <CampCalendar plans={data.plans} />
-        : <CampPlanList plans={data.plans} canEdit={canEdit} csrfToken={data.session?.csrfToken} />}
+      {isCalendar ? <CampCalendar plans={data.plans} /> : (
+        <CampPlanList
+          plans={data.plans}
+          canEdit={canEdit}
+          csrfToken={data.session?.csrfToken}
+        />
+      )}
     </Layout>
   );
 }

@@ -1,30 +1,26 @@
 {
-  "lock": false,
   "unstable": ["kv"],
+  "nodeModulesDir": "manual",
   "tasks": {
-    "check": "deno fmt --check && deno lint && deno check **/*.ts && deno check **/*.tsx",
-    "cli": "echo \"import '\\$fresh/src/dev/cli.ts'\" | deno run --unstable -A -",
-    "manifest": "deno task cli manifest $(pwd)",
-    "start": "deno run -A --unstable-kv --watch=static/,routes/ dev.ts",
-    "build": "deno run -A --unstable-kv dev.ts build",
-    "preview": "deno run -A --unstable-kv main.ts",
-    "update": "deno run -A -r https://fresh.deno.dev/update .",
+    "dev": "vite",
+    "dev:bypass": "DEV_BYPASS=true vite",
+    "build": "vite build",
+    "preview": "deno serve -A --unstable-kv _fresh/server.js",
+    "update": "deno run -A -r jsr:@fresh/update .",
     "seed": "deno run -A --unstable-kv db/seed.ts"
   },
   "lint": { "rules": { "tags": ["fresh", "recommended"] } },
-  "exclude": ["**/_fresh/*"],
+  "exclude": ["**/_fresh/*", "**/node_modules/*"],
   "imports": {
-    "$fresh/": "https://deno.land/x/fresh@1.7.3/",
+    "fresh": "jsr:@fresh/core@^2.2.0",
+    "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.0.4",
+    "vite": "npm:vite@^7.0.0",
     "bcryptjs": "npm:bcryptjs@2.4.3",
     "@types/bcryptjs": "npm:@types/bcryptjs@2.4.6",
-    "tailwindcss": "npm:tailwindcss@3.4.1",
-    "tailwindcss/": "npm:/tailwindcss@3.4.1/",
-    "tailwindcss/plugin": "npm:/tailwindcss@3.4.1/plugin.js",
-    "preact": "https://esm.sh/preact@10.22.0",
-    "preact/": "https://esm.sh/preact@10.22.0/",
-    "@preact/signals": "https://esm.sh/*@preact/signals@1.2.2",
-    "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
-    "$std/": "https://deno.land/std@0.216.0/"
+    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.2.1",
+    "tailwindcss": "npm:tailwindcss@^4.2.1",
+    "preact": "npm:preact@^10.27.2",
+    "@preact/signals": "npm:@preact/signals@^2.5.0"
   },
   "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "preact" }
 }

@@ -1,6 +1,15 @@
 /// <reference lib="deno.unstable" />
 // Deno KV database setup and operations
-import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace, CampPlan, CampTemplate, CampTemplateItem } from "../types/inventory.ts";
+import type {
+  CampPlan,
+  CampTemplate,
+  CampTemplateItem,
+  CheckOut,
+  FoodItem,
+  InventoryItem,
+  ItemCategory,
+  ItemSpace,
+} from "../types/inventory.ts";
 import type { Meal, MealPayload } from "../types/meals.ts";
 
 // Initialize Deno KV
@@ -29,23 +38,26 @@ export async function initKv(): Promise<Deno.Kv> {
 //   ["inventory", "stats", "computed"]                    → ComputedStats
 
 const KEYS = {
-  items:         ["inventory", "items"] as const,
-  checkouts:     ["inventory", "checkouts"] as const,
-  neckers:       ["inventory", "neckers", "count"] as const,
+  items: ["inventory", "items"] as const,
+  checkouts: ["inventory", "checkouts"] as const,
+  neckers: ["inventory", "neckers", "count"] as const,
   computedStats: ["inventory", "stats", "computed"] as const,
-  camps:         ["camps", "plans"] as const,
-  templates:     ["camps", "templates"] as const,
-  meals:         ["meals"] as const,
+  camps: ["camps", "plans"] as const,
+  templates: ["camps", "templates"] as const,
+  meals: ["meals"] as const,
 };
 
 // Index key helpers
 const IDX = {
-  category:       ["inventory", "idx", "category"] as const,
-  space:          ["inventory", "idx", "space"] as const,
-  expiry:         ["inventory", "idx", "expiry"] as const,
-  categoryKey:    (cat: string, id: string) => ["inventory", "idx", "category", cat, id] as const,
-  spaceKey:       (sp: string,  id: string) => ["inventory", "idx", "space",    sp,  id] as const,
-  expiryKey:      (iso: string, id: string) => ["inventory", "idx", "expiry",   iso, id] as const,
+  category: ["inventory", "idx", "category"] as const,
+  space: ["inventory", "idx", "space"] as const,
+  expiry: ["inventory", "idx", "expiry"] as const,
+  categoryKey: (cat: string, id: string) =>
+    ["inventory", "idx", "category", cat, id] as const,
+  spaceKey: (sp: string, id: string) =>
+    ["inventory", "idx", "space", sp, id] as const,
+  expiryKey: (iso: string, id: string) =>
+    ["inventory", "idx", "expiry", iso, id] as const,
 };
 
 // ===== PRE-COMPUTED STATS =====
@@ -82,7 +94,9 @@ function emptyStats(): ComputedStats {
   };
 }
 
-function hasCondition(item: InventoryItem): item is InventoryItem & { condition: string } {
+function hasCondition(
+  item: InventoryItem,
+): item is InventoryItem & { condition: string } {
   return "condition" in item;
 }
 
@@ -90,30 +104,42 @@ function hasCondition(item: InventoryItem): item is InventoryItem & { condition:
  * Apply a single item to a stats snapshot (+1 to add it, -1 to remove it).
  * Uses sign to avoid duplicating logic for add vs remove.
  */
-function applyItemToStats(stats: ComputedStats, item: InventoryItem, sign: 1 | -1): ComputedStats {
+function applyItemToStats(
+  stats: ComputedStats,
+  item: InventoryItem,
+  sign: 1 | -1,
+): ComputedStats {
   const next: ComputedStats = {
-    totalItems:    stats.totalItems    + sign,
+    totalItems: stats.totalItems + sign,
     totalQuantity: stats.totalQuantity + sign * item.quantity,
-    categoryBreakdown: { ...stats.categoryBreakdown } as ComputedStats["categoryBreakdown"],
-    spaceBreakdown:    { ...stats.spaceBreakdown }    as ComputedStats["spaceBreakdown"],
-    lowStockItems:     stats.lowStockItems,
-    needsRepairItems:  stats.needsRepairItems,
-    activeLoansCount:  stats.activeLoansCount ?? 0,
+    categoryBreakdown: {
+      ...stats.categoryBreakdown,
+    } as ComputedStats["categoryBreakdown"],
+    spaceBreakdown: {
+      ...stats.spaceBreakdown,
+    } as ComputedStats["spaceBreakdown"],
+    lowStockItems: stats.lowStockItems,
+    needsRepairItems: stats.needsRepairItems,
+    activeLoansCount: stats.activeLoansCount ?? 0,
   };
 
   // Deep-copy the two buckets we'll touch
-  const cat  = item.category as ItemCategory;
-  const sp   = (item.space ?? "camp-store") as ItemSpace;
+  const cat = item.category as ItemCategory;
+  const sp = (item.space ?? "camp-store") as ItemSpace;
   next.categoryBreakdown[cat] = { ...next.categoryBreakdown[cat] };
-  next.spaceBreakdown[sp]     = { ...next.spaceBreakdown[sp] };
+  next.spaceBreakdown[sp] = { ...next.spaceBreakdown[sp] };
 
-  next.categoryBreakdown[cat].count    += sign;
+  next.categoryBreakdown[cat].count += sign;
   next.categoryBreakdown[cat].quantity += sign * item.quantity;
-  next.spaceBreakdown[sp].count        += sign;
-  next.spaceBreakdown[sp].quantity     += sign * item.quantity;
+  next.spaceBreakdown[sp].count += sign;
+  next.spaceBreakdown[sp].quantity += sign * item.quantity;
 
   if (item.quantity <= item.minThreshold) next.lowStockItems += sign;
-  if (hasCondition(item) && (item.condition === "needs-repair" || ((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0)) next.needsRepairItems += sign;
+  if (
+    hasCondition(item) &&
+    (item.condition === "needs-repair" ||
+      ((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0)
+  ) next.needsRepairItems += sign;
 
   return next;
 }
@@ -140,7 +166,8 @@ let checkoutsInFlight: Promise<CheckOut[]> | null = null;
 let campPlansCache: { plans: CampPlan[]; expiresAt: number } | null = null;
 let campPlansInFlight: Promise<CampPlan[]> | null = null;
 
-let templatesCache: { templates: CampTemplate[]; expiresAt: number } | null = null;
+let templatesCache: { templates: CampTemplate[]; expiresAt: number } | null =
+  null;
 let templatesInFlight: Promise<CampTemplate[]> | null = null;
 
 export async function getAllItems(): Promise<InventoryItem[]> {
@@ -203,7 +230,10 @@ function addToIndex(op: Deno.AtomicOperation, item: InventoryItem): void {
   op.set(IDX.categoryKey(item.category, item.id), item.id);
   op.set(IDX.spaceKey(item.space ?? "camp-store", item.id), item.id);
   if (item.category === "food") {
-    op.set(IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id), item.id);
+    op.set(
+      IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id),
+      item.id,
+    );
   }
 }
 
@@ -212,7 +242,9 @@ function removeFromIndex(op: Deno.AtomicOperation, item: InventoryItem): void {
   op.delete(IDX.categoryKey(item.category, item.id));
   op.delete(IDX.spaceKey(item.space ?? "camp-store", item.id));
   if (item.category === "food") {
-    op.delete(IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id));
+    op.delete(
+      IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id),
+    );
   }
 }
 
@@ -229,7 +261,9 @@ export async function getItemById(id: string): Promise<InventoryItem | null> {
  * Uses the in-memory cache when warm; falls back to a full KV scan.
  * Avoids N individual KV reads that the index-then-lookup approach requires.
  */
-export async function getItemsByCategory(category: ItemCategory): Promise<InventoryItem[]> {
+export async function getItemsByCategory(
+  category: ItemCategory,
+): Promise<InventoryItem[]> {
   const all = await getAllItems();
   return all.filter((item) => item.category === category);
 }
@@ -238,7 +272,9 @@ export async function getItemsByCategory(category: ItemCategory): Promise<Invent
  * Fetch all items for a specific space.
  * Uses the in-memory cache when warm; falls back to a full KV scan.
  */
-export async function getItemsBySpace(space: ItemSpace): Promise<InventoryItem[]> {
+export async function getItemsBySpace(
+  space: ItemSpace,
+): Promise<InventoryItem[]> {
   const all = await getAllItems();
   return all.filter((item) => (item.space ?? "camp-store") === space);
 }
@@ -252,8 +288,12 @@ export async function getFoodItemsSortedByExpiry(): Promise<FoodItem[]> {
   const all = await getAllItems();
   return (all.filter((item): item is FoodItem => item.category === "food"))
     .sort((a, b) => {
-      const aTime = a.expiryDate instanceof Date ? a.expiryDate.getTime() : new Date(a.expiryDate as string).getTime();
-      const bTime = b.expiryDate instanceof Date ? b.expiryDate.getTime() : new Date(b.expiryDate as string).getTime();
+      const aTime = a.expiryDate instanceof Date
+        ? a.expiryDate.getTime()
+        : new Date(a.expiryDate as string).getTime();
+      const bTime = b.expiryDate instanceof Date
+        ? b.expiryDate.getTime()
+        : new Date(b.expiryDate as string).getTime();
       return aTime - bTime;
     });
 }
@@ -273,7 +313,10 @@ export async function createItem(item: InventoryItem): Promise<InventoryItem> {
   return item;
 }
 
-export async function updateItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
+export async function updateItem(
+  id: string,
+  updates: Partial<InventoryItem>,
+): Promise<InventoryItem | null> {
   const existing = await getItemById(id);
   if (!existing) {
     return null;
@@ -287,7 +330,11 @@ export async function updateItem(id: string, updates: Partial<InventoryItem>): P
   } as InventoryItem;
 
   const currentStats = await getComputedStats();
-  const newStats = applyItemToStats(applyItemToStats(currentStats, existing, -1), updated, 1);
+  const newStats = applyItemToStats(
+    applyItemToStats(currentStats, existing, -1),
+    updated,
+    1,
+  );
 
   const db = await initKv();
   const op = db.atomic();
@@ -324,7 +371,7 @@ export async function deleteItem(id: string): Promise<boolean> {
 export async function searchItems(query: string): Promise<InventoryItem[]> {
   const allItems = await getAllItems();
   const lowerQuery = query.toLowerCase();
-  
+
   return allItems.filter((item) =>
     item.name.toLowerCase().includes(lowerQuery) ||
     item.category.toLowerCase().includes(lowerQuery) ||
@@ -401,7 +448,9 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
 
 export async function getActiveCheckOuts(): Promise<CheckOut[]> {
   const allCheckOuts = await getAllCheckOuts();
-  return allCheckOuts.filter((co) => co.status === "checked-out" || co.status === "overdue");
+  return allCheckOuts.filter((co) =>
+    co.status === "checked-out" || co.status === "overdue"
+  );
 }
 
 export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
@@ -410,7 +459,10 @@ export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
 
   // Atomically write the checkout record and increment active loans count
   const currentStats = await getComputedStats();
-  const newStats: ComputedStats = { ...currentStats, activeLoansCount: (currentStats.activeLoansCount ?? 0) + 1 };
+  const newStats: ComputedStats = {
+    ...currentStats,
+    activeLoansCount: (currentStats.activeLoansCount ?? 0) + 1,
+  };
   await db.atomic()
     .set([...KEYS.checkouts, checkout.id], serializedCheckOut)
     .set(KEYS.computedStats, newStats)
@@ -421,7 +473,9 @@ export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
   // Deduct quantity from item stock
   const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, { quantity: item.quantity - checkout.quantity });
+    await updateItem(checkout.itemId, {
+      quantity: item.quantity - checkout.quantity,
+    });
   }
 
   return checkout;
@@ -430,21 +484,24 @@ export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
 export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   const db = await initKv();
   const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
-  
+
   if (!result.value) {
     return null;
   }
-  
+
   const checkout = deserializeCheckOut(result.value);
   const updated: CheckOut = {
     ...checkout,
     actualReturnDate: new Date(),
     status: "returned",
   };
-  
+
   // Atomically write the return and decrement active loans count
   const currentStats = await getComputedStats();
-  const newStats: ComputedStats = { ...currentStats, activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1) };
+  const newStats: ComputedStats = {
+    ...currentStats,
+    activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
+  };
   await db.atomic()
     .set([...KEYS.checkouts, id], serializeCheckOut(updated))
     .set(KEYS.computedStats, newStats)
@@ -455,7 +512,9 @@ export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   // Restore item quantity
   const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, { quantity: item.quantity + checkout.quantity });
+    await updateItem(checkout.itemId, {
+      quantity: item.quantity + checkout.quantity,
+    });
   }
 
   return updated;
@@ -483,10 +542,15 @@ export async function deleteCheckOut(id: string): Promise<boolean> {
   if (isActive) {
     const item = await getItemById(checkout.itemId);
     if (item) {
-      await updateItem(checkout.itemId, { quantity: item.quantity + checkout.quantity });
+      await updateItem(checkout.itemId, {
+        quantity: item.quantity + checkout.quantity,
+      });
     }
     const currentStats = await getComputedStats();
-    const newStats: ComputedStats = { ...currentStats, activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1) };
+    const newStats: ComputedStats = {
+      ...currentStats,
+      activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
+    };
     await db.atomic()
       .delete([...KEYS.checkouts, id])
       .set(KEYS.computedStats, newStats)
@@ -533,11 +597,11 @@ function serializeItem(item: InventoryItem): any {
   const serialized: any = { ...item };
   serialized.addedDate = item.addedDate.toISOString();
   serialized.lastUpdated = item.lastUpdated.toISOString();
-  
+
   if (item.category === "food") {
     serialized.expiryDate = item.expiryDate.toISOString();
   }
-  
+
   return serialized;
 }
 
@@ -547,11 +611,11 @@ function deserializeItem(data: any): InventoryItem {
   const item: any = { ...data };
   item.addedDate = new Date(data.addedDate);
   item.lastUpdated = new Date(data.lastUpdated);
-  
+
   if (data.category === "food") {
     item.expiryDate = new Date(data.expiryDate);
   }
-  
+
   return item as InventoryItem;
 }
 
@@ -571,7 +635,9 @@ function deserializeCheckOut(data: any): CheckOut {
     ...data,
     checkOutDate: new Date(data.checkOutDate),
     expectedReturnDate: new Date(data.expectedReturnDate),
-    actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : undefined,
+    actualReturnDate: data.actualReturnDate
+      ? new Date(data.actualReturnDate)
+      : undefined,
   };
 }
 
@@ -674,12 +740,20 @@ export async function deleteCampPlan(id: string): Promise<boolean> {
 
 // deno-lint-ignore no-explicit-any
 function serializeCampTemplate(t: CampTemplate): any {
-  return { ...t, createdAt: t.createdAt.toISOString(), lastUpdated: t.lastUpdated.toISOString() };
+  return {
+    ...t,
+    createdAt: t.createdAt.toISOString(),
+    lastUpdated: t.lastUpdated.toISOString(),
+  };
 }
 
 // deno-lint-ignore no-explicit-any
 function deserializeCampTemplate(data: any): CampTemplate {
-  return { ...data, createdAt: new Date(data.createdAt), lastUpdated: new Date(data.lastUpdated) };
+  return {
+    ...data,
+    createdAt: new Date(data.createdAt),
+    lastUpdated: new Date(data.lastUpdated),
+  };
 }
 
 export async function getAllCampTemplates(): Promise<CampTemplate[]> {
@@ -691,10 +765,14 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
   templatesInFlight = (async () => {
     const db = await initKv();
     const templates: CampTemplate[] = [];
-    for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
+    for await (
+      const entry of db.list<CampTemplate>({ prefix: KEYS.templates })
+    ) {
       templates.push(deserializeCampTemplate(entry.value));
     }
-    templates.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    templates.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true })
+    );
     templatesCache = { templates, expiresAt: Date.now() + CACHE_TTL_MS };
     templatesInFlight = null;
     return templates;
@@ -703,7 +781,9 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
   return templatesInFlight;
 }
 
-export async function getCampTemplateById(id: string): Promise<CampTemplate | null> {
+export async function getCampTemplateById(
+  id: string,
+): Promise<CampTemplate | null> {
   const db = await initKv();
   const result = await db.get<CampTemplate>([...KEYS.templates, id]);
   return result.value ? deserializeCampTemplate(result.value) : null;
@@ -726,7 +806,10 @@ export async function createCampTemplate(
     createdAt: now,
     lastUpdated: now,
   };
-  await db.set([...KEYS.templates, template.id], serializeCampTemplate(template));
+  await db.set(
+    [...KEYS.templates, template.id],
+    serializeCampTemplate(template),
+  );
   invalidateTemplatesCache();
   return template;
 }
@@ -748,7 +831,9 @@ export async function getAllMeals(): Promise<Meal[]> {
   for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
     if (entry.value) meals.push(entry.value);
   }
-  return meals.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  return meals.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true })
+  );
 }
 
 export async function getMealById(id: string): Promise<Meal | null> {
@@ -766,11 +851,19 @@ export async function createMeal(payload: MealPayload): Promise<Meal> {
   return meal;
 }
 
-export async function updateMeal(id: string, payload: MealPayload): Promise<Meal | null> {
+export async function updateMeal(
+  id: string,
+  payload: MealPayload,
+): Promise<Meal | null> {
   const db = await initKv();
   const existing = await getMealById(id);
   if (!existing) return null;
-  const updated: Meal = { ...existing, ...payload, id, updatedAt: new Date().toISOString() };
+  const updated: Meal = {
+    ...existing,
+    ...payload,
+    id,
+    updatedAt: new Date().toISOString(),
+  };
   await db.set([...KEYS.meals, id], updated);
   return updated;
 }

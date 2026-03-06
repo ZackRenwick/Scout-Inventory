@@ -1,7 +1,17 @@
 // API route for individual camp plans
-import { Handlers } from "$fresh/server.ts";
-import { getCampPlanById, updateCampPlan, deleteCampPlan, getItemById, updateItem } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import {
+  deleteCampPlan,
+  getCampPlanById,
+  getItemById,
+  updateCampPlan,
+  updateItem,
+} from "../../../db/kv.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 import type { CampPlanItem } from "../../../types/inventory.ts";
 
 /**
@@ -31,11 +41,15 @@ async function applyItemSideEffects(
       tasks.push(
         getItemById(itemId).then((inv) => {
           if (inv) {
-            return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+            return updateItem(itemId, {
+              quantity: inv.quantity + old.quantityPlanned,
+            });
           }
         }),
       );
-    } else if (old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus) {
+    } else if (
+      old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus
+    ) {
       // Gear removed while still at camp — mark as returned to store
       tasks.push(updateItem(itemId, { atCamp: false, quantityAtCamp: 0 }));
     }
@@ -54,7 +68,9 @@ async function applyItemSideEffects(
         tasks.push(
           getItemById(itemId).then((inv) => {
             if (inv) {
-              return updateItem(itemId, { quantity: Math.max(0, inv.quantity - newItem.quantityPlanned) });
+              return updateItem(itemId, {
+                quantity: Math.max(0, inv.quantity - newItem.quantityPlanned),
+              });
             }
           }),
         );
@@ -63,7 +79,9 @@ async function applyItemSideEffects(
         tasks.push(
           getItemById(itemId).then((inv) => {
             if (inv) {
-              return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+              return updateItem(itemId, {
+                quantity: inv.quantity + old.quantityPlanned,
+              });
             }
           }),
         );
@@ -91,9 +109,9 @@ async function applyItemSideEffects(
   await Promise.all(tasks);
 }
 
-export const handler: Handlers = {
+export const handler = {
   // GET /api/camps/[id]
-  async GET(_req, ctx) {
+  async GET(ctx) {
     const { id } = ctx.params;
     try {
       const plan = await getCampPlanById(id);
@@ -102,12 +120,15 @@ export const handler: Handlers = {
       }
       return Response.json(plan);
     } catch (_error) {
-      return Response.json({ error: "Failed to fetch camp plan" }, { status: 500 });
+      return Response.json({ error: "Failed to fetch camp plan" }, {
+        status: 500,
+      });
     }
   },
 
   // PATCH /api/camps/[id] — update plan metadata, status, or checklist items
-  async PATCH(req, ctx) {
+  async PATCH(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") {
       return forbidden();
@@ -131,7 +152,10 @@ export const handler: Handlers = {
       }
 
       if (body.items) {
-        await applyItemSideEffects(existing.items, body.items as CampPlanItem[]);
+        await applyItemSideEffects(
+          existing.items,
+          body.items as CampPlanItem[],
+        );
       }
 
       const updated = await updateCampPlan(id, body, existing);
@@ -140,7 +164,9 @@ export const handler: Handlers = {
       }
       return Response.json(updated);
     } catch (_error) {
-      return Response.json({ error: "Failed to update camp plan" }, { status: 500 });
+      return Response.json({ error: "Failed to update camp plan" }, {
+        status: 500,
+      });
     }
   },
 
@@ -148,7 +174,8 @@ export const handler: Handlers = {
   // via PATCH body with an `items` array.
 
   // DELETE /api/camps/[id]
-  async DELETE(req, ctx) {
+  async DELETE(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") {
       return forbidden();
@@ -164,7 +191,9 @@ export const handler: Handlers = {
       }
       return Response.json({ success: true });
     } catch (_error) {
-      return Response.json({ error: "Failed to delete camp plan" }, { status: 500 });
+      return Response.json({ error: "Failed to delete camp plan" }, {
+        status: 500,
+      });
     }
   },
 };
