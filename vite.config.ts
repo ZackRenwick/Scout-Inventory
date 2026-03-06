@@ -8,15 +8,15 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    // Ensure only one copy of Preact is bundled — avoids `__H` / hooks context errors
-    // when @preact/signals and preact-render-to-string each try to bring their own copy.
+    // Single copy of Preact in client bundles — avoids duplicate hooks context in browser.
     dedupe: ["preact", "preact/hooks", "preact/jsx-runtime", "@preact/signals"],
   },
   ssr: {
-    // Force Preact + signals to bundle together so there's only one shared
-    // options/hooks object — prevents the `__H` undefined crash on SSR.
-    noExternal: ["preact", "preact/hooks", "preact/jsx-runtime", "preact-render-to-string", "@preact/signals"],
-    // Let Deno handle all jsr:, npm:, and mapped specifiers at runtime
+    // Let Deno resolve all npm packages (including Preact) at runtime so every
+    // module shares the same instance. The @fresh/plugin-vite server-entry uses
+    // `npm:preact@^10.27.2` specifiers directly — if we also bundle a separate
+    // Preact copy via noExternal, two instances exist and `options.__H` is
+    // undefined on the Fresh copy → "__H" crash in production.
     external: true,
   },
   build: {
