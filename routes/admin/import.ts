@@ -54,6 +54,30 @@ interface ValidationError {
   error: string;
 }
 
+// Validate and coerce a contents array, or return an error string.
+function parseContents(
+  raw: unknown,
+): { name: string; quantity: number }[] | string {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) return '"contents" must be an array';
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (typeof c !== "object" || c === null) {
+      return `"contents[${i}]" must be an object with name and quantity`;
+    }
+    if (typeof c.name !== "string" || !c.name.trim()) {
+      return `"contents[${i}].name" must be a non-empty string`;
+    }
+    if (
+      typeof c.quantity !== "number" || !Number.isInteger(c.quantity) ||
+      c.quantity < 0
+    ) {
+      return `"contents[${i}].quantity" must be a non-negative integer`;
+    }
+  }
+  return raw as { name: string; quantity: number }[];
+}
+
 function validateItem(
   raw: RawItem,
   index: number,
@@ -137,6 +161,10 @@ function validateItem(
     };
   }
   if (category === "cooking") {
+    const contents = parseContents(raw.contents);
+    if (typeof contents === "string") {
+      return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+    }
     return {
       ok: true,
       item: {
@@ -147,6 +175,7 @@ function validateItem(
         material: raw.material,
         fuelType: raw.fuelType,
         capacity: raw.capacity,
+        contents: contents.length ? contents : undefined,
       },
     };
   }
@@ -188,6 +217,10 @@ function validateItem(
     };
   }
   if (category === "games") {
+    const contents = parseContents(raw.contents);
+    if (typeof contents === "string") {
+      return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+    }
     return {
       ok: true,
       item: {
@@ -197,10 +230,15 @@ function validateItem(
         condition: raw.condition,
         playerCount: raw.playerCount,
         yearPurchased: raw.yearPurchased,
+        contents: contents.length ? contents : undefined,
       },
     };
   }
   // kit
+  const contents = parseContents(raw.contents);
+  if (typeof contents === "string") {
+    return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+  }
   return {
     ok: true,
     item: {
@@ -208,7 +246,7 @@ function validateItem(
       category: "kit",
       kitType: raw.kitType,
       condition: raw.condition,
-      contents: raw.contents,
+      contents: contents.length ? contents : undefined,
       brand: raw.brand,
       yearPurchased: raw.yearPurchased,
     },
