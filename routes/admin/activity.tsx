@@ -9,6 +9,9 @@ import type { Session } from "../../lib/auth.ts";
 
 interface ActivityPageData {
   entries: ActivityEntry[];
+  allEntries: ActivityEntry[];
+  userFilter: string;
+  users: string[];
   session: Session;
 }
 
@@ -21,8 +24,14 @@ export const handler = {
         headers: { location: "/admin/admin-panel" },
       });
     }
-    const entries = await getRecentActivity(200);
-    return page({ entries, session });
+    const url = new URL(ctx.req.url);
+    const userFilter = url.searchParams.get("user")?.trim() ?? "";
+    const allEntries = await getRecentActivity(500);
+    const users = [...new Set(allEntries.map((e) => e.username))].sort();
+    const entries = userFilter
+      ? allEntries.filter((e) => e.username === userFilter)
+      : allEntries.slice(0, 200);
+    return page({ entries, allEntries, userFilter, users, session });
   },
 };
 
@@ -55,7 +64,7 @@ function formatDate(ts: string): string {
 }
 
 export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
-  const { entries, session } = data;
+  const { entries, userFilter, users, session } = data;
 
   return (
     <Layout
@@ -71,7 +80,9 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
               📋 Activity Log
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Last {entries.length} events (90-day rolling window)
+              {userFilter
+                ? `${entries.length} event${entries.length !== 1 ? "s" : ""} for ${userFilter}`
+                : `Last ${entries.length} events (90-day rolling window)`}
             </p>
           </div>
           <a
@@ -82,11 +93,44 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
           </a>
         </div>
 
-        {/* Table */}
+        {/* User filter */}
+        <div class="mb-6 flex items-center gap-3 flex-wrap">
+          <form method="get" class="flex items-center gap-2">
+            <label
+              for="user-filter"
+              class="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Filter by user:
+            </label>
+            <select
+              id="user-filter"
+              name="user"
+              class="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              onChange={(e) => (e.currentTarget.form as HTMLFormElement).submit()}
+            >
+              <option value="" selected={!userFilter}>All users</option>
+              {users.map((u) => (
+                <option key={u} value={u} selected={u === userFilter}>
+                  {u}
+                </option>
+              ))}
+            </select>
+          </form>
+          {userFilter && (
+            <a
+              href="/admin/activity"
+              class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              ✕ Clear filter
+            </a>
+          )}
+        </div>
         {entries.length === 0
           ? (
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
-              No activity recorded yet.
+              {userFilter
+                ? `No activity found for "${userFilter}".`
+                : "No activity recorded yet."}
             </div>
           )
           : (
