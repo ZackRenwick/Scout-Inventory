@@ -8,7 +8,10 @@ interface Props {
 
 type Status = { ok: boolean; message: string } | null;
 
-async function callNotify(type: string | null, csrfToken: string): Promise<Status> {
+async function callNotify(
+  type: string | null,
+  csrfToken: string,
+): Promise<Status> {
   const url = type ? `/admin/notify?type=${type}` : "/admin/notify";
   try {
     const res = await fetch(url, {
@@ -16,7 +19,10 @@ async function callNotify(type: string | null, csrfToken: string): Promise<Statu
       headers: { "X-CSRF-Token": csrfToken },
     });
     const data = await res.json();
-    return { ok: res.ok, message: data.message ?? (res.ok ? "Done." : "An error occurred.") };
+    return {
+      ok: res.ok,
+      message: data.message ?? (res.ok ? "Done." : "An error occurred."),
+    };
   } catch {
     return { ok: false, message: "Network error — please try again." };
   }
@@ -46,7 +52,9 @@ export default function NotificationButtons({ csrfToken }: Props) {
           disabled={loading !== null}
           onClick={() => trigger("low-stock", "⚠️ Send Low Stock Alert")}
         >
-          {loading === "⚠️ Send Low Stock Alert" ? "⏳ Sending…" : "⚠️ Send Low Stock Alert"}
+          {loading === "⚠️ Send Low Stock Alert"
+            ? "⏳ Sending…"
+            : "⚠️ Send Low Stock Alert"}
         </button>
         <button
           type="button"
@@ -54,7 +62,9 @@ export default function NotificationButtons({ csrfToken }: Props) {
           disabled={loading !== null}
           onClick={() => trigger("expiry", "🥫 Send Expiry Alert")}
         >
-          {loading === "🥫 Send Expiry Alert" ? "⏳ Sending…" : "🥫 Send Expiry Alert"}
+          {loading === "🥫 Send Expiry Alert"
+            ? "⏳ Sending…"
+            : "🥫 Send Expiry Alert"}
         </button>
         <button
           type="button"
@@ -62,11 +72,19 @@ export default function NotificationButtons({ csrfToken }: Props) {
           disabled={loading !== null}
           onClick={() => trigger(null, "📧 Send All Alerts")}
         >
-          {loading === "📧 Send All Alerts" ? "⏳ Sending…" : "📧 Send All Alerts"}
+          {loading === "📧 Send All Alerts"
+            ? "⏳ Sending…"
+            : "📧 Send All Alerts"}
         </button>
       </div>
       {status && (
-        <p class={`text-sm ${status.ok ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+        <p
+          class={`text-sm ${
+            status.ok
+              ? "text-green-700 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
           {status.message}
         </p>
       )}

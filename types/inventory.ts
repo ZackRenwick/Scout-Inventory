@@ -1,32 +1,85 @@
 // Base inventory item interface
-export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit";
+export type ItemCategory =
+  | "tent"
+  | "cooking"
+  | "food"
+  | "camping-tools"
+  | "games"
+  | "kit";
 
 export type ItemSpace = "camp-store" | "scout-post-loft";
 
 export type ItemLocation =
-  | "Plastic Shelf 1 - Level 1" | "Plastic Shelf 1 - Level 2" | "Plastic Shelf 1 - Level 3" | "Plastic Shelf 1 - Level 4"
-  | "Plastic Shelf 2 - Level 1" | "Plastic Shelf 2 - Level 2" | "Plastic Shelf 2 - Level 3" | "Plastic Shelf 2 - Level 4" | "On Top of Plastic Shelf 2"
-  | "Plastic Shelf 3 - Level 1" | "Plastic Shelf 3 - Level 2" | "Plastic Shelf 3 - Level 3" | "Plastic Shelf 3 - Level 4" | "On Top of Plastic Shelf 3"
-  | "Wooden Shelf 1" | "Wooden Shelf 2" | "Wooden Shelf 3"
-  | "Metal Shelf 1 - Slot 1" | "Metal Shelf 1 - Slot 2" | "Metal Shelf 1 - Slot 3" | "Metal Shelf 1 - Slot 4"
-  | "Metal Shelf 2 - Slot 1" | "Metal Shelf 2 - Slot 2" | "Metal Shelf 2 - Slot 3" | "Metal Shelf 2 - Slot 4"
-  | "Metal Shelf 3 - Slot 1" | "Metal Shelf 3 - Slot 2" | "Metal Shelf 3 - Slot 3" | "Metal Shelf 3 - Slot 4"
-  | "Metal Shelf 4 - Slot 1" | "Metal Shelf 4 - Slot 2" | "Metal Shelf 4 - Slot 3" | "Metal Shelf 4 - Slot 4"
-  | "Filing Cabinet - Drawer 1" | "Filing Cabinet - Drawer 2" | "Filing Cabinet - Drawer 3" | "Filing Cabinet - Drawer 4"
-  | "Blue Box" | "Red Box" | "Green Box" | "Yellow Box"
-  | "Kestrels Box" | "Eagles Box"
+  | "Plastic Shelf 1 - Level 1"
+  | "Plastic Shelf 1 - Level 2"
+  | "Plastic Shelf 1 - Level 3"
+  | "Plastic Shelf 1 - Level 4"
+  | "Plastic Shelf 2 - Level 1"
+  | "Plastic Shelf 2 - Level 2"
+  | "Plastic Shelf 2 - Level 3"
+  | "Plastic Shelf 2 - Level 4"
+  | "On Top of Plastic Shelf 2"
+  | "Plastic Shelf 3 - Level 1"
+  | "Plastic Shelf 3 - Level 2"
+  | "Plastic Shelf 3 - Level 3"
+  | "Plastic Shelf 3 - Level 4"
+  | "On Top of Plastic Shelf 3"
+  | "Wooden Shelf 1"
+  | "Wooden Shelf 2"
+  | "Wooden Shelf 3"
+  | "Metal Shelf 1 - Slot 1"
+  | "Metal Shelf 1 - Slot 2"
+  | "Metal Shelf 1 - Slot 3"
+  | "Metal Shelf 1 - Slot 4"
+  | "Metal Shelf 2 - Slot 1"
+  | "Metal Shelf 2 - Slot 2"
+  | "Metal Shelf 2 - Slot 3"
+  | "Metal Shelf 2 - Slot 4"
+  | "Metal Shelf 3 - Slot 1"
+  | "Metal Shelf 3 - Slot 2"
+  | "Metal Shelf 3 - Slot 3"
+  | "Metal Shelf 3 - Slot 4"
+  | "Metal Shelf 4 - Slot 1"
+  | "Metal Shelf 4 - Slot 2"
+  | "Metal Shelf 4 - Slot 3"
+  | "Metal Shelf 4 - Slot 4"
+  | "Filing Cabinet - Drawer 1"
+  | "Filing Cabinet - Drawer 2"
+  | "Filing Cabinet - Drawer 3"
+  | "Filing Cabinet - Drawer 4"
+  | "Blue Box"
+  | "Red Box"
+  | "Green Box"
+  | "Yellow Box"
+  | "Kestrels Box"
+  | "Eagles Box"
   | "Cubby Hole"
   | "Axe/Saw Hanging Space"
-  | "On Top of Red Box" | "On Top of Green Box"
-  | "Loft Shelf 1" | "Loft Shelf 2" | "Loft Shelf 3" | "Loft Shelf 4";
+  | "On Top of Red Box"
+  | "On Top of Green Box"
+  | "Loft Shelf 1"
+  | "Loft Shelf 2"
+  | "Loft Shelf 3"
+  | "Loft Shelf 4";
 
 export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
     group: "Plastic Shelves",
     options: [
-      "Plastic Shelf 1 - Level 1", "Plastic Shelf 1 - Level 2", "Plastic Shelf 1 - Level 3", "Plastic Shelf 1 - Level 4",
-      "Plastic Shelf 2 - Level 1", "Plastic Shelf 2 - Level 2", "Plastic Shelf 2 - Level 3", "Plastic Shelf 2 - Level 4", "On Top of Plastic Shelf 2",
-      "Plastic Shelf 3 - Level 1", "Plastic Shelf 3 - Level 2", "Plastic Shelf 3 - Level 3", "Plastic Shelf 3 - Level 4", "On Top of Plastic Shelf 3",
+      "Plastic Shelf 1 - Level 1",
+      "Plastic Shelf 1 - Level 2",
+      "Plastic Shelf 1 - Level 3",
+      "Plastic Shelf 1 - Level 4",
+      "Plastic Shelf 2 - Level 1",
+      "Plastic Shelf 2 - Level 2",
+      "Plastic Shelf 2 - Level 3",
+      "Plastic Shelf 2 - Level 4",
+      "On Top of Plastic Shelf 2",
+      "Plastic Shelf 3 - Level 1",
+      "Plastic Shelf 3 - Level 2",
+      "Plastic Shelf 3 - Level 3",
+      "Plastic Shelf 3 - Level 4",
+      "On Top of Plastic Shelf 3",
     ],
   },
   {
@@ -36,25 +89,52 @@ export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
     group: "Metal Shelves",
     options: [
-      "Metal Shelf 1 - Slot 1", "Metal Shelf 1 - Slot 2", "Metal Shelf 1 - Slot 3", "Metal Shelf 1 - Slot 4",
-      "Metal Shelf 2 - Slot 1", "Metal Shelf 2 - Slot 2", "Metal Shelf 2 - Slot 3", "Metal Shelf 2 - Slot 4",
-      "Metal Shelf 3 - Slot 1", "Metal Shelf 3 - Slot 2", "Metal Shelf 3 - Slot 3", "Metal Shelf 3 - Slot 4",
-      "Metal Shelf 4 - Slot 1", "Metal Shelf 4 - Slot 2", "Metal Shelf 4 - Slot 3", "Metal Shelf 4 - Slot 4",
+      "Metal Shelf 1 - Slot 1",
+      "Metal Shelf 1 - Slot 2",
+      "Metal Shelf 1 - Slot 3",
+      "Metal Shelf 1 - Slot 4",
+      "Metal Shelf 2 - Slot 1",
+      "Metal Shelf 2 - Slot 2",
+      "Metal Shelf 2 - Slot 3",
+      "Metal Shelf 2 - Slot 4",
+      "Metal Shelf 3 - Slot 1",
+      "Metal Shelf 3 - Slot 2",
+      "Metal Shelf 3 - Slot 3",
+      "Metal Shelf 3 - Slot 4",
+      "Metal Shelf 4 - Slot 1",
+      "Metal Shelf 4 - Slot 2",
+      "Metal Shelf 4 - Slot 3",
+      "Metal Shelf 4 - Slot 4",
     ],
   },
   {
     group: "Filing Cabinet",
     options: [
-      "Filing Cabinet - Drawer 1", "Filing Cabinet - Drawer 2", "Filing Cabinet - Drawer 3", "Filing Cabinet - Drawer 4",
+      "Filing Cabinet - Drawer 1",
+      "Filing Cabinet - Drawer 2",
+      "Filing Cabinet - Drawer 3",
+      "Filing Cabinet - Drawer 4",
     ],
   },
   {
     group: "Boxes",
-    options: ["Blue Box", "Red Box", "Green Box", "Yellow Box", "Kestrels Box", "Eagles Box"],
+    options: [
+      "Blue Box",
+      "Red Box",
+      "Green Box",
+      "Yellow Box",
+      "Kestrels Box",
+      "Eagles Box",
+    ],
   },
   {
     group: "Other",
-    options: ["Axe/Saw Hanging Space", "On Top of Red Box", "On Top of Green Box", "Cubby Hole"],
+    options: [
+      "Axe/Saw Hanging Space",
+      "On Top of Red Box",
+      "On Top of Green Box",
+      "Cubby Hole",
+    ],
   },
 ];
 
@@ -62,7 +142,10 @@ export const LOFT_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
     group: "Loft Shelves",
     options: [
-      "Loft Shelf 1", "Loft Shelf 2", "Loft Shelf 3", "Loft Shelf 4",
+      "Loft Shelf 1",
+      "Loft Shelf 2",
+      "Loft Shelf 3",
+      "Loft Shelf 4",
     ],
   },
 ];
@@ -106,7 +189,15 @@ export interface BoxContentItem {
 // Cooking equipment properties
 export interface CookingEquipment extends BaseInventoryItem {
   category: "cooking";
-  equipmentType: "stove" | "pots" | "pans" | "utensils" | "cooler" | "water-container" | "box" | "other";
+  equipmentType:
+    | "stove"
+    | "pots"
+    | "pans"
+    | "utensils"
+    | "cooler"
+    | "water-container"
+    | "box"
+    | "other";
   material?: string;
   fuelType?: string; // For stoves
   capacity?: string; // For pots, coolers, etc.
@@ -129,7 +220,15 @@ export interface FoodItem extends BaseInventoryItem {
 // Camping tools properties
 export interface CampingToolItem extends BaseInventoryItem {
   category: "camping-tools";
-  toolType: "axe" | "saw" | "knife" | "shovel" | "rope" | "hammer" | "multi-tool" | "other";
+  toolType:
+    | "axe"
+    | "saw"
+    | "knife"
+    | "shovel"
+    | "rope"
+    | "hammer"
+    | "multi-tool"
+    | "other";
   condition: "excellent" | "good" | "fair" | "needs-repair";
   material?: string;
   brand?: string;
@@ -139,7 +238,14 @@ export interface CampingToolItem extends BaseInventoryItem {
 // Kit / Box properties — a self-contained collection of items stored together
 export interface KitItem extends BaseInventoryItem {
   category: "kit";
-  kitType: "cooking-kit" | "first-aid" | "tool-kit" | "craft-kit" | "emergency" | "general" | "other";
+  kitType:
+    | "cooking-kit"
+    | "first-aid"
+    | "tool-kit"
+    | "craft-kit"
+    | "emergency"
+    | "general"
+    | "other";
   condition: "excellent" | "good" | "fair" | "needs-repair";
   contents?: BoxContentItem[];
   brand?: string;
@@ -150,7 +256,14 @@ export interface KitItem extends BaseInventoryItem {
 // Games equipment properties
 export interface GamesItem extends BaseInventoryItem {
   category: "games";
-  gameType: "board-game" | "card-game" | "outdoor-game" | "sports" | "puzzle" | "box" | "other";
+  gameType:
+    | "board-game"
+    | "card-game"
+    | "outdoor-game"
+    | "sports"
+    | "puzzle"
+    | "box"
+    | "other";
   condition: "excellent" | "good" | "fair" | "needs-repair";
   playerCount?: string;
   yearPurchased?: number;
@@ -159,14 +272,22 @@ export interface GamesItem extends BaseInventoryItem {
 }
 
 // Union type for all inventory items
-export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | KitItem;
+export type InventoryItem =
+  | TentItem
+  | CookingEquipment
+  | FoodItem
+  | CampingToolItem
+  | GamesItem
+  | KitItem;
 
 // Helper type guards
 export function isTentItem(item: InventoryItem): item is TentItem {
   return item.category === "tent";
 }
 
-export function isCookingEquipment(item: InventoryItem): item is CookingEquipment {
+export function isCookingEquipment(
+  item: InventoryItem,
+): item is CookingEquipment {
   return item.category === "cooking";
 }
 
@@ -174,7 +295,9 @@ export function isFoodItem(item: InventoryItem): item is FoodItem {
   return item.category === "food";
 }
 
-export function isCampingToolItem(item: InventoryItem): item is CampingToolItem {
+export function isCampingToolItem(
+  item: InventoryItem,
+): item is CampingToolItem {
   return item.category === "camping-tools";
 }
 
@@ -187,12 +310,18 @@ export function isKitItem(item: InventoryItem): item is KitItem {
 }
 
 // Expiry status for food items
-export type ExpiryStatus = "expired" | "expiring-soon" | "expiring-warning" | "fresh";
+export type ExpiryStatus =
+  | "expired"
+  | "expiring-soon"
+  | "expiring-warning"
+  | "fresh";
 
 export function getExpiryStatus(expiryDate: Date): ExpiryStatus {
   const now = new Date();
-  const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysUntilExpiry = Math.floor(
+    (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   if (daysUntilExpiry < 0) return "expired";
   if (daysUntilExpiry <= 7) return "expiring-soon";
   if (daysUntilExpiry <= 30) return "expiring-warning";
@@ -227,7 +356,12 @@ export interface CampPlanItem {
   contents?: BoxContentItem[];
 }
 
-export type CampPlanStatus = "planning" | "packing" | "active" | "returning" | "completed";
+export type CampPlanStatus =
+  | "planning"
+  | "packing"
+  | "active"
+  | "returning"
+  | "completed";
 
 export interface CampPlan {
   id: string;

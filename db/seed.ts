@@ -7,12 +7,12 @@ const CAMP_STORE = "camp-store" as const;
 
 // Stable IDs for food items so meal ingredients can link to them
 const FOOD_IDS = {
-  beans:      "seed-food-beans-001",
-  oatmeal:    "seed-food-oatmeal-001",
-  trailMix:   "seed-food-trailmix-001",
-  freezeDried:"seed-food-freezedried-001",
-  apples:     "seed-food-apples-001",
-  hotChoc:    "seed-food-hotchoc-001",
+  beans: "seed-food-beans-001",
+  oatmeal: "seed-food-oatmeal-001",
+  trailMix: "seed-food-trailmix-001",
+  freezeDried: "seed-food-freezedried-001",
+  apples: "seed-food-apples-001",
+  hotChoc: "seed-food-hotchoc-001",
 } as const;
 
 export async function seedDatabase() {
@@ -70,7 +70,7 @@ export async function seedDatabase() {
       lastUpdated: new Date("2024-06-01"),
       notes: "Needs minor repairs to base canvas",
     },
-    
+
     // Cooking Equipment
     {
       id: crypto.randomUUID(),
@@ -133,7 +133,7 @@ export async function seedDatabase() {
       lastUpdated: new Date("2025-01-05"),
       notes: "Collapsible with spigot",
     },
-    
+
     // Food Items
     // Pre-assigned IDs so meals can reference them as linked ingredients
     {
@@ -248,7 +248,8 @@ export async function seedDatabase() {
   const sampleMeals: MealPayload[] = [
     {
       name: "Porridge Breakfast",
-      description: "Simple hot oat porridge — quick to prepare for large groups",
+      description:
+        "Simple hot oat porridge — quick to prepare for large groups",
       ingredients: [
         { name: "Instant Oatmeal Packets", servingsPerUnit: 1 },
         { name: "Honey", servingsPerUnit: 20 },

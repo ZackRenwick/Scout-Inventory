@@ -1,15 +1,23 @@
 // POST /api/logout — destroys the session cookie
-import { Handlers } from "$fresh/server.ts";
-import { getSessionCookie, getSession, deleteSession, clearSessionCookie } from "../../lib/auth.ts";
+import {
+  clearSessionCookie,
+  deleteSession,
+  getSession,
+  getSessionCookie,
+} from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 
-export const handler: Handlers = {
-  async POST(req) {
+export const handler = {
+  async POST(ctx) {
+    const req = ctx.req;
     const sessionId = getSessionCookie(req);
     if (sessionId) {
       const session = await getSession(sessionId);
       if (session) {
-        await logActivity({ username: session.username, action: "user.logout" });
+        await logActivity({
+          username: session.username,
+          action: "user.logout",
+        });
       }
       await deleteSession(sessionId);
     }

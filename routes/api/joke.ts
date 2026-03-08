@@ -1,4 +1,3 @@
-import { FreshContext } from "$fresh/server.ts";
 
 const JOKES = [
   "I'm reading a book about anti-gravity. It's impossible to put down.",
@@ -57,7 +56,7 @@ const JOKES = [
   "What did the big flower say to the little flower? Hey, bud!",
 ];
 
-export const handler = (_req: Request, _ctx: FreshContext): Response => {
+export const handler = (_ctx: unknown): Response => {
   const randomIndex = Math.floor(Math.random() * JOKES.length);
   const body = JOKES[randomIndex];
   return new Response(body);

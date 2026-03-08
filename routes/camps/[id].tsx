@@ -1,10 +1,18 @@
 // Camp plan detail / checklist page
-import { Handlers, PageProps } from "$fresh/server.ts";
-import type { CampPlan, CampTemplate, InventoryItem } from "../../types/inventory.ts";
+import { page, PageProps } from "fresh";
+import type {
+  CampPlan,
+  CampTemplate,
+  InventoryItem,
+} from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import CampChecklist from "../../islands/CampChecklist.tsx";
 import type { Session } from "../../lib/auth.ts";
-import { getCampPlanById, getAllItems, getAllCampTemplates } from "../../db/kv.ts";
+import {
+  getAllCampTemplates,
+  getAllItems,
+  getCampPlanById,
+} from "../../db/kv.ts";
 
 interface CampDetailPageData {
   plan: CampPlan;
@@ -13,8 +21,8 @@ interface CampDetailPageData {
   session?: Session;
 }
 
-export const handler: Handlers<CampDetailPageData> = {
-  async GET(_req, ctx) {
+export const handler = {
+  async GET(ctx) {
     const { id } = ctx.params;
     const [plan, allItems, templates] = await Promise.all([
       getCampPlanById(id),
@@ -23,15 +31,42 @@ export const handler: Handlers<CampDetailPageData> = {
     ]);
 
     if (!plan) {
-      return new Response(null, { status: 302, headers: { location: "/camps" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/camps" },
+      });
     }
 
-    allItems.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    return ctx.render({ plan, allItems, templates, session: ctx.state.session as Session });
+    allItems.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true })
+    );
+    // Slim to only the fields CampChecklist uses — avoids sending full item
+    // payloads (~200KB) on every camp detail page load.
+    const slimItems = allItems.map((item) => {
+      const anyItem = item as unknown as Record<string, unknown>;
+      const slim: Record<string, unknown> = {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        location: item.location,
+      };
+      // contents exists on BoxItem/KitItem subtypes — include it when present
+      const c = anyItem.contents;
+      if (Array.isArray(c) && c.length > 0) slim.contents = c;
+      return slim;
+    }) as unknown as InventoryItem[];
+    return page({
+      plan,
+      allItems: slimItems,
+      templates,
+      session: ctx.state.session as Session,
+    });
   },
 };
 
-export default function CampDetailPage({ data }: PageProps<CampDetailPageData>) {
+export default function CampDetailPage(
+  { data }: PageProps<CampDetailPageData>,
+) {
   const canEdit = data.session?.role !== "viewer";
   return (
     <Layout

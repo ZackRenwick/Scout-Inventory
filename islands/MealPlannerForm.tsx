@@ -1,6 +1,7 @@
 // Interactive camp meal planner — select meals, enter headcount, see shopping list
-import { useState } from "preact/hooks";
-import type { Meal, FoodItemSummary } from "../types/meals.ts";
+import { useMemo, useState } from "preact/hooks";
+import type { FoodItemSummary, Meal } from "../types/meals.ts";
+import NumberInput from "../components/NumberInput.tsx";
 
 interface Props {
   meals: Meal[];
@@ -52,39 +53,49 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
   }
 
   function shareBuyList(toBuyList: PlannerRow[]) {
-    navigator.share({ title: "Scout Shopping List", text: buildBuyText(toBuyList) });
+    navigator.share({
+      title: "Scout Shopping List",
+      text: buildBuyText(toBuyList),
+    });
   }
 
   // Name-based stock map: aggregates quantity across all items sharing the same name
-  const stockByName = new Map<string, { total: number; batchCount: number }>();
-  for (const f of foodItems) {
-    const key = f.name.toLowerCase();
-    const existing = stockByName.get(key);
-    if (existing) {
-      existing.total += f.quantity;
-      existing.batchCount += 1;
-    } else {
-      stockByName.set(key, { total: f.quantity, batchCount: 1 });
+  const stockByName = useMemo(() => {
+    const m = new Map<string, { total: number; batchCount: number }>();
+    for (const f of foodItems) {
+      const key = f.name.toLowerCase();
+      const existing = m.get(key);
+      if (existing) {
+        existing.total += f.quantity;
+        existing.batchCount += 1;
+      } else {
+        m.set(key, { total: f.quantity, batchCount: 1 });
+      }
     }
-  }
+    return m;
+  }, [foodItems]);
 
   function setCount(mealId: string, value: number) {
     setCounts((prev) => ({ ...prev, [mealId]: Math.max(0, value) }));
   }
 
   // Unique ingredient names across all selected meals, sorted alphabetically
-  const activeIngredientNames = Array.from(
-    new Set(
-      meals
-        .filter((m) => (counts[m.id] ?? 0) > 0)
-        .flatMap((m) => m.ingredients.map((i) => i.name)),
-    ),
-  ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const activeIngredientNames = useMemo(() =>
+    Array.from(
+      new Set(
+        meals
+          .filter((m) => (counts[m.id] ?? 0) > 0)
+          .flatMap((m) => m.ingredients.map((i) => i.name)),
+      ),
+    ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  , [meals, counts]);
 
   // Sorted unique inventory food names for the link dropdowns
-  const foodNames = Array.from(new Set(foodItems.map((f) => f.name))).sort((a, b) =>
-    a.localeCompare(b, undefined, { numeric: true }),
-  );
+  const foodNames = useMemo(() =>
+    Array.from(new Set(foodItems.map((f) => f.name))).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    )
+  , [foodItems]);
 
   function calculate() {
     if (headcount < 1) return;
@@ -142,9 +153,12 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
   return (
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-purple-100">Plan a Camp</h2>
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-purple-100">
+          Plan a Camp
+        </h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          Select meals and how many times you'll serve each, then enter the headcount to see what you need.
+          Select meals and how many times you'll serve each, then enter the
+          headcount to see what you need.
         </p>
       </div>
 
@@ -154,12 +168,11 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
           <label class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
             Number of people
           </label>
-          <input
-            type="number"
-            min={1}
+          <NumberInput
             value={headcount || ""}
+            min={1}
             placeholder="e.g. 90"
-            onInput={(e) => setHeadcount(Math.max(0, parseInt((e.target as HTMLInputElement).value) || 0))}
+            onChange={(n) => setHeadcount(n)}
             class="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
           />
         </div>
@@ -177,15 +190,29 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                   <button
                     type="button"
                     onClick={() => setCount(meal.id, count > 0 ? 0 : 1)}
-                    class={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${count > 0 ? "bg-purple-600 border-purple-600 text-white" : "border-gray-300 dark:border-gray-500"}`}
-                    aria-label={count > 0 ? `Deselect ${meal.name}` : `Select ${meal.name}`}
+                    class={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      count > 0
+                        ? "bg-purple-600 border-purple-600 text-white"
+                        : "border-gray-300 dark:border-gray-500"
+                    }`}
+                    aria-label={count > 0
+                      ? `Deselect ${meal.name}`
+                      : `Select ${meal.name}`}
                   >
                     {count > 0 && <span class="text-xs leading-none">✓</span>}
                   </button>
-                  <span class={`text-sm flex-1 ${count > 0 ? "text-gray-800 dark:text-purple-100" : "text-gray-500 dark:text-gray-400"}`}>
+                  <span
+                    class={`text-sm flex-1 ${
+                      count > 0
+                        ? "text-gray-800 dark:text-purple-100"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
                     {meal.name}
                     {meal.description && (
-                      <span class="text-xs text-gray-400 dark:text-gray-500 ml-1">— {meal.description}</span>
+                      <span class="text-xs text-gray-400 dark:text-gray-500 ml-1">
+                        — {meal.description}
+                      </span>
                     )}
                   </span>
                   {count > 0 && (
@@ -194,13 +221,19 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                         type="button"
                         onClick={() => setCount(meal.id, count - 1)}
                         class="w-6 h-6 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      >−</button>
-                      <span class="w-8 text-center text-sm font-medium text-gray-800 dark:text-gray-100">{count}×</span>
+                      >
+                        −
+                      </button>
+                      <span class="w-8 text-center text-sm font-medium text-gray-800 dark:text-gray-100">
+                        {count}×
+                      </span>
                       <button
                         type="button"
                         onClick={() => setCount(meal.id, count + 1)}
                         class="w-6 h-6 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      >+</button>
+                      >
+                        +
+                      </button>
                     </div>
                   )}
                 </div>
@@ -216,12 +249,19 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
               Link ingredients to inventory
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Match each recipe ingredient to an inventory item so stock levels can be checked. Leave blank to treat as untracked.
+              Match each recipe ingredient to an inventory item so stock levels
+              can be checked. Leave blank to treat as untracked.
             </p>
             <div class="space-y-2">
               {activeIngredientNames.map((ingName) => (
-                <div key={ingName} class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                  <span class="text-sm font-medium text-gray-700 dark:text-gray-200 sm:w-40 sm:shrink-0 sm:truncate" title={ingName}>
+                <div
+                  key={ingName}
+                  class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3"
+                >
+                  <span
+                    class="text-sm font-medium text-gray-700 dark:text-gray-200 sm:w-40 sm:shrink-0 sm:truncate"
+                    title={ingName}
+                  >
                     {ingName}
                   </span>
                   <select
@@ -237,7 +277,14 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                       const stock = stockByName.get(fn.toLowerCase());
                       return (
                         <option key={fn} value={fn}>
-                          {fn}{stock ? ` (${stock.total} in stock${stock.batchCount > 1 ? `, ${stock.batchCount} batches` : ""})` : " (0 in stock)"}
+                          {fn}
+                          {stock
+                            ? ` (${stock.total} in stock${
+                              stock.batchCount > 1
+                                ? `, ${stock.batchCount} batches`
+                                : ""
+                            })`
+                            : " (0 in stock)"}
                         </option>
                       );
                     })}
@@ -269,172 +316,264 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
                 </span>
               </h3>
 
-              {results.length === 0 ? (
-                <p class="text-sm text-gray-500 dark:text-gray-400">No ingredients calculated — select at least one meal.</p>
-              ) : (
-                <>
-                  {/* Summary badges */}
-                  <div class="flex gap-3 mb-4 flex-wrap">
-                    <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                      {results.length} ingredient{results.length !== 1 ? "s" : ""}
-                    </span>
-                    <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
-                      {results.filter((r) => r.tracked && (r.toBuy ?? 0) > 0).length} to buy
-                    </span>
-                    <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
-                      {results.filter((r) => r.tracked && r.toBuy === 0).length} fully stocked
-                    </span>
-                    {results.some((r) => !r.tracked) && (
-                      <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
-                        {results.filter((r) => !r.tracked).length} not tracked
+              {results.length === 0
+                ? (
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    No ingredients calculated — select at least one meal.
+                  </p>
+                )
+                : (
+                  <>
+                    {/* Summary badges */}
+                    <div class="flex gap-3 mb-4 flex-wrap">
+                      <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        {results.length}{" "}
+                        ingredient{results.length !== 1 ? "s" : ""}
                       </span>
-                    )}
-                  </div>
+                      <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                        {results.filter((r) => r.tracked && (r.toBuy ?? 0) > 0)
+                          .length} to buy
+                      </span>
+                      <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">
+                        {results.filter((r) =>
+                          r.tracked && r.toBuy === 0
+                        )
+                          .length} fully stocked
+                      </span>
+                      {results.some((r) => !r.tracked) && (
+                        <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                          {results.filter((r) => !r.tracked).length} not tracked
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Table — desktop */}
-                  <div class="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                    <table class="w-full text-sm">
-                      <thead>
-                        <tr class="bg-gray-50 dark:bg-gray-700/50 text-left">
-                          <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Item</th>
-                          <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">Needed</th>
-                          <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">In loft</th>
-                          <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">To buy</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                        {results.map((row) => (
-                          <tr
-                            key={row.key}
-                            class={!row.tracked ? "opacity-70" : (row.toBuy ?? 0) > 0 ? "bg-red-50/40 dark:bg-red-900/10" : ""}
-                          >
-                            <td class="px-4 py-3 text-gray-800 dark:text-gray-100">
-                              {row.name}
-                              {row.tracked && row.linkedInventoryName && row.linkedInventoryName !== row.name && (
-                                <span class="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">→ {row.linkedInventoryName}</span>
-                              )}
-                              {!row.tracked && (
-                                <span class="ml-2 text-xs text-amber-600 dark:text-amber-400 font-normal">(not tracked)</span>
-                              )}
-                              {row.tracked && row.batchCount && row.batchCount > 1 && (
-                                <span class="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">({row.batchCount} batches)</span>
-                              )}
-                            </td>
-                            <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{row.unitsNeeded}</td>
-                            <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
-                              {row.tracked ? row.inStock : <span class="text-gray-400 dark:text-gray-500">0</span>}
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                              {!row.tracked ? (
-                                <span class="font-semibold text-amber-600 dark:text-amber-400">{row.unitsNeeded}</span>
-                              ) : (row.toBuy ?? 0) > 0 ? (
-                                <span class="font-semibold text-red-600 dark:text-red-400">{row.toBuy}</span>
-                              ) : (
-                                <span class="font-semibold text-green-600 dark:text-green-400">0</span>
-                              )}
-                            </td>
+                    {/* Table — desktop */}
+                    <div class="hidden sm:block overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                      <table class="w-full text-sm">
+                        <thead>
+                          <tr class="bg-gray-50 dark:bg-gray-700/50 text-left">
+                            <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300">
+                              Item
+                            </th>
+                            <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">
+                              Needed
+                            </th>
+                            <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">
+                              In loft
+                            </th>
+                            <th class="px-4 py-3 font-medium text-gray-600 dark:text-gray-300 text-right">
+                              To buy
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Cards — mobile */}
-                  <div class="sm:hidden rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden">
-                    {results.map((row) => (
-                      <div
-                        key={row.key}
-                        class={`px-4 py-3 bg-white dark:bg-gray-800 ${!row.tracked ? "opacity-70" : (row.toBuy ?? 0) > 0 ? "bg-red-50/40 dark:bg-red-900/10" : ""}`}
-                      >
-                        <div class="font-medium text-gray-800 dark:text-gray-100 text-sm mb-1">
-                          {row.name}
-                          {!row.tracked && (
-                            <span class="ml-2 text-xs text-amber-600 dark:text-amber-400 font-normal">(not tracked)</span>
-                          )}
-                        </div>
-                        {row.tracked && row.linkedInventoryName && row.linkedInventoryName !== row.name && (
-                          <div class="text-xs text-gray-400 dark:text-gray-500 mb-1.5">→ {row.linkedInventoryName}</div>
-                        )}
-                        <div class="flex gap-4 text-xs mt-1">
-                          <span class="text-gray-500 dark:text-gray-400">
-                            Needed: <span class="font-medium text-gray-700 dark:text-gray-200">{row.unitsNeeded}</span>
-                          </span>
-                          <span class="text-gray-500 dark:text-gray-400">
-                            In loft: <span class="font-medium text-gray-700 dark:text-gray-200">
-                              {row.tracked ? row.inStock : <span class="text-gray-400 dark:text-gray-500">0</span>}
-                            </span>
-                          </span>
-                          <span class="text-gray-500 dark:text-gray-400">
-                            To buy:{" "}
-                            {!row.tracked ? (
-                              <span class="font-semibold text-amber-600 dark:text-amber-400">{row.unitsNeeded}</span>
-                            ) : (row.toBuy ?? 0) > 0 ? (
-                              <span class="font-semibold text-red-600 dark:text-red-400">{row.toBuy}</span>
-                            ) : (
-                              <span class="font-semibold text-green-600 dark:text-green-400">0</span>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Buy list */}
-                  {(() => {
-                    const toBuyList = results.filter((r) => !r.tracked || (r.toBuy ?? 0) > 0);
-                    if (toBuyList.length === 0) return (
-                      <p class="mt-4 text-sm text-green-600 dark:text-green-400 font-medium">
-                        ✓ Everything is fully stocked — nothing to buy!
-                      </p>
-                    );
-                    return (
-                      <div class="mt-6">
-                        <div class="flex items-center justify-between gap-3 mb-3">
-                          <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                            🛒 What to buy
-                          </h4>
-                          <div class="flex gap-2">
-                            {canShare && (
-                              <button
-                                type="button"
-                                onClick={() => shareBuyList(toBuyList)}
-                                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                              >
-                                <span>↑</span> Share
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => copyBuyList(toBuyList)}
-                              class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                          {results.map((row) => (
+                            <tr
+                              key={row.key}
+                              class={!row.tracked
+                                ? "opacity-70"
+                                : (row.toBuy ?? 0) > 0
+                                ? "bg-red-50/40 dark:bg-red-900/10"
+                                : ""}
                             >
-                              {copied ? "✓ Copied" : "⎘ Copy"}
-                            </button>
-                          </div>
-                        </div>
-                        <ul class="divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                          {toBuyList.map((row) => (
-                            <li key={row.key} class="flex items-center justify-between gap-4 px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                              <div class="flex items-center gap-2 min-w-0">
-                                <span class={`w-2 h-2 rounded-full shrink-0 ${row.tracked ? "bg-red-400" : "bg-amber-400"}`} />
-                                <span class="text-sm text-gray-800 dark:text-gray-100 truncate">{row.name}</span>
-                                {!row.tracked && (
-                                  <span class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
-                                    not tracked
+                              <td class="px-4 py-3 text-gray-800 dark:text-gray-100">
+                                {row.name}
+                                {row.tracked && row.linkedInventoryName &&
+                                  row.linkedInventoryName !== row.name && (
+                                  <span class="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">
+                                    → {row.linkedInventoryName}
                                   </span>
                                 )}
-                              </div>
-                              <span class="shrink-0 text-sm font-bold tabular-nums px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
-                                × {row.tracked ? row.toBuy : row.unitsNeeded}
-                              </span>
-                            </li>
+                                {!row.tracked && (
+                                  <span class="ml-2 text-xs text-amber-600 dark:text-amber-400 font-normal">
+                                    (not tracked)
+                                  </span>
+                                )}
+                                {row.tracked && row.batchCount &&
+                                  row.batchCount > 1 && (
+                                  <span class="ml-2 text-xs text-gray-400 dark:text-gray-500 font-normal">
+                                    ({row.batchCount} batches)
+                                  </span>
+                                )}
+                              </td>
+                              <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+                                {row.unitsNeeded}
+                              </td>
+                              <td class="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
+                                {row.tracked
+                                  ? row.inStock
+                                  : (
+                                    <span class="text-gray-400 dark:text-gray-500">
+                                      0
+                                    </span>
+                                  )}
+                              </td>
+                              <td class="px-4 py-3 text-right">
+                                {!row.tracked
+                                  ? (
+                                    <span class="font-semibold text-amber-600 dark:text-amber-400">
+                                      {row.unitsNeeded}
+                                    </span>
+                                  )
+                                  : (row.toBuy ?? 0) > 0
+                                  ? (
+                                    <span class="font-semibold text-red-600 dark:text-red-400">
+                                      {row.toBuy}
+                                    </span>
+                                  )
+                                  : (
+                                    <span class="font-semibold text-green-600 dark:text-green-400">
+                                      0
+                                    </span>
+                                  )}
+                              </td>
+                            </tr>
                           ))}
-                        </ul>
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Cards — mobile */}
+                    <div class="sm:hidden rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700 overflow-hidden">
+                      {results.map((row) => (
+                        <div
+                          key={row.key}
+                          class={`px-4 py-3 bg-white dark:bg-gray-800 ${
+                            !row.tracked
+                              ? "opacity-70"
+                              : (row.toBuy ?? 0) > 0
+                              ? "bg-red-50/40 dark:bg-red-900/10"
+                              : ""
+                          }`}
+                        >
+                          <div class="font-medium text-gray-800 dark:text-gray-100 text-sm mb-1">
+                            {row.name}
+                            {!row.tracked && (
+                              <span class="ml-2 text-xs text-amber-600 dark:text-amber-400 font-normal">
+                                (not tracked)
+                              </span>
+                            )}
+                          </div>
+                          {row.tracked && row.linkedInventoryName &&
+                            row.linkedInventoryName !== row.name && (
+                            <div class="text-xs text-gray-400 dark:text-gray-500 mb-1.5">
+                              → {row.linkedInventoryName}
+                            </div>
+                          )}
+                          <div class="flex gap-4 text-xs mt-1">
+                            <span class="text-gray-500 dark:text-gray-400">
+                              Needed:{" "}
+                              <span class="font-medium text-gray-700 dark:text-gray-200">
+                                {row.unitsNeeded}
+                              </span>
+                            </span>
+                            <span class="text-gray-500 dark:text-gray-400">
+                              In loft:{" "}
+                              <span class="font-medium text-gray-700 dark:text-gray-200">
+                                {row.tracked
+                                  ? row.inStock
+                                  : (
+                                    <span class="text-gray-400 dark:text-gray-500">
+                                      0
+                                    </span>
+                                  )}
+                              </span>
+                            </span>
+                            <span class="text-gray-500 dark:text-gray-400">
+                              To buy: {!row.tracked
+                                ? (
+                                  <span class="font-semibold text-amber-600 dark:text-amber-400">
+                                    {row.unitsNeeded}
+                                  </span>
+                                )
+                                : (row.toBuy ?? 0) > 0
+                                ? (
+                                  <span class="font-semibold text-red-600 dark:text-red-400">
+                                    {row.toBuy}
+                                  </span>
+                                )
+                                : (
+                                  <span class="font-semibold text-green-600 dark:text-green-400">
+                                    0
+                                  </span>
+                                )}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Buy list */}
+                    {(() => {
+                      const toBuyList = results.filter((r) =>
+                        !r.tracked || (r.toBuy ?? 0) > 0
+                      );
+                      if (toBuyList.length === 0) {
+                        return (
+                          <p class="mt-4 text-sm text-green-600 dark:text-green-400 font-medium">
+                            ✓ Everything is fully stocked — nothing to buy!
+                          </p>
+                        );
+                      }
+                      return (
+                        <div class="mt-6">
+                          <div class="flex items-center justify-between gap-3 mb-3">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                              🛒 What to buy
+                            </h4>
+                            <div class="flex gap-2">
+                              {canShare && (
+                                <button
+                                  type="button"
+                                  onClick={() => shareBuyList(toBuyList)}
+                                  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                  <span>↑</span> Share
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => copyBuyList(toBuyList)}
+                                class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                {copied ? "✓ Copied" : "⎘ Copy"}
+                              </button>
+                            </div>
+                          </div>
+                          <ul class="divide-y divide-gray-100 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            {toBuyList.map((row) => (
+                              <li
+                                key={row.key}
+                                class="flex items-center justify-between gap-4 px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                              >
+                                <div class="flex items-center gap-2 min-w-0">
+                                  <span
+                                    class={`w-2 h-2 rounded-full shrink-0 ${
+                                      row.tracked
+                                        ? "bg-red-400"
+                                        : "bg-amber-400"
+                                    }`}
+                                  />
+                                  <span class="text-sm text-gray-800 dark:text-gray-100 truncate">
+                                    {row.name}
+                                  </span>
+                                  {!row.tracked && (
+                                    <span class="shrink-0 text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                                      not tracked
+                                    </span>
+                                  )}
+                                </div>
+                                <span class="shrink-0 text-sm font-bold tabular-nums px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                                  × {row.tracked ? row.toBuy : row.unitsNeeded}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })()}
+                  </>
+                )}
             </div>
           </div>
         )}

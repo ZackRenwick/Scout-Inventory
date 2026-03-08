@@ -6,25 +6,36 @@
 //   file        — a .json file whose content is an array of item objects
 //
 // Returns JSON: { imported: number; errors: { row: number; name?: string; error: string }[] }
-import type { Handlers } from "$fresh/server.ts";
 import { createItem } from "../../db/kv.ts";
-import type { InventoryItem, ItemCategory, ItemLocation, ItemSpace } from "../../types/inventory.ts";
+import type {
+  InventoryItem,
+  ItemCategory,
+  ItemLocation,
+  ItemSpace,
+} from "../../types/inventory.ts";
 import type { Session } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 
 // ===== CONSTANTS =====
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
+const VALID_CATEGORIES = new Set<ItemCategory>([
+  "tent",
+  "cooking",
+  "food",
+  "camping-tools",
+  "games",
+  "kit",
+]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft"]);
 
 // Required extra fields per category (beyond the base fields)
 const CATEGORY_REQUIRED: Record<ItemCategory, string[]> = {
-  tent:            ["tentType", "capacity", "size", "condition"],
-  cooking:         ["equipmentType", "condition"],
-  food:            ["foodType", "expiryDate"],
+  tent: ["tentType", "capacity", "size", "condition"],
+  cooking: ["equipmentType", "condition"],
+  food: ["foodType", "expiryDate"],
   "camping-tools": ["toolType", "condition"],
-  games:           ["gameType", "condition"],
-  kit:             ["kitType", "condition"],
+  games: ["gameType", "condition"],
+  kit: ["kitType", "condition"],
 };
 
 // ===== VALIDATION =====
@@ -43,7 +54,34 @@ interface ValidationError {
   error: string;
 }
 
-function validateItem(raw: RawItem, index: number): ValidationResult | ValidationError {
+// Validate and coerce a contents array, or return an error string.
+function parseContents(
+  raw: unknown,
+): { name: string; quantity: number }[] | string {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) return '"contents" must be an array';
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (typeof c !== "object" || c === null) {
+      return `"contents[${i}]" must be an object with name and quantity`;
+    }
+    if (typeof c.name !== "string" || !c.name.trim()) {
+      return `"contents[${i}].name" must be a non-empty string`;
+    }
+    if (
+      typeof c.quantity !== "number" || !Number.isInteger(c.quantity) ||
+      c.quantity < 0
+    ) {
+      return `"contents[${i}].quantity" must be a non-negative integer`;
+    }
+  }
+  return raw as { name: string; quantity: number }[];
+}
+
+function validateItem(
+  raw: RawItem,
+  index: number,
+): ValidationResult | ValidationError {
   const err = (msg: string): ValidationError => ({ ok: false, error: msg });
 
   // Base required fields
@@ -51,16 +89,33 @@ function validateItem(raw: RawItem, index: number): ValidationResult | Validatio
     return err(`Row ${index + 1}: "name" is required`);
   }
   if (!VALID_CATEGORIES.has(raw.category)) {
-    return err(`Row ${index + 1} ("${raw.name}"): invalid category "${raw.category}" — must be one of ${[...VALID_CATEGORIES].join(", ")}`);
+    return err(
+      `Row ${
+        index + 1
+      } ("${raw.name}"): invalid category "${raw.category}" — must be one of ${
+        [...VALID_CATEGORIES].join(", ")
+      }`,
+    );
   }
-  if (typeof raw.quantity !== "number" || !Number.isInteger(raw.quantity) || raw.quantity < 0) {
-    return err(`Row ${index + 1} ("${raw.name}"): "quantity" must be a non-negative integer`);
+  if (
+    typeof raw.quantity !== "number" || !Number.isInteger(raw.quantity) ||
+    raw.quantity < 0
+  ) {
+    return err(
+      `Row ${
+        index + 1
+      } ("${raw.name}"): "quantity" must be a non-negative integer`,
+    );
   }
   if (!raw.location || typeof raw.location !== "string") {
     return err(`Row ${index + 1} ("${raw.name}"): "location" is required`);
   }
   if (raw.space !== undefined && !VALID_SPACES.has(raw.space)) {
-    return err(`Row ${index + 1} ("${raw.name}"): invalid space "${raw.space}" — must be camp-store or scout-post-loft`);
+    return err(
+      `Row ${
+        index + 1
+      } ("${raw.name}"): invalid space "${raw.space}" — must be camp-store or scout-post-loft`,
+    );
   }
 
   const category = raw.category as ItemCategory;
@@ -68,51 +123,141 @@ function validateItem(raw: RawItem, index: number): ValidationResult | Validatio
   // Category-specific required fields
   for (const field of CATEGORY_REQUIRED[category]) {
     if (raw[field] === undefined || raw[field] === null || raw[field] === "") {
-      return err(`Row ${index + 1} ("${raw.name}"): "${field}" is required for category "${category}"`);
+      return err(
+        `Row ${
+          index + 1
+        } ("${raw.name}"): "${field}" is required for category "${category}"`,
+      );
     }
   }
 
   // Build the item — dates are set server-side; id is generated here
   const base = {
-    id:           crypto.randomUUID(),
-    name:         raw.name.trim(),
+    id: crypto.randomUUID(),
+    name: raw.name.trim(),
     category,
-    space:        (raw.space as ItemSpace) ?? "camp-store",
-    quantity:     raw.quantity,
+    space: (raw.space as ItemSpace) ?? "camp-store",
+    quantity: raw.quantity,
     minThreshold: typeof raw.minThreshold === "number" ? raw.minThreshold : 1,
-    location:     raw.location as ItemLocation,
-    notes:        raw.notes ?? undefined,
-    addedDate:    new Date(),
-    lastUpdated:  new Date(),
+    location: raw.location as ItemLocation,
+    notes: raw.notes ?? undefined,
+    addedDate: new Date(),
+    lastUpdated: new Date(),
   };
 
   if (category === "tent") {
-    return { ok: true, item: { ...base, category: "tent", tentType: raw.tentType, capacity: raw.capacity, size: raw.size, condition: raw.condition, brand: raw.brand, yearPurchased: raw.yearPurchased } };
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "tent",
+        tentType: raw.tentType,
+        capacity: raw.capacity,
+        size: raw.size,
+        condition: raw.condition,
+        brand: raw.brand,
+        yearPurchased: raw.yearPurchased,
+      },
+    };
   }
   if (category === "cooking") {
-    return { ok: true, item: { ...base, category: "cooking", equipmentType: raw.equipmentType, condition: raw.condition, material: raw.material, fuelType: raw.fuelType, capacity: raw.capacity } };
+    const contents = parseContents(raw.contents);
+    if (typeof contents === "string") {
+      return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+    }
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "cooking",
+        equipmentType: raw.equipmentType,
+        condition: raw.condition,
+        material: raw.material,
+        fuelType: raw.fuelType,
+        capacity: raw.capacity,
+        contents: contents.length ? contents : undefined,
+      },
+    };
   }
   if (category === "food") {
     const expiryDate = new Date(raw.expiryDate);
     if (isNaN(expiryDate.getTime())) {
-      return err(`Row ${index + 1} ("${raw.name}"): "expiryDate" must be a valid ISO date string (YYYY-MM-DD)`);
+      return err(
+        `Row ${
+          index + 1
+        } ("${raw.name}"): "expiryDate" must be a valid ISO date string (YYYY-MM-DD)`,
+      );
     }
-    return { ok: true, item: { ...base, category: "food", foodType: raw.foodType, expiryDate, storageRequirements: raw.storageRequirements, allergens: raw.allergens, weight: raw.weight, servings: raw.servings } };
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "food",
+        foodType: raw.foodType,
+        expiryDate,
+        storageRequirements: raw.storageRequirements,
+        allergens: raw.allergens,
+        weight: raw.weight,
+        servings: raw.servings,
+      },
+    };
   }
   if (category === "camping-tools") {
-    return { ok: true, item: { ...base, category: "camping-tools", toolType: raw.toolType, condition: raw.condition, material: raw.material, brand: raw.brand, yearPurchased: raw.yearPurchased } };
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "camping-tools",
+        toolType: raw.toolType,
+        condition: raw.condition,
+        material: raw.material,
+        brand: raw.brand,
+        yearPurchased: raw.yearPurchased,
+      },
+    };
   }
   if (category === "games") {
-    return { ok: true, item: { ...base, category: "games", gameType: raw.gameType, condition: raw.condition, playerCount: raw.playerCount, yearPurchased: raw.yearPurchased } };
+    const contents = parseContents(raw.contents);
+    if (typeof contents === "string") {
+      return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+    }
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "games",
+        gameType: raw.gameType,
+        condition: raw.condition,
+        playerCount: raw.playerCount,
+        yearPurchased: raw.yearPurchased,
+        contents: contents.length ? contents : undefined,
+      },
+    };
   }
   // kit
-  return { ok: true, item: { ...base, category: "kit", kitType: raw.kitType, condition: raw.condition, contents: raw.contents, brand: raw.brand, yearPurchased: raw.yearPurchased } };
+  const contents = parseContents(raw.contents);
+  if (typeof contents === "string") {
+    return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+  }
+  return {
+    ok: true,
+    item: {
+      ...base,
+      category: "kit",
+      kitType: raw.kitType,
+      condition: raw.condition,
+      contents: contents.length ? contents : undefined,
+      brand: raw.brand,
+      yearPurchased: raw.yearPurchased,
+    },
+  };
 }
 
 // ===== HANDLER =====
 
-export const handler: Handlers = {
-  async POST(req, ctx) {
+export const handler = {
+  async POST(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session;
 
     let form: FormData;
@@ -137,7 +282,17 @@ export const handler: Handlers = {
       return Response.json({ error: "No file uploaded" }, { status: 400 });
     }
     if (!file.name.endsWith(".json")) {
-      return Response.json({ error: "File must be a .json file" }, { status: 400 });
+      return Response.json({ error: "File must be a .json file" }, {
+        status: 400,
+      });
+    }
+    // Reject oversized uploads before buffering into memory (~1 MB limit)
+    const MAX_BYTES = 1 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      return Response.json(
+        { error: "File too large. Maximum upload size is 1 MB." },
+        { status: 413 },
+      );
     }
 
     // Parse JSON
@@ -146,18 +301,27 @@ export const handler: Handlers = {
       const text = await file.text();
       const parsed = JSON.parse(text);
       if (!Array.isArray(parsed)) {
-        return Response.json({ error: "JSON must be an array of item objects" }, { status: 400 });
+        return Response.json(
+          { error: "JSON must be an array of item objects" },
+          { status: 400 },
+        );
       }
       rows = parsed;
     } catch {
-      return Response.json({ error: "Could not parse JSON — check the file is valid JSON" }, { status: 400 });
+      return Response.json({
+        error: "Could not parse JSON — check the file is valid JSON",
+      }, { status: 400 });
     }
 
     if (rows.length === 0) {
-      return Response.json({ error: "File contains no items" }, { status: 400 });
+      return Response.json({ error: "File contains no items" }, {
+        status: 400,
+      });
     }
     if (rows.length > 500) {
-      return Response.json({ error: "Maximum 500 items per import" }, { status: 400 });
+      return Response.json({ error: "Maximum 500 items per import" }, {
+        status: 400,
+      });
     }
 
     // Validate all rows first so we can report all errors before writing anything
@@ -176,7 +340,11 @@ export const handler: Handlers = {
     // If there are any validation errors, reject the entire import without writing
     if (errors.length > 0) {
       return Response.json(
-        { error: "Import rejected due to validation errors — no items were saved", errors },
+        {
+          error:
+            "Import rejected due to validation errors — no items were saved",
+          errors,
+        },
         { status: 422 },
       );
     }
@@ -189,13 +357,19 @@ export const handler: Handlers = {
     const CONCURRENCY = 20;
     for (let i = 0; i < validItems.length; i += CONCURRENCY) {
       const batch = validItems.slice(i, i + CONCURRENCY);
-      const results = await Promise.allSettled(batch.map((item) => createItem(item)));
+      const results = await Promise.allSettled(
+        batch.map((item) => createItem(item)),
+      );
       for (let j = 0; j < results.length; j++) {
         if (results[j].status === "fulfilled") {
           imported++;
         } else {
           const item = batch[j];
-          writeErrors.push({ row: i + j + 1, name: item.name, error: "Failed to save item to database" });
+          writeErrors.push({
+            row: i + j + 1,
+            name: item.name,
+            error: "Failed to save item to database",
+          });
         }
       }
     }

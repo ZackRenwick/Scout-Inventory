@@ -1,13 +1,17 @@
 // GET /api/meals        — list all meals (any authenticated user)
 // POST /api/meals       — create a meal (admin/manager only)
-import { Handlers } from "$fresh/server.ts";
-import { getAllMeals, createMeal } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import { createMeal, getAllMeals } from "../../../db/kv.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 import type { MealPayload } from "../../../types/meals.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 
-export const handler: Handlers = {
-  async GET(_req, ctx) {
+export const handler = {
+  async GET(ctx) {
     if (!ctx.state.session) return forbidden();
     try {
       const meals = await getAllMeals();
@@ -17,9 +21,12 @@ export const handler: Handlers = {
     }
   },
 
-  async POST(req, ctx) {
+  async POST(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session | undefined;
-    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
+    if (!session || (session.role !== "admin" && session.role !== "manager")) {
+      return forbidden();
+    }
     if (!csrfOk(req, session)) return csrfFailed();
 
     try {
@@ -29,13 +36,17 @@ export const handler: Handlers = {
         return Response.json({ error: "Name is required" }, { status: 400 });
       }
       if (!Array.isArray(body.ingredients) || body.ingredients.length === 0) {
-        return Response.json({ error: "At least one ingredient is required" }, { status: 400 });
+        return Response.json({ error: "At least one ingredient is required" }, {
+          status: 400,
+        });
       }
       const badIngredient = body.ingredients.some(
         (ing: Partial<{ name: string }>) => !ing.name?.trim(),
       );
       if (badIngredient) {
-        return Response.json({ error: "Each ingredient must have a name" }, { status: 400 });
+        return Response.json({ error: "Each ingredient must have a name" }, {
+          status: 400,
+        });
       }
 
       const meal = await createMeal({

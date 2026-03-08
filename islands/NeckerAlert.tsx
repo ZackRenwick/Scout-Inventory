@@ -23,7 +23,9 @@ export default function NeckerAlert({ minThreshold }: Props) {
             Neckers Running Low
           </h3>
           <p class="mt-1 text-sm text-orange-800 dark:text-orange-200">
-            Only <strong>{neckerCount.value}</strong> necker{neckerCount.value !== 1 ? "s" : ""} in stock — consider restocking.
+            Only <strong>{neckerCount.value}</strong>{" "}
+            necker{neckerCount.value !== 1 ? "s" : ""}{" "}
+            in stock — consider restocking.
           </p>
         </div>
       </div>

@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/* Dark mode via .dark class on <html> */
+@variant dark (&:where(.dark, .dark *));
+
+/* Restore v3 hover behaviour: plain :hover without @media (hover: hover) wrapping,
+   so hover: classes give touch feedback on mobile (brief flash on tap). */
+@variant hover (&:hover);
+
+/* Force-include dynamically-constructed classes (safelist equivalent) */
+@source inline("text-white text-gray-900 text-gray-200 text-gray-300 text-gray-400 text-gray-500 dark:text-white dark:text-gray-200 dark:text-gray-300 dark:text-gray-400 dark:bg-gray-800 dark:border-gray-700 border-t-blue-500 border-t-green-500 border-t-yellow-500 border-t-red-500 border-t-purple-500 border-t-indigo-500 border-t-orange-500");

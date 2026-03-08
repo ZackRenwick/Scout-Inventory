@@ -10,7 +10,12 @@
 // If RESEND_API_KEY or NOTIFY_EMAIL are unset the helpers are safe no-ops — they
 // log to console instead so local dev works without any configuration.
 
-import { getAllItems, getFoodItemsSortedByExpiry, getNeckerCount, getAllCheckOuts } from "../db/kv.ts";
+import {
+  getAllCheckOuts,
+  getAllItems,
+  getFoodItemsSortedByExpiry,
+  getNeckerCount,
+} from "../db/kv.ts";
 import { getDaysUntil } from "./date-utils.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -20,10 +25,13 @@ const RESEND_URL = "https://api.resend.com/emails";
 async function sendEmail(subject: string, html: string): Promise<void> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   const toRaw = Deno.env.get("NOTIFY_EMAIL");
-  const from = Deno.env.get("NOTIFY_FROM_EMAIL") ?? "noreply@7thwhitburnscoutsinventory.co.uk";
+  const from = Deno.env.get("NOTIFY_FROM_EMAIL") ??
+    "noreply@7thwhitburnscoutsinventory.co.uk";
 
   if (!apiKey || !toRaw) {
-    console.log(`[notifications] Email not configured — skipping: "${subject}"`);
+    console.log(
+      `[notifications] Email not configured — skipping: "${subject}"`,
+    );
     return;
   }
 
@@ -45,7 +53,10 @@ async function sendEmail(subject: string, html: string): Promise<void> {
       console.log(`[notifications] Sent: "${subject}" → ${to.join(", ")}`);
     }
   } catch (err) {
-    console.error(`[notifications] Network error sending email to ${to.join(", ")}:`, err);
+    console.error(
+      `[notifications] Network error sending email to ${to.join(", ")}:`,
+      err,
+    );
   }
 }
 
@@ -56,11 +67,17 @@ async function sendEmail(subject: string, html: string): Promise<void> {
  * if any items are at or below their minimum threshold.
  */
 export async function checkAndNotifyLowStock(): Promise<void> {
-  const [items, neckerCount] = await Promise.all([getAllItems(), getNeckerCount()]);
+  const [items, neckerCount] = await Promise.all([
+    getAllItems(),
+    getNeckerCount(),
+  ]);
   const lowStock = items.filter((i) => i.quantity <= i.minThreshold);
 
   // Necker threshold: configurable via NECKER_MIN_THRESHOLD env var, default 5
-  const neckerThreshold = parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10);
+  const neckerThreshold = parseInt(
+    Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10",
+    10,
+  );
   const neckersLow = neckerCount <= neckerThreshold;
 
   if (lowStock.length === 0 && !neckersLow) {
@@ -89,7 +106,9 @@ export async function checkAndNotifyLowStock(): Promise<void> {
 
   const html = `
     <h2 style="color:#7c3aed">⚠️ Low Stock Alert — 7th Whitburn Scouts</h2>
-    <p>${totalCount} item${totalCount !== 1 ? "s are" : " is"} at or below minimum threshold:</p>
+    <p>${totalCount} item${
+    totalCount !== 1 ? "s are" : " is"
+  } at or below minimum threshold:</p>
     <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
       <thead>
         <tr style="background:#f9fafb">
@@ -105,7 +124,9 @@ export async function checkAndNotifyLowStock(): Promise<void> {
   `;
 
   await sendEmail(
-    `⚠️ 7th Whitburn Scouts: ${totalCount} item${totalCount !== 1 ? "s" : ""} low on stock`,
+    `⚠️ 7th Whitburn Scouts: ${totalCount} item${
+      totalCount !== 1 ? "s" : ""
+    } low on stock`,
     html,
   );
 }
@@ -128,17 +149,25 @@ export async function checkAndNotifyExpiry(): Promise<void> {
       : days === 0
       ? "Expires today"
       : `${days} day${days !== 1 ? "s" : ""} remaining`;
-    const statusColor = days < 0 ? "#dc2626" : days <= 7 ? "#d97706" : "#ca8a04";
+    const statusColor = days < 0
+      ? "#dc2626"
+      : days <= 7
+      ? "#d97706"
+      : "#ca8a04";
     return `<tr>
       <td style="padding:6px 12px">${escHtml(i.name)}</td>
-      <td style="padding:6px 12px">${i.expiryDate.toISOString().slice(0, 10)}</td>
+      <td style="padding:6px 12px">${
+      i.expiryDate.toISOString().slice(0, 10)
+    }</td>
       <td style="padding:6px 12px;color:${statusColor};font-weight:600">${statusText}</td>
     </tr>`;
   }).join("\n");
 
   const html = `
     <h2 style="color:#7c3aed">🥫 Food Expiry Alert — 7th Whitburn Scouts</h2>
-    <p>${alertItems.length} food item${alertItems.length !== 1 ? "s" : ""} expiring within 30 days (or already expired):</p>
+    <p>${alertItems.length} food item${
+    alertItems.length !== 1 ? "s" : ""
+  } expiring within 30 days (or already expired):</p>
     <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
       <thead>
         <tr style="background:#f9fafb">
@@ -154,7 +183,9 @@ export async function checkAndNotifyExpiry(): Promise<void> {
 
   const count = alertItems.length;
   await sendEmail(
-    `🥫 7th Whitburn Scouts: ${count} food item${count !== 1 ? "s" : ""} expiring soon`,
+    `🥫 7th Whitburn Scouts: ${count} food item${
+      count !== 1 ? "s" : ""
+    } expiring soon`,
     html,
   );
 }
@@ -181,7 +212,10 @@ export async function checkAndNotifyOverdueLoans(): Promise<void> {
   if (overdue.length === 0) return;
 
   const rows = overdue
-    .sort((a, b) => new Date(a.expectedReturnDate).getTime() - new Date(b.expectedReturnDate).getTime())
+    .sort((a, b) =>
+      new Date(a.expectedReturnDate).getTime() -
+      new Date(b.expectedReturnDate).getTime()
+    )
     .map((l) => {
       const due = new Date(l.expectedReturnDate);
       const daysLate = Math.floor((now.getTime() - due.getTime()) / 86400000);
@@ -190,7 +224,9 @@ export async function checkAndNotifyOverdueLoans(): Promise<void> {
         <td style="padding:6px 12px">${escHtml(l.borrower)}</td>
         <td style="padding:6px 12px;text-align:center">${l.quantity}</td>
         <td style="padding:6px 12px">${due.toISOString().slice(0, 10)}</td>
-        <td style="padding:6px 12px;color:#dc2626;font-weight:600">${daysLate} day${daysLate !== 1 ? "s" : ""} overdue</td>
+        <td style="padding:6px 12px;color:#dc2626;font-weight:600">${daysLate} day${
+        daysLate !== 1 ? "s" : ""
+      } overdue</td>
       </tr>`;
     })
     .join("\n");

@@ -1,12 +1,20 @@
 // Root middleware — protects all routes except /login and public assets
-import { FreshContext } from "$fresh/server.ts";
-import { getSessionCookie, getSession, extendSession, makeSessionCookie, type Session } from "../lib/auth.ts";
+import { type Context } from "fresh";
+import {
+  extendSession,
+  getSession,
+  getSessionCookie,
+  makeSessionCookie,
+  type Session,
+} from "../lib/auth.ts";
 import { preloadCaches } from "../db/kv.ts";
 
 // Routes that don't require authentication
 const PUBLIC_PATHS = [
   "/login",
   "/styles.css",
+  "/theme-init.js",
+  "/sw-register.js",
   "/robots.txt",
   "/manifest.json",
   "/sw.js",
@@ -40,6 +48,13 @@ function applySecurityHeaders(headers: Headers): void {
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   // Disable browser features not needed by this app
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  // Enforce HTTPS for 1 year (including subdomains) on deployed instances
+  if (IS_DEPLOYED) {
+    headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
   // Content Security Policy — allow only same-origin resources plus the CDNs used for Preact/Signals
   headers.set(
     "Content-Security-Policy",
@@ -55,7 +70,8 @@ function applySecurityHeaders(headers: Headers): void {
   );
 }
 
-export async function handler(req: Request, ctx: FreshContext) {
+export async function handler(ctx: Context<Record<string, unknown>>) {
+  const req = ctx.req;
   const url = new URL(req.url);
   const path = url.pathname;
 
@@ -72,7 +88,10 @@ export async function handler(req: Request, ctx: FreshContext) {
       res.headers.set("Cache-Control", "public, max-age=31536000, immutable");
     } else if (path === "/styles.css" || path.startsWith("/static/")) {
       // Static assets — cache for 1 day, revalidate
-      res.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+      res.headers.set(
+        "Cache-Control",
+        "public, max-age=86400, stale-while-revalidate=604800",
+      );
     }
     applySecurityHeaders(res.headers);
     return res;
@@ -84,7 +103,7 @@ export async function handler(req: Request, ctx: FreshContext) {
     !IS_DEPLOYED &&
     (url.hostname === "localhost" || url.hostname === "127.0.0.1")
   ) {
-    ctx.state.session = DEV_SESSION;
+    (ctx.state as Record<string, unknown>).session = DEV_SESSION;
     preloadCaches();
     const res = await ctx.next();
     applySecurityHeaders(res.headers);
@@ -93,7 +112,9 @@ export async function handler(req: Request, ctx: FreshContext) {
 
   // Validate session
   const sessionId = getSessionCookie(req);
-  const session: Session | null = sessionId ? await getSession(sessionId) : null;
+  const session: Session | null = sessionId
+    ? await getSession(sessionId)
+    : null;
 
   if (!session) {
     const loginUrl = `/login?redirect=${encodeURIComponent(path)}`;
@@ -101,7 +122,7 @@ export async function handler(req: Request, ctx: FreshContext) {
   }
 
   // Attach session to state so handlers/pages can read it
-  ctx.state.session = session;
+  (ctx.state as Record<string, unknown>).session = session;
 
   // Warm all caches in the background — zero latency cost thanks to in-flight
   // deduplication; subsequent calls within the TTL are no-ops.

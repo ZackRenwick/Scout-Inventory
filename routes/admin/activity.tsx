@@ -1,22 +1,39 @@
 // Admin activity log page
-import { Handlers, PageProps } from "$fresh/server.ts";
+import { page, PageProps } from "fresh";
 import Layout from "../../components/Layout.tsx";
-import { getRecentActivity, type ActivityEntry } from "../../lib/activityLog.ts";
+import {
+  type ActivityEntry,
+  getRecentActivity,
+} from "../../lib/activityLog.ts";
 import type { Session } from "../../lib/auth.ts";
 
 interface ActivityPageData {
   entries: ActivityEntry[];
+  allEntries: ActivityEntry[];
+  userFilter: string;
+  users: string[];
   session: Session;
 }
 
-export const handler: Handlers<ActivityPageData> = {
-  async GET(_req, ctx) {
+export const handler = {
+  async GET(ctx: { state: { session: Session; }; req: { url: string | URL; }; }) {
     const session = ctx.state.session as Session;
     if (session.role !== "admin") {
-      return new Response(null, { status: 302, headers: { location: "/admin/admin-panel" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/admin/admin-panel" },
+      });
     }
-    const entries = await getRecentActivity(200);
-    return ctx.render({ entries, session });
+    const url = new URL(ctx.req.url);
+    const userFilter = url.searchParams.get("user")?.trim() ?? "";
+    // Fetch only as many entries as the view needs — 500 when filtering by user,
+    // 200 for the default unfiltered view (which also only displays 200).
+    const allEntries = await getRecentActivity(userFilter ? 500 : 200);
+    const users = [...new Set(allEntries.map((e) => e.username))].sort();
+    const entries = userFilter
+      ? allEntries.filter((e) => e.username === userFilter)
+      : allEntries;
+    return page({ entries, allEntries, userFilter, users, session });
   },
 };
 
@@ -49,17 +66,25 @@ function formatDate(ts: string): string {
 }
 
 export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
-  const { entries, session } = data;
+  const { entries, userFilter, users, session } = data;
 
   return (
-    <Layout username={session.username} role={session.role} title="Activity Log">
+    <Layout
+      username={session.username}
+      role={session.role}
+      title="Activity Log"
+    >
       <div class="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">📋 Activity Log</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+              📋 Activity Log
+            </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Last {entries.length} events (90-day rolling window)
+              {userFilter
+                ? `${entries.length} event${entries.length !== 1 ? "s" : ""} for ${userFilter}`
+                : `Last ${entries.length} events (90-day rolling window)`}
             </p>
           </div>
           <a
@@ -70,11 +95,49 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
           </a>
         </div>
 
-        {/* Table */}
+        {/* User filter */}
+        <div class="mb-6 flex items-center gap-3 flex-wrap">
+          <form method="get" class="flex items-center gap-2">
+            <label
+              for="user-filter"
+              class="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Filter by user:
+            </label>
+            <select
+              id="user-filter"
+              name="user"
+              class="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="" selected={!userFilter}>All users</option>
+              {users.map((u) => (
+                <option key={u} value={u} selected={u === userFilter}>
+                  {u}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              class="text-sm px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium"
+            >
+              Filter
+            </button>
+          </form>
+          {userFilter && (
+            <a
+              href="/admin/activity"
+              class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              ✕ Clear filter
+            </a>
+          )}
+        </div>
         {entries.length === 0
           ? (
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
-              No activity recorded yet.
+              {userFilter
+                ? `No activity found for "${userFilter}".`
+                : "No activity recorded yet."}
             </div>
           )
           : (
@@ -93,7 +156,10 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     {entries.map((e) => (
-                      <tr key={e.id} class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                      <tr
+                        key={e.id}
+                        class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
+                      >
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap font-mono text-xs">
                           {formatDate(e.timestamp)}
                         </td>
@@ -101,7 +167,11 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
                           {e.username}
                         </td>
                         <td class="px-4 py-3">
-                          <span class={`inline-block px-2 py-0.5 rounded text-xs font-medium ${actionBadge(e.action)}`}>
+                          <span
+                            class={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                              actionBadge(e.action)
+                            }`}
+                          >
                             {e.action}
                           </span>
                         </td>
@@ -127,15 +197,25 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
                 {entries.map((e) => (
                   <li key={e.id} class="px-4 py-3 space-y-1">
                     <div class="flex items-center justify-between gap-2 flex-wrap">
-                      <span class={`inline-block px-2 py-0.5 rounded text-xs font-medium ${actionBadge(e.action)}`}>
+                      <span
+                        class={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                          actionBadge(e.action)
+                        }`}
+                      >
                         {e.action}
                       </span>
-                      <span class="text-xs text-gray-400 dark:text-gray-500 font-mono">{formatDate(e.timestamp)}</span>
+                      <span class="text-xs text-gray-400 dark:text-gray-500 font-mono">
+                        {formatDate(e.timestamp)}
+                      </span>
                     </div>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">{e.username}</p>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                      {e.username}
+                    </p>
                     {(e.resource ?? e.details) && (
                       <p class="text-xs text-gray-500 dark:text-gray-400">
-                        {e.resource}{e.resource && e.details ? " — " : ""}{e.details}
+                        {e.resource}
+                        {e.resource && e.details ? " — " : ""}
+                        {e.details}
                       </p>
                     )}
                   </li>

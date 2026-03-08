@@ -1,31 +1,26 @@
-// Login page
-import { Handlers, PageProps } from "$fresh/server.ts";
+import { Context, page, PageProps } from "fresh";
 import {
-  getUserByUsername,
-  verifyPassword,
-  createSession,
-  makeSessionCookie,
-  getSessionCookie,
-  getSession,
-  updateUserPassword,
   checkRateLimit,
+  createSession,
+  deleteAllSessionsForUser,
+  getSession,
+  getSessionCookie,
+  getUserByUsername,
+  makeSessionCookie,
   recordFailedLogin,
   resetRateLimit,
-  deleteAllSessionsForUser,
+  updateUserPassword,
+  verifyPassword,
 } from "../lib/auth.ts";
 import { logActivity } from "../lib/activityLog.ts";
-import PasswordInput from "../islands/PasswordInput.tsx";
-
-// This page renders its own full HTML document, so skip the _app.tsx wrapper
-// to avoid nested <html>/<body> tags that break island hydration in production.
-export const config = { skipAppWrapper: true };
 
 interface LoginData {
   error?: string;
 }
 
-export const handler: Handlers<LoginData> = {
-  async GET(req, ctx) {
+export const handler = {
+  async GET(ctx: Context<LoginData>) {
+    const req = ctx.req; 
     // Already logged in? Redirect to dashboard
     const sessionId = getSessionCookie(req);
     if (sessionId) {
@@ -34,34 +29,40 @@ export const handler: Handlers<LoginData> = {
         return new Response(null, { status: 302, headers: { location: "/" } });
       }
     }
-    return ctx.render({});
+    return page({});
   },
 
-  async POST(req, ctx) {
+  async POST(ctx: Context<LoginData>) {
+    const req = ctx.req;
     const form = await req.formData();
     const username = (form.get("username") as string ?? "").trim();
     const password = form.get("password") as string ?? "";
 
     if (!username || !password) {
-      return ctx.render({ error: "Please enter your username and password." });
+      return page({ error: "Please enter your username and password." });
     }
 
     // Rate-limit by username (prevents brute-force)
     const identifier = `login:${username}`;
     const { blocked } = await checkRateLimit(identifier);
     if (blocked) {
-      return ctx.render({ error: "Too many failed attempts. Please try again in 15 minutes." });
+      return page({
+        error: "Too many failed attempts. Please try again in 15 minutes.",
+      });
     }
 
     const user = await getUserByUsername(username);
     if (!user) {
       await recordFailedLogin(identifier);
-      return ctx.render({ error: "Invalid username or password." });
+      return page({ error: "Invalid username or password." });
     }
-    const { valid, newHash } = await verifyPassword(password, user.passwordHash);
+    const { valid, newHash } = await verifyPassword(
+      password,
+      user.passwordHash,
+    );
     if (!valid) {
       await recordFailedLogin(identifier);
-      return ctx.render({ error: "Invalid username or password." });
+      return page({ error: "Invalid username or password." });
     }
     // Successful login: clear rate limit
     await resetRateLimit(identifier);
@@ -102,7 +103,9 @@ export const handler: Handlers<LoginData> = {
       const resolved = new URL(rawRedirect, requestUrl.origin);
       const onSameOrigin = resolved.origin === requestUrl.origin;
       const knownRoute = ALLOWED_PREFIXES.some(
-        (p) => resolved.pathname === p || resolved.pathname.startsWith(p === "/" ? p : p + "/"),
+        (p) =>
+          resolved.pathname === p ||
+          resolved.pathname.startsWith(p === "/" ? p : p + "/"),
       );
       if (onSameOrigin && knownRoute) {
         redirectTo = resolved.pathname + resolved.search + resolved.hash;
@@ -129,18 +132,24 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Sign In · 7th Whitburn Scouts Inventory</title>
         <link rel="stylesheet" href="/styles.css" />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var s=localStorage.getItem("theme");if(s==="dark"||(!s&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark");}})();` }} />
+        <script src="/theme-init.js"></script>
       </head>
       <body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
         <div class="w-full max-w-sm">
           <div class="text-center mb-8">
             <span class="text-5xl">⛺</span>
-            <h1 class="mt-4 text-2xl font-bold text-gray-800 dark:text-purple-100">7th Whitburn Scouts</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Inventory Management</p>
+            <h1 class="mt-4 text-2xl font-bold text-gray-800 dark:text-purple-100">
+              7th Whitburn Scouts
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Inventory Management
+            </p>
           </div>
 
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
-            <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6">Sign in to continue</h2>
+            <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-6">
+              Sign in to continue
+            </h2>
 
             {data?.error && (
               <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-700 rounded-lg text-sm text-red-700 dark:text-red-300">
@@ -150,7 +159,10 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
 
             <form method="POST">
               <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="username">
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  for="username"
+                >
                   Username
                 </label>
                 <input
@@ -164,14 +176,19 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
               </div>
 
               <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="password">
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  for="password"
+                >
                   Password
                 </label>
-                <PasswordInput
+                <input
                   id="password"
+                  type="password"
                   name="password"
-                  autocomplete="current-password"
                   required
+                  autocomplete="current-password"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
               </div>
 

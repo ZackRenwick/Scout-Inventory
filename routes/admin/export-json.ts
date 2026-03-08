@@ -4,7 +4,6 @@
 // Strips server-assigned fields (id, addedDate, lastUpdated, atCamp,
 // quantityAtCamp) so the file can be dropped straight into the bulk importer
 // on another environment without modification.
-import type { Handlers } from "$fresh/server.ts";
 import { getAllItems } from "../../db/kv.ts";
 import type { InventoryItem } from "../../types/inventory.ts";
 
@@ -14,13 +13,22 @@ function toImportShape(item: InventoryItem): Record<string, any> {
   const i = item as any;
 
   // Fields stripped because they are generated server-side on import
-  const { id: _id, addedDate: _a, lastUpdated: _l, atCamp: _ac, quantityAtCamp: _qac, ...rest } = i;
+  const {
+    id: _id,
+    addedDate: _a,
+    lastUpdated: _l,
+    atCamp: _ac,
+    quantityAtCamp: _qac,
+    ...rest
+  } = i;
 
   // Serialise Date objects to strings
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(rest)) {
     if (value instanceof Date) {
-      out[key] = isNaN((value as Date).getTime()) ? null : (value as Date).toISOString().slice(0, 10);
+      out[key] = isNaN((value as Date).getTime())
+        ? null
+        : (value as Date).toISOString().slice(0, 10);
     } else {
       out[key] = value;
     }
@@ -29,14 +37,19 @@ function toImportShape(item: InventoryItem): Record<string, any> {
   return out;
 }
 
-export const handler: Handlers = {
-  async GET(_req, ctx) {
+export const handler = {
+  async GET(ctx) {
     const session = ctx.state.session as { role?: string } | undefined;
     if (!session || session.role !== "admin") {
-      return new Response(null, { status: 302, headers: { location: "/admin/admin-panel" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/admin/admin-panel" },
+      });
     }
     const items = await getAllItems();
-    items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    items.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true })
+    );
 
     const payload = items.map(toImportShape);
     const json = JSON.stringify(payload, null, 2);

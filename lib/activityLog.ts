@@ -29,7 +29,8 @@ export type ActivityAction =
   | "loan.created"
   | "loan.returned"
   | "loan.cancelled"
-  | "stocktake.completed";
+  | "stocktake.completed"
+  | "db.cleared";
 
 export interface ActivityEntry {
   id: string;
@@ -80,6 +81,17 @@ export async function logActivity(
   }
 }
 
+/** Delete all activity log entries from KV. */
+export async function clearActivityLog(): Promise<number> {
+  const kv = await getKv();
+  const deleteOps: Promise<void>[] = [];
+  for await (const entry of kv.list({ prefix: LOG_PREFIX })) {
+    deleteOps.push(kv.delete(entry.key));
+  }
+  await Promise.all(deleteOps);
+  return deleteOps.length;
+}
+
 /**
  * Retrieve the most recent activity entries (default 100, max 500).
  * Returns entries in reverse chronological order (newest first).
@@ -89,7 +101,9 @@ export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
   const entries: ActivityEntry[] = [];
   const effectiveLimit = Math.min(limit, 500);
   for await (
-    const entry of kv.list<ActivityEntry>({ prefix: LOG_PREFIX }, { limit: effectiveLimit })
+    const entry of kv.list<ActivityEntry>({ prefix: LOG_PREFIX }, {
+      limit: effectiveLimit,
+    })
   ) {
     entries.push(entry.value);
   }

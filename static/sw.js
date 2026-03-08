@@ -5,8 +5,8 @@
 //   - API / admin routes: network-only (never cache sensitive data)
 
 const CACHE_VERSION = "v3";
-const STATIC_CACHE  = `scouts-static-${CACHE_VERSION}`;
-const PAGE_CACHE    = `scouts-pages-${CACHE_VERSION}`;
+const STATIC_CACHE = `scouts-static-${CACHE_VERSION}`;
+const PAGE_CACHE = `scouts-pages-${CACHE_VERSION}`;
 
 // Only pre-cache assets guaranteed to return 200 with no auth.
 // Authenticated page URLs redirect to /login — addAll() rejects on any
@@ -41,7 +41,9 @@ self.addEventListener("fetch", (event) => {
 
   // Skip cross-origin, API and admin routes entirely.
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin/")) return;
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin/")) {
+    return;
+  }
 
   if (isStaticAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
@@ -119,10 +121,10 @@ async function networkFirstPage(request) {
     const fallback = await caches.match("/");
     return (
       fallback ??
-      new Response("You are offline.", {
-        status: 503,
-        headers: { "Content-Type": "text/plain" },
-      })
+        new Response("You are offline.", {
+          status: 503,
+          headers: { "Content-Type": "text/plain" },
+        })
     );
   }
 }

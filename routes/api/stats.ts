@@ -1,5 +1,4 @@
 // API route for dashboard statistics
-import { Handlers } from "$fresh/server.ts";
 import { getComputedStats, getFoodItemsSortedByExpiry } from "../../db/kv.ts";
 import { getDaysUntil } from "../../lib/date-utils.ts";
 
@@ -22,8 +21,8 @@ interface Stats {
   };
 }
 
-export const handler: Handlers = {
-  async GET(_req) {
+export const handler = {
+  async GET() {
     try {
       // getComputedStats is O(1) — reads a single precomputed KV entry.
       // getFoodItemsSortedByExpiry uses the expiry index — O(n_food).
@@ -35,22 +34,22 @@ export const handler: Handlers = {
       const expiringFood = { expired: 0, expiringSoon: 0, expiringWarning: 0 };
       for (const item of foodItems) {
         const d = getDaysUntil(item.expiryDate);
-        if (d < 0)       expiringFood.expired++;
-        else if (d <= 7)  expiringFood.expiringSoon++;
+        if (d < 0) expiringFood.expired++;
+        else if (d <= 7) expiringFood.expiringSoon++;
         else if (d <= 30) expiringFood.expiringWarning++;
       }
 
       const stats: Stats = {
-        totalItems:        computed.totalItems,
-        totalQuantity:     computed.totalQuantity,
+        totalItems: computed.totalItems,
+        totalQuantity: computed.totalQuantity,
         categoryBreakdown: {
-          tent:            computed.categoryBreakdown.tent,
-          cooking:         computed.categoryBreakdown.cooking,
-          food:            computed.categoryBreakdown.food,
+          tent: computed.categoryBreakdown.tent,
+          cooking: computed.categoryBreakdown.cooking,
+          food: computed.categoryBreakdown.food,
           "camping-tools": computed.categoryBreakdown["camping-tools"],
-          kit:             computed.categoryBreakdown.kit,
+          kit: computed.categoryBreakdown.kit,
         },
-        lowStockItems:    computed.lowStockItems,
+        lowStockItems: computed.lowStockItems,
         needsRepairItems: computed.needsRepairItems,
         expiringFood,
       };

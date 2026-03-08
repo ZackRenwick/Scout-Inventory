@@ -1,12 +1,21 @@
 // PATCH /api/loans/[id] — mark a loan as returned
 // DELETE /api/loans/[id] — cancel/remove a loan record
-import { Handlers } from "$fresh/server.ts";
-import { getCheckOutById, returnCheckOut, deleteCheckOut } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import {
+  deleteCheckOut,
+  getCheckOutById,
+  returnCheckOut,
+} from "../../../db/kv.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 
-export const handler: Handlers = {
-  async PATCH(req, ctx) {
+export const handler = {
+  async PATCH(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
@@ -19,7 +28,9 @@ export const handler: Handlers = {
         return Response.json({ error: "Loan not found." }, { status: 404 });
       }
       if (existing.status === "returned") {
-        return Response.json({ error: "Loan has already been returned." }, { status: 409 });
+        return Response.json({ error: "Loan has already been returned." }, {
+          status: 409,
+        });
       }
 
       const updated = await returnCheckOut(id);
@@ -32,17 +43,21 @@ export const handler: Handlers = {
         action: "loan.returned",
         resource: updated.itemName,
         resourceId: id,
-        details: `Returned ${updated.quantity}× "${updated.itemName}" from ${updated.borrower}`,
+        details:
+          `Returned ${updated.quantity}× "${updated.itemName}" from ${updated.borrower}`,
       });
 
       return Response.json(updated);
     } catch (e) {
       console.error("Failed to return loan:", e);
-      return Response.json({ error: "Failed to mark loan as returned." }, { status: 500 });
+      return Response.json({ error: "Failed to mark loan as returned." }, {
+        status: 500,
+      });
     }
   },
 
-  async DELETE(req, ctx) {
+  async DELETE(ctx) {
+    const req = ctx.req;
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role === "viewer") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
@@ -62,13 +77,16 @@ export const handler: Handlers = {
         action: "loan.cancelled",
         resource: existing.itemName,
         resourceId: id,
-        details: `Cancelled loan of ${existing.quantity}× "${existing.itemName}" to ${existing.borrower}`,
+        details:
+          `Cancelled loan of ${existing.quantity}× "${existing.itemName}" to ${existing.borrower}`,
       });
 
       return new Response(null, { status: 204 });
     } catch (e) {
       console.error("Failed to cancel loan:", e);
-      return Response.json({ error: "Failed to cancel loan." }, { status: 500 });
+      return Response.json({ error: "Failed to cancel loan." }, {
+        status: 500,
+      });
     }
   },
 };

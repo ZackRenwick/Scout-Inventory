@@ -1,5 +1,5 @@
 // Printable QR label page for a single inventory item
-import { Handlers, PageProps } from "$fresh/server.ts";
+import { page, PageProps } from "fresh";
 import type { InventoryItem } from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
 import { getItemById } from "../../../db/kv.ts";
@@ -21,8 +21,9 @@ interface QrPageData {
   session?: Session;
 }
 
-export const handler: Handlers<QrPageData> = {
-  async GET(req, ctx) {
+export const handler = {
+  async GET(ctx) {
+    const req = ctx.req;
     const { id } = ctx.params;
     const item = await getItemById(id);
     if (!item) {
@@ -30,7 +31,10 @@ export const handler: Handlers<QrPageData> = {
     }
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role !== "admin") {
-      return new Response(null, { status: 302, headers: { location: `/inventory/${id}` } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: `/inventory/${id}` },
+      });
     }
     const origin = new URL(req.url).origin;
     const itemUrl = `${origin}/inventory/${id}`;
@@ -38,7 +42,10 @@ export const handler: Handlers<QrPageData> = {
     // Fetch QR SVG server-side so no external request leaves the browser (avoids CSP img-src issues)
     let qrDataUri = "";
     try {
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&format=svg&data=${encodeURIComponent(itemUrl)}`;
+      const qrApiUrl =
+        `https://api.qrserver.com/v1/create-qr-code/?size=220x220&format=svg&data=${
+          encodeURIComponent(itemUrl)
+        }`;
       const qrRes = await fetch(qrApiUrl);
       if (qrRes.ok) {
         const svgText = await qrRes.text();
@@ -47,7 +54,7 @@ export const handler: Handlers<QrPageData> = {
       }
     } catch (_) { /* leave qrDataUri empty; label still prints with URL */ }
 
-    return ctx.render({ item, itemUrl, qrDataUri, session });
+    return page({ item, itemUrl, qrDataUri, session });
   },
 };
 
@@ -61,7 +68,8 @@ export default function QrLabelPage({ data }: PageProps<QrPageData>) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>QR Label — {item.name}</title>
-        <style>{`
+        <style>
+          {`
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -136,11 +144,14 @@ export default function QrLabelPage({ data }: PageProps<QrPageData>) {
               page-break-inside: avoid;
             }
           }
-        `}</style>
+        `}
+        </style>
       </head>
       <body>
         <div class="no-print">
-          <a href={`/inventory/${item.id}`} class="btn btn-secondary">← Back to Item</a>
+          <a href={`/inventory/${item.id}`} class="btn btn-secondary">
+            ← Back to Item
+          </a>
           <PrintButton />
         </div>
 
@@ -158,8 +169,11 @@ export default function QrLabelPage({ data }: PageProps<QrPageData>) {
                 class="label-qr"
               />
             )
-            : <p style="font-size:0.75rem;color:#9ca3af;margin:1rem 0">QR code unavailable</p>
-          }
+            : (
+              <p style="font-size:0.75rem;color:#9ca3af;margin:1rem 0">
+                QR code unavailable
+              </p>
+            )}
           <div class="label-qty">Qty: {item.quantity}</div>
           <div class="label-url">{itemUrl}</div>
         </div>
