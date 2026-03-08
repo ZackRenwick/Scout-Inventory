@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Smooth cross-fade between pages (Chrome 111+, Edge 111+, Safari 18+; no-op elsewhere) */
+@view-transition {
+  navigation: auto;
+}
+
+/* Disable the cross-fade for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
 /* Dark mode via .dark class on <html> */
 @variant dark (&:where(.dark, .dark *));
 

@@ -28,6 +28,7 @@ export default function App({ Component }: PageProps) {
         <link rel="manifest" href="/manifest.json" />
         <script src="/theme-init.js"></script>
         <script src="/sw-register.js" defer={true}></script>
+        <script src="/nav-progress.js" defer={true}></script>
       </head>
       <body>
         <Component />
