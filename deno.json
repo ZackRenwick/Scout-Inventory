@@ -8,8 +8,12 @@
     "preview": "deno serve -A --unstable-kv _fresh/server.js",
     "update": "deno run -A -r jsr:@fresh/update .",
     "seed": "deno run -A --unstable-kv db/seed.ts",
-    "brand:upgrade": "cp static/branding/upgrade/favicon.svg static/favicon.svg && cp static/branding/upgrade/icon.svg static/icon.svg && cp static/branding/upgrade/icon-512.png static/icon-512.png && cp static/branding/upgrade/icon-192.png static/icon-192.png && cp static/branding/upgrade/apple-touch-icon.png static/apple-touch-icon.png && echo 'Branding set to: upgrade'",
-    "brand:production": "cp static/branding/production/favicon.svg static/favicon.svg && cp static/branding/production/icon.svg static/icon.svg && cp static/branding/production/icon-512.png static/icon-512.png && cp static/branding/production/icon-192.png static/icon-192.png && cp static/branding/production/apple-touch-icon.png static/apple-touch-icon.png && echo 'Branding set to: production'"
+    "brand:upgrade": "cp static/branding/upgrade/favicon.svg static/favicon.svg && cp static/branding/upgrade/icon.svg static/icon.svg && cp static/branding/upgrade/icon-512.png static/icon-512.png && cp static/branding/upgrade/icon-192.png static/icon-192.png && cp static/branding/upgrade/apple-touch-icon.png static/apple-touch-icon.png",
+    "brand:production": "cp static/branding/production/favicon.svg static/favicon.svg && cp static/branding/production/icon.svg static/icon.svg && cp static/branding/production/icon-512.png static/icon-512.png && cp static/branding/production/icon-192.png static/icon-192.png && cp static/branding/production/apple-touch-icon.png static/apple-touch-icon.png",
+    "stamp:upgrade": "echo 'export const APP_MODE: \"production\" | \"upgrade\" = \"upgrade\";' > lib/mode.ts",
+    "stamp:production": "echo 'export const APP_MODE: \"production\" | \"upgrade\" = \"production\";' > lib/mode.ts",
+    "mode:upgrade": "deno task brand:upgrade && deno task stamp:upgrade && echo 'Mode set to: upgrade'",
+    "mode:production": "deno task brand:production && deno task stamp:production && echo 'Mode set to: production'"
   },
   "lint": { "rules": { "tags": ["fresh", "recommended"] } },
   "exclude": ["**/_fresh/*", "**/node_modules/*"],
