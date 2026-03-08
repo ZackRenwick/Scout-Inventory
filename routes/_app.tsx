@@ -1,4 +1,8 @@
 import { type PageProps } from "fresh";
+import { APP_MODE } from "../lib/mode.ts";
+
+const THEME_COLOR = APP_MODE === "upgrade" ? "#d97706" : "#7c3aed";
+
 export default function App({ Component }: PageProps) {
   return (
     <html lang="en">
@@ -9,7 +13,7 @@ export default function App({ Component }: PageProps) {
           name="description"
           content="Scout troop inventory management — track gear, supplies, and equipment."
         />
-        <meta name="theme-color" content="#d97706" />
+        <meta name="theme-color" content={THEME_COLOR} />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
