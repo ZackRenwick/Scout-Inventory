@@ -292,6 +292,31 @@ export async function ensureDefaultAdmin(): Promise<void> {
 
 // ===== SESSION OPERATIONS =====
 
+// In-memory cache: avoids a KV read on every authenticated page navigation.
+// TTL is short (60 s) so stale data is bounded; sessions themselves live 15 min.
+const SESSION_CACHE_TTL_MS = 60_000;
+const _sessionCache = new Map<
+  string,
+  { session: Session; cacheExpiresAt: number }
+>();
+
+function _sessionCacheGet(sessionId: string): Session | null {
+  const entry = _sessionCache.get(sessionId);
+  if (!entry) return null;
+  if (Date.now() >= entry.cacheExpiresAt) {
+    _sessionCache.delete(sessionId);
+    return null;
+  }
+  return entry.session;
+}
+
+function _sessionCacheSet(sessionId: string, session: Session): void {
+  _sessionCache.set(sessionId, {
+    session,
+    cacheExpiresAt: Date.now() + SESSION_CACHE_TTL_MS,
+  });
+}
+
 export async function createSession(user: User): Promise<Session> {
   const kv = await getKv();
   const session: Session = {
@@ -313,6 +338,16 @@ export async function createSession(user: User): Promise<Session> {
 }
 
 export async function getSession(sessionId: string): Promise<Session | null> {
+  const cached = _sessionCacheGet(sessionId);
+  if (cached) {
+    // Belt-and-suspenders: honour the embedded expiry even from cache
+    if (new Date(cached.expiresAt) < new Date()) {
+      _sessionCache.delete(sessionId);
+      return null;
+    }
+    return cached;
+  }
+
   const kv = await getKv();
   const result = await kv.get<Session>(["auth", "sessions", sessionId]);
   if (!result.value) {
@@ -323,6 +358,7 @@ export async function getSession(sessionId: string): Promise<Session | null> {
     await kv.delete(["auth", "sessions", sessionId]);
     return null;
   }
+  _sessionCacheSet(sessionId, result.value);
   return result.value;
 }
 
@@ -349,10 +385,12 @@ export async function extendSession(
       expireIn: SESSION_DURATION_MS,
     })
     .commit();
+  _sessionCacheSet(sessionId, session);
   return session;
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
+  _sessionCache.delete(sessionId);
   const kv = await getKv();
   // Also remove the secondary index entry
   const session = await kv.get<Session>(["auth", "sessions", sessionId]);

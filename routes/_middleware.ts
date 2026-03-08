@@ -128,13 +128,11 @@ export async function handler(ctx: Context<Record<string, unknown>>) {
   // deduplication; subsequent calls within the TTL are no-ops.
   preloadCaches();
 
-  // Rolling session — extend expiry on every authenticated request so
-  // any activity (navigation, API call, form submission) resets the idle timer.
-  // Pass the already-fetched session to avoid a redundant KV read inside extendSession.
-  const [res] = await Promise.all([
-    ctx.next(),
-    extendSession(sessionId!, session),
-  ]);
+  // Rolling session — extend expiry in the background so the KV write
+  // never blocks the response. The page render and the session extension
+  // both start immediately; we only await the render.
+  extendSession(sessionId!, session).catch(() => {});
+  const res = await ctx.next();
 
   // Re-issue the cookie so the browser Max-Age counter also resets.
   res.headers.append("Set-Cookie", makeSessionCookie(sessionId!));
