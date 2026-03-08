@@ -1,6 +1,7 @@
 // Form for adding/editing inventory items
 import { Signal, useSignal } from "@preact/signals";
 import { ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
+import NumberInput from "../components/NumberInput.tsx";
 
 interface ItemFormProps {
   initialData?: any;
@@ -161,6 +162,8 @@ export default function ItemForm(
     "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500";
   const labelClass =
     "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2";
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
 
   return (
     <form
@@ -333,8 +336,9 @@ export default function ItemForm(
           <input
             type="number"
             name="quantity"
-            defaultValue={initialData?.quantity || 1}
+            defaultValue={initialData?.quantity ?? 1}
             min="0"
+            inputMode="numeric"
             required
             class={inputClass}
           />
@@ -475,14 +479,16 @@ export default function ItemForm(
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input
-                type="number"
+              <select
                 name="yearPurchased"
-                defaultValue={initialData?.yearPurchased}
-                min="1900"
-                max="2100"
+                defaultValue={initialData?.yearPurchased ?? ""}
                 class={inputClass}
-              />
+              >
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -662,18 +668,12 @@ export default function ItemForm(
                   <div class="space-y-2">
                     {boxContents.value.map((row, i) => (
                       <div key={i} class="flex gap-2 items-center">
-                        <input
-                          type="number"
+                        <NumberInput
                           value={row.quantity}
                           min={1}
-                          onInput={(e) => {
+                          onChange={(n) => {
                             const copy = [...boxContents.value];
-                            copy[i] = {
-                              ...copy[i],
-                              quantity: parseInt(
-                                (e.target as HTMLInputElement).value,
-                              ) || 1,
-                            };
+                            copy[i] = { ...copy[i], quantity: n };
                             boxContents.value = copy;
                           }}
                           class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
@@ -830,14 +830,16 @@ export default function ItemForm(
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input
-                type="number"
+              <select
                 name="yearPurchased"
-                defaultValue={initialData?.yearPurchased}
-                min="1900"
-                max="2100"
+                defaultValue={initialData?.yearPurchased ?? ""}
                 class={inputClass}
-              />
+              >
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -1078,14 +1080,16 @@ export default function ItemForm(
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input
-                type="number"
+              <select
                 name="yearPurchased"
-                defaultValue={initialData?.yearPurchased}
-                min="1900"
-                max="2100"
+                defaultValue={initialData?.yearPurchased ?? ""}
                 class={inputClass}
-              />
+              >
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -1125,18 +1129,12 @@ export default function ItemForm(
                   <div class="space-y-2">
                     {boxContents.value.map((row, i) => (
                       <div key={i} class="flex gap-2 items-center">
-                        <input
-                          type="number"
+                        <NumberInput
                           value={row.quantity}
                           min={1}
-                          onInput={(e) => {
+                          onChange={(n) => {
                             const copy = [...boxContents.value];
-                            copy[i] = {
-                              ...copy[i],
-                              quantity: parseInt(
-                                (e.target as HTMLInputElement).value,
-                              ) || 1,
-                            };
+                            copy[i] = { ...copy[i], quantity: n };
                             boxContents.value = copy;
                           }}
                           class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
@@ -1283,14 +1281,16 @@ export default function ItemForm(
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input
-                type="number"
+              <select
                 name="yearPurchased"
-                defaultValue={initialData?.yearPurchased}
-                min="1900"
-                max="2100"
+                defaultValue={initialData?.yearPurchased ?? ""}
                 class={inputClass}
-              />
+              >
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -1328,18 +1328,12 @@ export default function ItemForm(
                 <div class="space-y-2">
                   {boxContents.value.map((row, i) => (
                     <div key={i} class="flex gap-2 items-center">
-                      <input
-                        type="number"
+                      <NumberInput
                         value={row.quantity}
                         min={1}
-                        onInput={(e) => {
+                        onChange={(n) => {
                           const copy = [...boxContents.value];
-                          copy[i] = {
-                            ...copy[i],
-                            quantity:
-                              parseInt((e.target as HTMLInputElement).value) ||
-                              1,
-                          };
+                          copy[i] = { ...copy[i], quantity: n };
                           boxContents.value = copy;
                         }}
                         class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"

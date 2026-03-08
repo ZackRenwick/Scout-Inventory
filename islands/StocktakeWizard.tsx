@@ -1,5 +1,6 @@
 // Guided stock-take wizard island
 import { useComputed, useSignal } from "@preact/signals";
+import NumberInput from "../components/NumberInput.tsx";
 
 export interface StocktakeItem {
   id: string;
@@ -432,18 +433,12 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
                     )}
                   </span>
                 </div>
-                <input
-                  type="number"
-                  min={0}
-                  class={inputClass}
+                <NumberInput
+                  key={entry.id}
                   value={entry.countedQty}
-                  onInput={(e) =>
-                    updateCurrentQty(
-                      Math.max(
-                        0,
-                        parseInt((e.target as HTMLInputElement).value) || 0,
-                      ),
-                    )}
+                  min={0}
+                  onChange={(n) => updateCurrentQty(n)}
+                  class={inputClass}
                 />
               </div>
 

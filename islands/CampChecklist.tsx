@@ -1,5 +1,6 @@
 // Camp checklist island — full management for a single camp plan
 import { useComputed, useSignal } from "@preact/signals";
+import NumberInput from "../components/NumberInput.tsx";
 import type {
   CampPlan,
   CampPlanItem,
@@ -821,17 +822,12 @@ export default function CampChecklist(
                                 · {selectedInv.value.quantity} in stock
                               </span>
                             </label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={selectedInv.value.quantity}
-                              class={`${inputClass} w-full`}
+                            <NumberInput
+                              key={selectedInv.value.id}
                               value={addQty.value}
-                              onInput={(
-                                e,
-                              ) => (addQty.value = parseInt(
-                                (e.target as HTMLInputElement).value,
-                              ) || 1)}
+                              min={1}
+                              onChange={(n) => { addQty.value = n; }}
+                              class={`${inputClass} w-full`}
                             />
                           </div>
                           <div class="flex-1 min-w-0">
