@@ -40,9 +40,24 @@ export const handler = {
     allItems.sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true })
     );
+    // Slim to only the fields CampChecklist uses — avoids sending full item
+    // payloads (~200KB) on every camp detail page load.
+    const slimItems = allItems.map((item) => {
+      const anyItem = item as unknown as Record<string, unknown>;
+      const slim: Record<string, unknown> = {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        location: item.location,
+      };
+      // contents exists on BoxItem/KitItem subtypes — include it when present
+      const c = anyItem.contents;
+      if (Array.isArray(c) && c.length > 0) slim.contents = c;
+      return slim;
+    }) as unknown as InventoryItem[];
     return page({
       plan,
-      allItems,
+      allItems: slimItems,
       templates,
       session: ctx.state.session as Session,
     });

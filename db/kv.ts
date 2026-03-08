@@ -174,7 +174,7 @@ export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
   }
-  if (itemsInFlight) return itemsInFlight;
+  if (itemsInFlight) return await itemsInFlight;
 
   itemsInFlight = (async () => {
     const db = await initKv();
@@ -188,7 +188,7 @@ export async function getAllItems(): Promise<InventoryItem[]> {
     return items;
   })();
 
-  return itemsInFlight;
+  return await itemsInFlight;
 }
 
 function invalidateItemsCache(): void {
@@ -400,16 +400,27 @@ export async function rebuildIndexes(): Promise<void> {
   // 2. Scan all items, rebuild indexes + stats
   let stats = emptyStats();
   const entries = db.list<InventoryItem>({ prefix: KEYS.items });
-  const batchOps = [];
+  // Each addToIndex call adds 2–3 KV mutations; Deno KV allows 10 per atomic.
+  // Batch 3 items per commit (max 9 mutations) to reduce round-trips.
+  const BATCH_SIZE = 3;
+  let batchOp = db.atomic();
+  let batchCount = 0;
+  const flushBatch = async () => {
+    if (batchCount > 0) {
+      await batchOp.commit();
+      batchOp = db.atomic();
+      batchCount = 0;
+    }
+  };
 
   for await (const entry of entries) {
     const item = deserializeItem(entry.value);
-    const op = db.atomic();
-    addToIndex(op, item);
-    batchOps.push(op.commit());
+    addToIndex(batchOp, item);
+    batchCount++;
     stats = applyItemToStats(stats, item, 1);
+    if (batchCount >= BATCH_SIZE) await flushBatch();
   }
-  await Promise.all(batchOps);
+  await flushBatch();
 
   // 3. Count active loans for stats
   let activeLoansCount = 0;
@@ -433,7 +444,7 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
   if (checkoutsCache && Date.now() < checkoutsCache.expiresAt) {
     return checkoutsCache.checkouts;
   }
-  if (checkoutsInFlight) return checkoutsInFlight;
+  if (checkoutsInFlight) return await checkoutsInFlight;
 
   checkoutsInFlight = (async () => {
     const db = await initKv();
@@ -447,7 +458,7 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
     return checkouts;
   })();
 
-  return checkoutsInFlight;
+  return await checkoutsInFlight;
 }
 
 export async function getActiveCheckOuts(): Promise<CheckOut[]> {
@@ -675,7 +686,7 @@ export async function getAllCampPlans(): Promise<CampPlan[]> {
   if (campPlansCache && Date.now() < campPlansCache.expiresAt) {
     return campPlansCache.plans;
   }
-  if (campPlansInFlight) return campPlansInFlight;
+  if (campPlansInFlight) return await campPlansInFlight;
 
   campPlansInFlight = (async () => {
     const db = await initKv();
@@ -689,10 +700,14 @@ export async function getAllCampPlans(): Promise<CampPlan[]> {
     return plans;
   })();
 
-  return campPlansInFlight;
+  return await campPlansInFlight;
 }
 
 export async function getCampPlanById(id: string): Promise<CampPlan | null> {
+  if (campPlansCache && Date.now() < campPlansCache.expiresAt) {
+    const cached = campPlansCache.plans.find((p) => p.id === id);
+    if (cached !== undefined) return cached;
+  }
   const db = await initKv();
   const result = await db.get<CampPlan>([...KEYS.camps, id]);
   return result.value ? deserializeCampPlan(result.value) : null;
@@ -764,7 +779,7 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
   if (templatesCache && Date.now() < templatesCache.expiresAt) {
     return templatesCache.templates;
   }
-  if (templatesInFlight) return templatesInFlight;
+  if (templatesInFlight) return await templatesInFlight;
 
   templatesInFlight = (async () => {
     const db = await initKv();
@@ -782,7 +797,7 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
     return templates;
   })();
 
-  return templatesInFlight;
+  return await templatesInFlight;
 }
 
 export async function getCampTemplateById(
@@ -967,7 +982,7 @@ export async function clearInventoryData(): Promise<ClearReport> {
 
   // Reset scalar keys
   deleteOps.push(db.delete(KEYS.neckers));
-  deleteOps.push(db.set(KEYS.computedStats, emptyStats()) as Promise<void>);
+  deleteOps.push(db.set(KEYS.computedStats, emptyStats()) as unknown as Promise<void>);
 
   await Promise.all(deleteOps);
 

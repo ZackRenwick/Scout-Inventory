@@ -1,5 +1,5 @@
 // Interactive camp meal planner — select meals, enter headcount, see shopping list
-import { useState } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import type { FoodItemSummary, Meal } from "../types/meals.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
@@ -60,36 +60,42 @@ export default function MealPlannerForm({ meals, foodItems }: Props) {
   }
 
   // Name-based stock map: aggregates quantity across all items sharing the same name
-  const stockByName = new Map<string, { total: number; batchCount: number }>();
-  for (const f of foodItems) {
-    const key = f.name.toLowerCase();
-    const existing = stockByName.get(key);
-    if (existing) {
-      existing.total += f.quantity;
-      existing.batchCount += 1;
-    } else {
-      stockByName.set(key, { total: f.quantity, batchCount: 1 });
+  const stockByName = useMemo(() => {
+    const m = new Map<string, { total: number; batchCount: number }>();
+    for (const f of foodItems) {
+      const key = f.name.toLowerCase();
+      const existing = m.get(key);
+      if (existing) {
+        existing.total += f.quantity;
+        existing.batchCount += 1;
+      } else {
+        m.set(key, { total: f.quantity, batchCount: 1 });
+      }
     }
-  }
+    return m;
+  }, [foodItems]);
 
   function setCount(mealId: string, value: number) {
     setCounts((prev) => ({ ...prev, [mealId]: Math.max(0, value) }));
   }
 
   // Unique ingredient names across all selected meals, sorted alphabetically
-  const activeIngredientNames = Array.from(
-    new Set(
-      meals
-        .filter((m) => (counts[m.id] ?? 0) > 0)
-        .flatMap((m) => m.ingredients.map((i) => i.name)),
-    ),
-  ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const activeIngredientNames = useMemo(() =>
+    Array.from(
+      new Set(
+        meals
+          .filter((m) => (counts[m.id] ?? 0) > 0)
+          .flatMap((m) => m.ingredients.map((i) => i.name)),
+      ),
+    ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+  , [meals, counts]);
 
   // Sorted unique inventory food names for the link dropdowns
-  const foodNames = Array.from(new Set(foodItems.map((f) => f.name))).sort((
-    a,
-    b,
-  ) => a.localeCompare(b, undefined, { numeric: true }));
+  const foodNames = useMemo(() =>
+    Array.from(new Set(foodItems.map((f) => f.name))).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    )
+  , [foodItems]);
 
   function calculate() {
     if (headcount < 1) return;

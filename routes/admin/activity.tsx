@@ -26,11 +26,13 @@ export const handler = {
     }
     const url = new URL(ctx.req.url);
     const userFilter = url.searchParams.get("user")?.trim() ?? "";
-    const allEntries = await getRecentActivity(500);
+    // Fetch only as many entries as the view needs — 500 when filtering by user,
+    // 200 for the default unfiltered view (which also only displays 200).
+    const allEntries = await getRecentActivity(userFilter ? 500 : 200);
     const users = [...new Set(allEntries.map((e) => e.username))].sort();
     const entries = userFilter
       ? allEntries.filter((e) => e.username === userFilter)
-      : allEntries.slice(0, 200);
+      : allEntries;
     return page({ entries, allEntries, userFilter, users, session });
   },
 };

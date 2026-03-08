@@ -73,31 +73,31 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
 
   function updateCurrentQty(qty: number) {
     const idx = currentIdx.value;
-    entries.value = entries.value.map((e, i) =>
-      i === idx ? { ...e, countedQty: qty } : e
-    );
+    const copy = entries.value.slice();
+    copy[idx] = { ...copy[idx], countedQty: qty };
+    entries.value = copy;
   }
 
   function updateCurrentCondition(cond: string) {
     const idx = currentIdx.value;
-    entries.value = entries.value.map((e, i) =>
-      i === idx ? { ...e, countedCondition: cond } : e
-    );
+    const copy = entries.value.slice();
+    copy[idx] = { ...copy[idx], countedCondition: cond };
+    entries.value = copy;
   }
 
   function skipCurrent() {
     const idx = currentIdx.value;
-    entries.value = entries.value.map((e, i) =>
-      i === idx ? { ...e, skipped: true } : e
-    );
+    const copy = entries.value.slice();
+    copy[idx] = { ...copy[idx], skipped: true };
+    entries.value = copy;
     advance();
   }
 
   function unskipCurrent() {
     const idx = currentIdx.value;
-    entries.value = entries.value.map((e, i) =>
-      i === idx ? { ...e, skipped: false } : e
-    );
+    const copy = entries.value.slice();
+    copy[idx] = { ...copy[idx], skipped: false };
+    entries.value = copy;
   }
 
   function advance() {

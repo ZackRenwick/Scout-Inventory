@@ -56,7 +56,7 @@ export default function InventoryTable(
   const showNeedsRepair = useSignal(initialNeedsRepair);
   const showAtCamp = useSignal(false);
   const showOnLoan = useSignal(initialOnLoan);
-  const loanedIdSet = new Set(loanedItemIds);
+  const loanedIdSet = useComputed(() => new Set(loanedItemIds));
   const cookingTypeFilter = useSignal<string>("all");
   const showExpiredFood = useSignal(false);
   const showExpiringSoon = useSignal(false);
@@ -100,7 +100,7 @@ export default function InventoryTable(
   const atCampCount = useComputed(() =>
     itemsSignal.value.filter((i) => (i as { atCamp?: boolean }).atCamp).length
   );
-  const loanedCount = loanedIdSet.size;
+  const loanedCount = loanedIdSet.value.size;
 
   // Filter items based on search and filters — useComputed() memoises the result
   // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
@@ -147,7 +147,7 @@ export default function InventoryTable(
       }
 
       // On loan filter
-      if (showOnLoan.value && !loanedIdSet.has(item.id)) {
+      if (showOnLoan.value && !loanedIdSet.value.has(item.id)) {
         return false;
       }
 
@@ -223,7 +223,7 @@ export default function InventoryTable(
           ) return 1;
           if (item.quantity <= item.minThreshold) return 2;
           if ((item as { atCamp?: boolean }).atCamp) return 3;
-          if (loanedIdSet.has(item.id)) return 4;
+          if (loanedIdSet.value.has(item.id)) return 4;
           if (
             "condition" in item &&
             (item as { condition: string }).condition === "fair"

@@ -1,5 +1,6 @@
 // Camp checklist island — full management for a single camp plan
 import { useComputed, useSignal } from "@preact/signals";
+import { useRef } from "preact/hooks";
 import NumberInput from "../components/NumberInput.tsx";
 import type {
   CampPlan,
@@ -82,6 +83,20 @@ export default function CampChecklist(
   const savingTemplate = useSignal(false);
   const templateSaved = useSignal(false);
 
+  // Debounce timer for checkbox-triggered patches so rapid toggles coalesce
+  const checkboxPatchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingCheckboxItems = useRef<CampPlan["items"] | null>(null);
+
+  function debouncedItemsPatch(items: CampPlan["items"]) {
+    plan.value = { ...plan.value, items };
+    pendingCheckboxItems.current = items;
+    if (checkboxPatchTimer.current) clearTimeout(checkboxPatchTimer.current);
+    checkboxPatchTimer.current = setTimeout(() => {
+      patch({ items: pendingCheckboxItems.current! });
+      pendingCheckboxItems.current = null;
+    }, 500);
+  }
+
   const planItemIds = useComputed(() =>
     new Set(plan.value.items.map((i) => i.itemId))
   );
@@ -146,14 +161,14 @@ export default function CampChecklist(
     const items = plan.value.items.map((i) =>
       i.itemId === itemId ? { ...i, packedStatus: !i.packedStatus } : i
     );
-    patch({ items });
+    debouncedItemsPatch(items);
   }
 
   function toggleReturned(itemId: string) {
     const items = plan.value.items.map((i) =>
       i.itemId === itemId ? { ...i, returnedStatus: !i.returnedStatus } : i
     );
-    patch({ items });
+    debouncedItemsPatch(items);
   }
 
   function returnAll() {
@@ -348,6 +363,7 @@ export default function CampChecklist(
             <div class="flex flex-wrap gap-1.5">
               {STATUS_ORDER.map((s) => (
                 <button
+                  type="button"
                   key={s}
                   onClick={() => setStatus(s)}
                   disabled={saving.value || plan.value.status === s}
@@ -510,6 +526,7 @@ export default function CampChecklist(
       {canEdit && (
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
           <button
+            type="button"
             onClick={() => {
               showAddPanel.value = !showAddPanel.value;
             }}

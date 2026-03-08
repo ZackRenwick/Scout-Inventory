@@ -1,6 +1,16 @@
 // Interactive space switcher for the dashboard category breakdown
 import { useSignal } from "@preact/signals";
 
+const ACCENT_MAP: Record<string, string> = {
+  blue: "border-t-4 border-blue-500",
+  green: "border-t-4 border-green-500",
+  yellow: "border-t-4 border-yellow-500",
+  red: "border-t-4 border-red-500",
+  purple: "border-t-4 border-purple-500",
+  indigo: "border-t-4 border-indigo-500",
+  orange: "border-t-4 border-orange-500",
+};
+
 interface CategoryBreakdown {
   tent: { count: number; quantity: number };
   cooking: { count: number; quantity: number };
@@ -34,17 +44,6 @@ function CategoryCard(
     href: string;
   },
 ) {
-  // Top-border accent + neutral card background — works in both light and dark mode
-  // without relying on dynamically-constructed dark: classes that Tailwind JIT can miss
-  const accentMap: Record<string, string> = {
-    blue: "border-t-4 border-blue-500",
-    green: "border-t-4 border-green-500",
-    yellow: "border-t-4 border-yellow-500",
-    red: "border-t-4 border-red-500",
-    purple: "border-t-4 border-purple-500",
-    indigo: "border-t-4 border-indigo-500",
-    orange: "border-t-4 border-orange-500",
-  };
   return (
     <a
       href={href}
@@ -52,7 +51,7 @@ function CategoryCard(
     >
       <div
         class={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5 h-full ${
-          accentMap[color] ?? accentMap.blue
+          ACCENT_MAP[color] ?? ACCENT_MAP.blue
         }`}
       >
         <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">

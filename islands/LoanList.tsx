@@ -1,5 +1,5 @@
 // Interactive loan list island — shows active/overdue loans and return history
-import { useSignal } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 import type { CheckOut } from "../types/inventory.ts";
 import { formatDate } from "../lib/date-utils.ts";
 
@@ -65,8 +65,12 @@ export default function LoanList(
   const error = useSignal<string | null>(null);
   const showHistory = useSignal(false);
 
-  const activeLoans = loans.value.filter((l) => l.status !== "returned");
-  const historyLoans = loans.value.filter((l) => l.status === "returned");
+  const activeLoans = useComputed(() =>
+    loans.value.filter((l) => l.status !== "returned")
+  );
+  const historyLoans = useComputed(() =>
+    loans.value.filter((l) => l.status === "returned")
+  );
 
   async function handleReturn(id: string) {
     actioningId.value = id;
@@ -283,13 +287,13 @@ export default function LoanList(
       <section>
         <h3 class="text-lg font-semibold text-gray-800 dark:text-purple-100 mb-3">
           Active Loans
-          {activeLoans.length > 0 && (
+          {activeLoans.value.length > 0 && (
             <span class="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
-              ({activeLoans.length})
+              ({activeLoans.value.length})
             </span>
           )}
         </h3>
-        {activeLoans.length === 0
+        {activeLoans.value.length === 0
           ? (
             <div class="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
               <div class="text-4xl mb-2">📤</div>
@@ -306,7 +310,7 @@ export default function LoanList(
           )
           : (
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {activeLoans
+              {activeLoans.value
                 .sort((a, b) =>
                   daysUntil(a.expectedReturnDate) -
                   daysUntil(b.expectedReturnDate)
@@ -317,7 +321,7 @@ export default function LoanList(
       </section>
 
       {/* History */}
-      {historyLoans.length > 0 && (
+      {historyLoans.value.length > 0 && (
         <section>
           <button
             type="button"
@@ -327,12 +331,12 @@ export default function LoanList(
             <span>{showHistory.value ? "▾" : "▸"}</span>
             Return History
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-              ({historyLoans.length})
+              ({historyLoans.value.length})
             </span>
           </button>
           {showHistory.value && (
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {historyLoans
+              {historyLoans.value
                 .sort((a, b) =>
                   new Date(b.actualReturnDate!).getTime() -
                   new Date(a.actualReturnDate!).getTime()
