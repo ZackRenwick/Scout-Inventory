@@ -4,7 +4,7 @@
 //   - Navigation/HTML pages: network-first, cached opportunistically
 //   - API / admin routes: network-only (never cache sensitive data)
 
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const STATIC_CACHE = `scouts-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `scouts-pages-${CACHE_VERSION}`;
 
@@ -76,7 +76,16 @@ function isStaticAsset(pathname) {
 // NOT hashed and must NOT be served cache-first, otherwise a redeployment
 // causes the stale entrypoint to reference chunk hashes that no longer exist,
 // breaking island hydration (e.g. the mobile nav menu stops working).
+//
+// Fresh v2 (Vite build) puts ALL content-hashed assets under /_fresh/client/assets/.
+// The old chunk-XXXXXXXX.js pattern only matched Fresh v1 output; Fresh v2 names
+// files like fresh-island__Name-Hash.js, preact.module-Hash.js, etc.
+// Without this fix the SW serves them network-first instead of cache-first,
+// causing a network round-trip on every SPA navigation even for unchanged files.
 function isHashedChunk(pathname) {
+  // Fresh v2 (Vite): everything under /_fresh/client/assets/ is content-hashed
+  if (pathname.startsWith("/_fresh/client/assets/")) return true;
+  // Fresh v1 (legacy): chunk-XXXXXXXX.js
   return pathname.startsWith("/_fresh/") &&
     /\/chunk-[A-Z0-9]{8,}\.(js|css)$/i.test(pathname);
 }
