@@ -123,28 +123,41 @@ async function cacheFirst(request, cacheName) {
 }
 
 async function networkFirstPage(request) {
-  try {
-    const response = await fetch(request);
-    // Only cache genuine 200 pages — redirects (30x) must not be cached.
-    if (response.ok && response.status === 200) {
-      caches.open(PAGE_CACHE)
-        .then((cache) => cache.put(request, response.clone()))
-        .catch(() => {});
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    // Don't fall back to the home page for a different URL — that would render
-    // the wrong content at the wrong address.  Show a proper offline message.
-    return new Response(
-      "<!doctype html><html><head><meta charset=utf-8><title>Offline</title>" +
-        "<meta name=viewport content='width=device-width,initial-scale=1'></head>" +
-        "<body style='font-family:sans-serif;text-align:center;padding:3rem'>" +
-        "<h1>You're offline</h1>" +
-        "<p>This page isn't available without a network connection.</p>" +
-        "<p><a href='/'>Go to homepage</a></p></body></html>",
-      { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
-    );
-  }
+  const cached = await caches.match(request);
+
+  // Always kick off a background network request to keep the cache fresh.
+  // Only cache genuine 200 pages — redirects (30x) must not be cached.
+  const networkFetch = fetch(request)
+    .then((response) => {
+      if (response.ok && response.status === 200) {
+        caches.open(PAGE_CACHE)
+          .then((cache) => cache.put(request, response.clone()))
+          .catch(() => {});
+      }
+      return response;
+    })
+    .catch(() => null);
+
+  // Stale-while-revalidate: if we have a cached copy, return it immediately
+  // and let the background fetch update the cache for the next visit.
+  // This avoids blocking every navigation on a full SSR round-trip, which
+  // is the primary cause of 5+ second page loads when Deno KV is slow.
+  if (cached) return cached;
+
+  // Nothing cached yet — must wait for the network on first visit.
+  const response = await networkFetch;
+  if (response) return response;
+
+  // Network failed and no cache — show offline message.
+  // Don't fall back to the home page for a different URL — that would render
+  // the wrong content at the wrong address.
+  return new Response(
+    "<!doctype html><html><head><meta charset=utf-8><title>Offline</title>" +
+      "<meta name=viewport content='width=device-width,initial-scale=1'></head>" +
+      "<body style='font-family:sans-serif;text-align:center;padding:3rem'>" +
+      "<h1>You're offline</h1>" +
+      "<p>This page isn't available without a network connection.</p>" +
+      "<p><a href='/'>Go to homepage</a></p></body></html>",
+    { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
+  );
 }
