@@ -4,7 +4,7 @@
 //   - Navigation/HTML pages: network-first, cached opportunistically
 //   - API / admin routes: network-only (never cache sensitive data)
 
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const STATIC_CACHE = `scouts-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `scouts-pages-${CACHE_VERSION}`;
 
@@ -75,17 +75,20 @@ function isStaticAsset(pathname) {
 // Island entrypoints (island-*.js, main.js, signals.js, deserializer.js) are
 // NOT hashed and must NOT be served cache-first, otherwise a redeployment
 // causes the stale entrypoint to reference chunk hashes that no longer exist,
-// breaking island hydration (e.g. the mobile nav menu stops working).
+// breaking island hydration.
 //
-// Fresh v2 (Vite build) puts ALL content-hashed assets under /_fresh/client/assets/.
-// The old chunk-XXXXXXXX.js pattern only matched Fresh v1 output; Fresh v2 names
-// files like fresh-island__Name-Hash.js, preact.module-Hash.js, etc.
-// Without this fix the SW serves them network-first instead of cache-first,
-// causing a network round-trip on every SPA navigation even for unchanged files.
+// This build (Fresh v2 + @fresh/plugin-vite) outputs content-hashed shared
+// chunks as /_fresh/chunk-XXXXXXXX.js.  The island entrypoints at
+// /_fresh/island-*.js are non-hashed thin wrappers that import those chunks;
+// they must stay network-first.
+//
+// The /_fresh/client/assets/ check below is kept as a forward-compatibility
+// safety net in case a future Fresh/Vite version starts serving hashed assets
+// at that path — it has no performance cost when it never matches.
 function isHashedChunk(pathname) {
-  // Fresh v2 (Vite): everything under /_fresh/client/assets/ is content-hashed
+  // Forward-compat: if Fresh ever routes hashed Vite assets here, cache them.
   if (pathname.startsWith("/_fresh/client/assets/")) return true;
-  // Fresh v1 (legacy): chunk-XXXXXXXX.js
+  // Current output: chunk-XXXXXXXX.js  (8+ char uppercase/digit hash)
   return pathname.startsWith("/_fresh/") &&
     /\/chunk-[A-Z0-9]{8,}\.(js|css)$/i.test(pathname);
 }
@@ -93,9 +96,12 @@ function isHashedChunk(pathname) {
 async function networkFirstStatic(request) {
   try {
     const response = await fetch(request);
+    // Cache write is fire-and-forget — don't await caches.open() before
+    // returning, as the IDB round-trip would delay the response for no benefit.
     if (response.ok) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, response.clone());
+      caches.open(STATIC_CACHE)
+        .then((cache) => cache.put(request, response.clone()))
+        .catch(() => {});
     }
     return response;
   } catch {
@@ -109,8 +115,9 @@ async function cacheFirst(request, cacheName) {
   if (cached) return cached;
   const response = await fetch(request);
   if (response.ok) {
-    const cache = await caches.open(cacheName);
-    cache.put(request, response.clone());
+    caches.open(cacheName)
+      .then((cache) => cache.put(request, response.clone()))
+      .catch(() => {});
   }
   return response;
 }
@@ -120,20 +127,24 @@ async function networkFirstPage(request) {
     const response = await fetch(request);
     // Only cache genuine 200 pages — redirects (30x) must not be cached.
     if (response.ok && response.status === 200) {
-      const cache = await caches.open(PAGE_CACHE);
-      cache.put(request, response.clone());
+      caches.open(PAGE_CACHE)
+        .then((cache) => cache.put(request, response.clone()))
+        .catch(() => {});
     }
     return response;
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    const fallback = await caches.match("/");
-    return (
-      fallback ??
-        new Response("You are offline.", {
-          status: 503,
-          headers: { "Content-Type": "text/plain" },
-        })
+    // Don't fall back to the home page for a different URL — that would render
+    // the wrong content at the wrong address.  Show a proper offline message.
+    return new Response(
+      "<!doctype html><html><head><meta charset=utf-8><title>Offline</title>" +
+        "<meta name=viewport content='width=device-width,initial-scale=1'></head>" +
+        "<body style='font-family:sans-serif;text-align:center;padding:3rem'>" +
+        "<h1>You're offline</h1>" +
+        "<p>This page isn't available without a network connection.</p>" +
+        "<p><a href='/'>Go to homepage</a></p></body></html>",
+      { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
     );
   }
 }
