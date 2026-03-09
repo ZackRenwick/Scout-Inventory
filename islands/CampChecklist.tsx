@@ -1,5 +1,6 @@
 // Camp checklist island — full management for a single camp plan
 import { useSignal, useComputed } from "@preact/signals";
+import NumberInput from "../components/NumberInput.tsx";
 import type { CampPlan, CampPlanItem, CampPlanStatus, CampTemplate, InventoryItem } from "../types/inventory.ts";
 import { ITEM_LOCATIONS } from "../types/inventory.ts";
 import { formatDate } from "../lib/date-utils.ts";
@@ -629,13 +630,12 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                         {selectedIsFood.value ? "Qty (to take)" : "Qty (to pack)"}
                         <span class="font-normal text-gray-400 dark:text-gray-500 ml-1">· {selectedInv.value.quantity} in stock</span>
                       </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={selectedInv.value.quantity}
-                        class={`${inputClass} w-full`}
+                      <NumberInput
+                        key={selectedInv.value.id}
                         value={addQty.value}
-                        onInput={(e) => (addQty.value = parseInt((e.target as HTMLInputElement).value) || 1)}
+                        min={1}
+                        onChange={(n) => { addQty.value = n; }}
+                        class={`${inputClass} w-full`}
                       />
                     </div>
                     <div class="flex-1 min-w-0">

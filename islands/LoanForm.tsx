@@ -1,5 +1,6 @@
 // Island for creating a new loan record
 import { useSignal, useComputed } from "@preact/signals";
+import NumberInput from "../components/NumberInput.tsx";
 
 export interface LoanableItem {
   id: string;
@@ -215,14 +216,14 @@ export default function LoanForm({ items, csrfToken }: LoanFormProps) {
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class={labelClass}>Quantity *</label>
-          <input
-            type="number"
-            class={inputClass}
-            min={1}
-            max={selectedItem.value?.quantity ?? undefined}
+          <NumberInput
+            key={selectedItem.value?.id ?? "none"}
             value={quantity.value}
-            onInput={(e) => (quantity.value = Number((e.target as HTMLInputElement).value))}
+            min={1}
+            max={selectedItem.value?.quantity}
+            onChange={(n) => { quantity.value = n; }}
             required
+            class={inputClass}
           />
           {selectedItem.value && (
             <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">

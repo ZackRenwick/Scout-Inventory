@@ -1,6 +1,7 @@
 // Form for adding/editing inventory items
 import { Signal, useSignal } from "@preact/signals";
 import { ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
+import NumberInput from "../components/NumberInput.tsx";
 
 interface ItemFormProps {
   initialData?: any;
@@ -240,7 +241,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           <label class={labelClass}>
             Quantity *
           </label>
-          <input type="number" name="quantity" defaultValue={initialData?.quantity || 1} min="0" required class={inputClass} />
+          <input type="number" name="quantity" defaultValue={initialData?.quantity ?? 1} min="0" inputMode="numeric" required class={inputClass} />
         </div>
         
         <div>
@@ -294,7 +295,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -367,13 +373,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               <div class="space-y-2">
                 {boxContents.value.map((row, i) => (
                   <div key={i} class="flex gap-2 items-center">
-                    <input
-                      type="number"
+                    <NumberInput
                       value={row.quantity}
                       min={1}
-                      onInput={(e) => {
+                      onChange={(n) => {
                         const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], quantity: parseInt((e.target as HTMLInputElement).value) || 1 };
+                        copy[i] = { ...copy[i], quantity: n };
                         boxContents.value = copy;
                       }}
                       class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
@@ -447,7 +452,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -535,7 +545,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -561,13 +576,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               <div class="space-y-2">
                 {boxContents.value.map((row, i) => (
                   <div key={i} class="flex gap-2 items-center">
-                    <input
-                      type="number"
+                    <NumberInput
                       value={row.quantity}
                       min={1}
-                      onInput={(e) => {
+                      onChange={(n) => {
                         const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], quantity: parseInt((e.target as HTMLInputElement).value) || 1 };
+                        copy[i] = { ...copy[i], quantity: n };
                         boxContents.value = copy;
                       }}
                       class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
@@ -634,7 +648,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <input type="number" name="yearPurchased" defaultValue={initialData?.yearPurchased} min="1900" max="2100" class={inputClass} />
+              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -659,13 +678,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               <div class="space-y-2">
                 {boxContents.value.map((row, i) => (
                   <div key={i} class="flex gap-2 items-center">
-                    <input
-                      type="number"
+                    <NumberInput
                       value={row.quantity}
                       min={1}
-                      onInput={(e) => {
+                      onChange={(n) => {
                         const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], quantity: parseInt((e.target as HTMLInputElement).value) || 1 };
+                        copy[i] = { ...copy[i], quantity: n };
                         boxContents.value = copy;
                       }}
                       class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
