@@ -48,9 +48,17 @@ const LOG_PREFIX = ["activity", "log"] as const;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
 let _kv: Deno.Kv | null = null;
+let _kvInFlight: Promise<Deno.Kv> | null = null;
 async function getKv(): Promise<Deno.Kv> {
-  if (!_kv) _kv = await Deno.openKv();
-  return _kv;
+  if (_kv) return _kv;
+  if (!_kvInFlight) {
+    _kvInFlight = Deno.openKv().then((instance) => {
+      _kv = instance;
+      _kvInFlight = null;
+      return instance;
+    });
+  }
+  return _kvInFlight;
 }
 
 /** Produces a zero-padded inverted epoch so KV scans return entries newest-first. */

@@ -4,13 +4,19 @@ import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace, CampPl
 import type { Meal, MealPayload } from "../types/meals.ts";
 
 // Initialize Deno KV
-let kv: Deno.Kv;
+let kv: Deno.Kv | null = null;
+let kvInFlight: Promise<Deno.Kv> | null = null;
 
 export async function initKv(): Promise<Deno.Kv> {
-  if (!kv) {
-    kv = await Deno.openKv();
+  if (kv) return kv;
+  if (!kvInFlight) {
+    kvInFlight = Deno.openKv().then((instance) => {
+      kv = instance;
+      kvInFlight = null;
+      return instance;
+    });
   }
-  return kv;
+  return kvInFlight;
 }
 
 // ===== KEY LAYOUT =====

@@ -96,12 +96,18 @@ export function generateId(): string {
 // ===== DB HELPERS =====
 
 let _kv: Deno.Kv | null = null;
+let _kvInFlight: Promise<Deno.Kv> | null = null;
 
 async function getKv(): Promise<Deno.Kv> {
-  if (!_kv) {
-    _kv = await Deno.openKv();
+  if (_kv) return _kv;
+  if (!_kvInFlight) {
+    _kvInFlight = Deno.openKv().then((instance) => {
+      _kv = instance;
+      _kvInFlight = null;
+      return instance;
+    });
   }
-  return _kv;
+  return _kvInFlight;
 }
 
 // ===== USER OPERATIONS =====
