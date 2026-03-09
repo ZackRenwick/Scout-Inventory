@@ -143,6 +143,9 @@ let campPlansInFlight: Promise<CampPlan[]> | null = null;
 let templatesCache: { templates: CampTemplate[]; expiresAt: number } | null = null;
 let templatesInFlight: Promise<CampTemplate[]> | null = null;
 
+let mealsCache: { meals: Meal[]; expiresAt: number } | null = null;
+let mealsInFlight: Promise<Meal[]> | null = null;
+
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
@@ -179,6 +182,11 @@ function invalidateCampPlansCache(): void {
   campPlansInFlight = null;
 }
 
+function invalidateMealsCache(): void {
+  mealsCache = null;
+  mealsInFlight = null;
+}
+
 function invalidateTemplatesCache(): void {
   templatesCache = null;
   templatesInFlight = null;
@@ -194,6 +202,7 @@ export function preloadCaches(): void {
   getAllCheckOuts().catch(() => {});
   getAllCampPlans().catch(() => {});
   getAllCampTemplates().catch(() => {});
+  getAllMeals().catch(() => {});
 }
 
 // ===== ATOMIC INDEX HELPERS =====
@@ -743,12 +752,24 @@ export async function deleteCampTemplate(id: string): Promise<boolean> {
 // ===== MEAL PLANNER =====
 
 export async function getAllMeals(): Promise<Meal[]> {
-  const db = await initKv();
-  const meals: Meal[] = [];
-  for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
-    if (entry.value) meals.push(entry.value);
+  if (mealsCache && Date.now() < mealsCache.expiresAt) {
+    return mealsCache.meals;
   }
-  return meals.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (mealsInFlight) return mealsInFlight;
+
+  mealsInFlight = (async () => {
+    const db = await initKv();
+    const meals: Meal[] = [];
+    for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
+      if (entry.value) meals.push(entry.value);
+    }
+    const sorted = meals.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    mealsCache = { meals: sorted, expiresAt: Date.now() + CACHE_TTL_MS };
+    mealsInFlight = null;
+    return sorted;
+  })();
+
+  return mealsInFlight;
 }
 
 export async function getMealById(id: string): Promise<Meal | null> {
@@ -763,6 +784,7 @@ export async function createMeal(payload: MealPayload): Promise<Meal> {
   const now = new Date().toISOString();
   const meal: Meal = { id, ...payload, createdAt: now, updatedAt: now };
   await db.set([...KEYS.meals, id], meal);
+  invalidateMealsCache();
   return meal;
 }
 
@@ -772,6 +794,7 @@ export async function updateMeal(id: string, payload: MealPayload): Promise<Meal
   if (!existing) return null;
   const updated: Meal = { ...existing, ...payload, id, updatedAt: new Date().toISOString() };
   await db.set([...KEYS.meals, id], updated);
+  invalidateMealsCache();
   return updated;
 }
 
@@ -780,6 +803,7 @@ export async function deleteMeal(id: string): Promise<boolean> {
   if (!existing) return false;
   const db = await initKv();
   await db.delete([...KEYS.meals, id]);
+  invalidateMealsCache();
   return true;
 }
 

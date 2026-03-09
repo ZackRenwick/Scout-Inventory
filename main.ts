@@ -11,7 +11,7 @@ import manifest from "./fresh.gen.ts";
 import config from "./fresh.config.ts";
 import { ensureDefaultAdmin } from "./lib/auth.ts";
 import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "./lib/notifications.ts";
-import { initKv } from "./db/kv.ts";
+import { initKv, preloadCaches } from "./db/kv.ts";
 
 // Always ensure a default admin account exists — locally and on Deploy
 await ensureDefaultAdmin();
@@ -55,6 +55,10 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   // Set APP_URL to your deployment URL in Deno Deploy environment variables.
   const appUrl = Deno.env.get("APP_URL") ?? "https://7thwhitburnscoutsinventory.co.uk";
   Deno.cron("warmup-ping", "*/5 * * * *", async () => {
+    // Warm KV caches directly in-process — the HTTP ping alone bypasses the
+    // middleware preloadCaches() call (because /api/ping is a public path)
+    // and would leave caches cold even while the isolate itself is running.
+    preloadCaches();
     try {
       await fetch(`${appUrl}/api/ping`);
     } catch {
