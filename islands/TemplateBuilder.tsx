@@ -1,5 +1,6 @@
 import { useSignal, useComputed } from "@preact/signals";
 import type { CampTemplateItem, InventoryItem } from "../types/inventory.ts";
+import NumberInput from "../components/NumberInput.tsx";
 
 interface TemplateBuilderProps {
   allItems: InventoryItem[];
@@ -195,11 +196,10 @@ export default function TemplateBuilder({ allItems, csrfToken }: TemplateBuilder
                       </span>
                       <div class="flex items-center gap-2 shrink-0">
                         <label class="text-xs text-gray-500 dark:text-gray-400">Qty:</label>
-                        <input
-                          type="number"
-                          min={1}
+                        <NumberInput
                           value={item.quantityPlanned}
-                          onInput={(e) => setQty(item.itemId, parseInt((e.target as HTMLInputElement).value) || 1)}
+                          min={1}
+                          onChange={(n) => setQty(item.itemId, n)}
                           class="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         />
                         <button

@@ -1,6 +1,7 @@
 // Create / edit a meal recipe — admin only
 import { useState } from "preact/hooks";
 import type { Meal, MealIngredient } from "../types/meals.ts";
+import NumberInput from "../components/NumberInput.tsx";
 
 interface Props {
   meal?: Meal;
@@ -179,11 +180,10 @@ export default function MealForm({ meal, csrfToken }: Props) {
                   {/* Servings per unit */}
                   <div class="w-36 shrink-0">
                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Servings per unit</label>
-                    <input
-                      type="number"
+                    <NumberInput
                       value={ing.servingsPerUnit}
                       min={1}
-                      onInput={(e) => updateIngredient(i, { servingsPerUnit: Math.max(1, parseInt((e.target as HTMLInputElement).value) || 1) })}
+                      onChange={(n) => updateIngredient(i, { servingsPerUnit: n })}
                       class="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded focus:ring-1 focus:ring-purple-500 focus:outline-none"
                     />
                   </div>
