@@ -125,6 +125,8 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
   
   const inputClass = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2";
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
 
   return (
     <form onSubmit={handleSubmit} class="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 w-full max-w-2xl">

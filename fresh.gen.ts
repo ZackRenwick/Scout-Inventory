@@ -10,6 +10,7 @@ import * as $admin_middleware from "./routes/admin/_middleware.ts";
 import * as $admin_activity from "./routes/admin/activity.tsx";
 import * as $admin_admin_panel from "./routes/admin/admin-panel.tsx";
 import * as $admin_cleanup from "./routes/admin/cleanup.ts";
+import * as $admin_clear_db from "./routes/admin/clear-db.ts";
 import * as $admin_export_json from "./routes/admin/export-json.ts";
 import * as $admin_export from "./routes/admin/export.ts";
 import * as $admin_import from "./routes/admin/import.ts";
@@ -60,6 +61,7 @@ import * as $CampPlanList from "./islands/CampPlanList.tsx";
 import * as $ConfirmDeleteForm from "./islands/ConfirmDeleteForm.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $DbCleanup from "./islands/DbCleanup.tsx";
+import * as $DbClear from "./islands/DbClear.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
@@ -90,6 +92,7 @@ const manifest = {
     "./routes/admin/activity.tsx": $admin_activity,
     "./routes/admin/admin-panel.tsx": $admin_admin_panel,
     "./routes/admin/cleanup.ts": $admin_cleanup,
+    "./routes/admin/clear-db.ts": $admin_clear_db,
     "./routes/admin/export-json.ts": $admin_export_json,
     "./routes/admin/export.ts": $admin_export,
     "./routes/admin/import.ts": $admin_import,
@@ -142,6 +145,7 @@ const manifest = {
     "./islands/ConfirmDeleteForm.tsx": $ConfirmDeleteForm,
     "./islands/Counter.tsx": $Counter,
     "./islands/DbCleanup.tsx": $DbCleanup,
+    "./islands/DbClear.tsx": $DbClear,
     "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
