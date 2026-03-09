@@ -13,6 +13,12 @@ import { ensureDefaultAdmin } from "./lib/auth.ts";
 import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "./lib/notifications.ts";
 import { initKv, preloadCaches } from "./db/kv.ts";
 
+// Kick off KV cache warming immediately at startup — fire-and-forget so it runs
+// concurrently with ensureDefaultAdmin() and Fresh initialization below.
+// Without this, every cold-start isolate serves the first few requests from raw
+// KV scans (4-7 s TTFB) until the middleware's preloadCaches() is reached.
+preloadCaches();
+
 // Always ensure a default admin account exists — locally and on Deploy
 await ensureDefaultAdmin();
 
