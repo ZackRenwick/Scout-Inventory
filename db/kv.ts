@@ -150,21 +150,24 @@ export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
   }
-  if (itemsInFlight) return itemsInFlight;
-
-  itemsInFlight = (async () => {
-    const db = await initKv();
-    const items: InventoryItem[] = [];
-    const entries = db.list<InventoryItem>({ prefix: KEYS.items });
-    for await (const entry of entries) {
-      items.push(deserializeItem(entry.value));
-    }
-    itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
-    itemsInFlight = null;
-    return items;
-  })();
-
-  return itemsInFlight;
+  // Start a background refresh if not already running
+  if (!itemsInFlight) {
+    itemsInFlight = (async () => {
+      const db = await initKv();
+      const items: InventoryItem[] = [];
+      const entries = db.list<InventoryItem>({ prefix: KEYS.items });
+      for await (const entry of entries) {
+        items.push(deserializeItem(entry.value));
+      }
+      itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
+      itemsInFlight = null;
+      return items;
+    })();
+  }
+  // Stale-while-revalidate: serve existing data immediately, refresh in background
+  if (itemsCache) return itemsCache.items;
+  // True cold start — no data yet, must wait
+  return itemsInFlight!;
 }
 
 function invalidateItemsCache(): void {
@@ -193,16 +196,18 @@ function invalidateTemplatesCache(): void {
 }
 
 /**
- * Kick off background population of the items, checkouts, camp plans, and
- * templates caches. Call this early in a request handler to warm the cache
- * for subsequent navigations without blocking the current render.
+ * Warm all KV caches concurrently. Returns a promise that resolves once every
+ * cache has been populated. Awaiting this at startup ensures no request is
+ * served until all data is in memory, eliminating cold-isolate TTFB spikes.
  */
-export function preloadCaches(): void {
-  getAllItems().catch(() => {});
-  getAllCheckOuts().catch(() => {});
-  getAllCampPlans().catch(() => {});
-  getAllCampTemplates().catch(() => {});
-  getAllMeals().catch(() => {});
+export function preloadCaches(): Promise<void> {
+  return Promise.all([
+    getAllItems().catch(() => {}),
+    getAllCheckOuts().catch(() => {}),
+    getAllCampPlans().catch(() => {}),
+    getAllCampTemplates().catch(() => {}),
+    getAllMeals().catch(() => {}),
+  ]).then(() => {});
 }
 
 // ===== ATOMIC INDEX HELPERS =====
@@ -391,21 +396,21 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
   if (checkoutsCache && Date.now() < checkoutsCache.expiresAt) {
     return checkoutsCache.checkouts;
   }
-  if (checkoutsInFlight) return checkoutsInFlight;
-
-  checkoutsInFlight = (async () => {
-    const db = await initKv();
-    const checkouts: CheckOut[] = [];
-    const entries = db.list<CheckOut>({ prefix: KEYS.checkouts });
-    for await (const entry of entries) {
-      checkouts.push(deserializeCheckOut(entry.value));
-    }
-    checkoutsCache = { checkouts, expiresAt: Date.now() + CACHE_TTL_MS };
-    checkoutsInFlight = null;
-    return checkouts;
-  })();
-
-  return checkoutsInFlight;
+  if (!checkoutsInFlight) {
+    checkoutsInFlight = (async () => {
+      const db = await initKv();
+      const checkouts: CheckOut[] = [];
+      const entries = db.list<CheckOut>({ prefix: KEYS.checkouts });
+      for await (const entry of entries) {
+        checkouts.push(deserializeCheckOut(entry.value));
+      }
+      checkoutsCache = { checkouts, expiresAt: Date.now() + CACHE_TTL_MS };
+      checkoutsInFlight = null;
+      return checkouts;
+    })();
+  }
+  if (checkoutsCache) return checkoutsCache.checkouts;
+  return checkoutsInFlight!;
 }
 
 export async function getActiveCheckOuts(): Promise<CheckOut[]> {
@@ -614,21 +619,21 @@ export async function getAllCampPlans(): Promise<CampPlan[]> {
   if (campPlansCache && Date.now() < campPlansCache.expiresAt) {
     return campPlansCache.plans;
   }
-  if (campPlansInFlight) return campPlansInFlight;
-
-  campPlansInFlight = (async () => {
-    const db = await initKv();
-    const plans: CampPlan[] = [];
-    for await (const entry of db.list<CampPlan>({ prefix: KEYS.camps })) {
-      plans.push(deserializeCampPlan(entry.value));
-    }
-    plans.sort((a, b) => b.campDate.getTime() - a.campDate.getTime());
-    campPlansCache = { plans, expiresAt: Date.now() + CACHE_TTL_MS };
-    campPlansInFlight = null;
-    return plans;
-  })();
-
-  return campPlansInFlight;
+  if (!campPlansInFlight) {
+    campPlansInFlight = (async () => {
+      const db = await initKv();
+      const plans: CampPlan[] = [];
+      for await (const entry of db.list<CampPlan>({ prefix: KEYS.camps })) {
+        plans.push(deserializeCampPlan(entry.value));
+      }
+      plans.sort((a, b) => b.campDate.getTime() - a.campDate.getTime());
+      campPlansCache = { plans, expiresAt: Date.now() + CACHE_TTL_MS };
+      campPlansInFlight = null;
+      return plans;
+    })();
+  }
+  if (campPlansCache) return campPlansCache.plans;
+  return campPlansInFlight!;
 }
 
 export async function getCampPlanById(id: string): Promise<CampPlan | null> {
@@ -695,21 +700,21 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
   if (templatesCache && Date.now() < templatesCache.expiresAt) {
     return templatesCache.templates;
   }
-  if (templatesInFlight) return templatesInFlight;
-
-  templatesInFlight = (async () => {
-    const db = await initKv();
-    const templates: CampTemplate[] = [];
-    for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
-      templates.push(deserializeCampTemplate(entry.value));
-    }
-    templates.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    templatesCache = { templates, expiresAt: Date.now() + CACHE_TTL_MS };
-    templatesInFlight = null;
-    return templates;
-  })();
-
-  return templatesInFlight;
+  if (!templatesInFlight) {
+    templatesInFlight = (async () => {
+      const db = await initKv();
+      const templates: CampTemplate[] = [];
+      for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
+        templates.push(deserializeCampTemplate(entry.value));
+      }
+      templates.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      templatesCache = { templates, expiresAt: Date.now() + CACHE_TTL_MS };
+      templatesInFlight = null;
+      return templates;
+    })();
+  }
+  if (templatesCache) return templatesCache.templates;
+  return templatesInFlight!;
 }
 
 export async function getCampTemplateById(id: string): Promise<CampTemplate | null> {
@@ -755,21 +760,21 @@ export async function getAllMeals(): Promise<Meal[]> {
   if (mealsCache && Date.now() < mealsCache.expiresAt) {
     return mealsCache.meals;
   }
-  if (mealsInFlight) return mealsInFlight;
-
-  mealsInFlight = (async () => {
-    const db = await initKv();
-    const meals: Meal[] = [];
-    for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
-      if (entry.value) meals.push(entry.value);
-    }
-    const sorted = meals.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-    mealsCache = { meals: sorted, expiresAt: Date.now() + CACHE_TTL_MS };
-    mealsInFlight = null;
-    return sorted;
-  })();
-
-  return mealsInFlight;
+  if (!mealsInFlight) {
+    mealsInFlight = (async () => {
+      const db = await initKv();
+      const meals: Meal[] = [];
+      for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
+        if (entry.value) meals.push(entry.value);
+      }
+      const sorted = meals.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      mealsCache = { meals: sorted, expiresAt: Date.now() + CACHE_TTL_MS };
+      mealsInFlight = null;
+      return sorted;
+    })();
+  }
+  if (mealsCache) return mealsCache.meals;
+  return mealsInFlight!;
 }
 
 export async function getMealById(id: string): Promise<Meal | null> {

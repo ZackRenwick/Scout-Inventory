@@ -13,14 +13,13 @@ import { ensureDefaultAdmin } from "./lib/auth.ts";
 import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "./lib/notifications.ts";
 import { initKv, preloadCaches } from "./db/kv.ts";
 
-// Kick off KV cache warming immediately at startup — fire-and-forget so it runs
-// concurrently with ensureDefaultAdmin() and Fresh initialization below.
-// Without this, every cold-start isolate serves the first few requests from raw
-// KV scans (4-7 s TTFB) until the middleware's preloadCaches() is reached.
-preloadCaches();
-
-// Always ensure a default admin account exists — locally and on Deploy
-await ensureDefaultAdmin();
+// Warm all KV caches and ensure the admin account exist concurrently before
+// starting Fresh. Awaiting here guarantees no request is ever served from a
+// cold cache, eliminating the 4-9 s TTFB spike on new isolates.
+await Promise.all([
+  preloadCaches(),
+  ensureDefaultAdmin(),
+]);
 
 // Atomically claim the notification run for today (UTC date).
 // Returns true only for the first caller — cron or startup catch-up,
@@ -64,7 +63,7 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
     // Warm KV caches directly in-process — the HTTP ping alone bypasses the
     // middleware preloadCaches() call (because /api/ping is a public path)
     // and would leave caches cold even while the isolate itself is running.
-    preloadCaches();
+    preloadCaches().catch(() => {});
     try {
       await fetch(`${appUrl}/api/ping`);
     } catch {
