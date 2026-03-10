@@ -56,19 +56,12 @@ async function runNotifications(source: string) {
 }
 
 if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
-  // Self-ping every 5 minutes to keep the isolate warm and avoid cold starts.
-  // Set APP_URL to your deployment URL in Deno Deploy environment variables.
-  const appUrl = Deno.env.get("APP_URL") ?? "https://7thwhitburnscoutsinventory.co.uk";
-  Deno.cron("warmup-ping", "*/5 * * * *", async () => {
-    // Warm KV caches directly in-process — the HTTP ping alone bypasses the
-    // middleware preloadCaches() call (because /api/ping is a public path)
-    // and would leave caches cold even while the isolate itself is running.
+  // Warm KV caches every 5 minutes to keep the isolate warm and avoid cold starts.
+  Deno.cron("warmup-ping", "*/5 * * * *", () => {
+    // Warm KV caches directly in-process to avoid cold-start TTFB spikes.
+    // An outbound HTTP ping is not used — /api/ping bypasses the middleware
+    // preloadCaches() call, so it would leave caches cold anyway.
     preloadCaches().catch(() => {});
-    try {
-      await fetch(`${appUrl}/api/ping`);
-    } catch {
-      // Non-fatal — cron will retry on next interval
-    }
   });
 
   // Daily 8:30 AM checks (Wed + Fri) — no-op when RESEND_API_KEY / NOTIFY_EMAIL not configured.
