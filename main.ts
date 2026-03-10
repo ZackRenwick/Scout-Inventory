@@ -57,11 +57,15 @@ async function runNotifications(source: string) {
 
 if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   // Warm KV caches every 5 minutes to keep the isolate warm and avoid cold starts.
-  Deno.cron("warmup-ping", "*/5 * * * *", () => {
+  Deno.cron("warmup-ping", "*/5 * * * *", async () => {
     // Warm KV caches directly in-process to avoid cold-start TTFB spikes.
     // An outbound HTTP ping is not used — /api/ping bypasses the middleware
     // preloadCaches() call, so it would leave caches cold anyway.
-    preloadCaches().catch(() => {});
+    try {
+      await preloadCaches();
+    } catch {
+      // Non-fatal — cron will retry on next interval
+    }
   });
 
   // Daily 8:30 AM checks (Wed + Fri) — no-op when RESEND_API_KEY / NOTIFY_EMAIL not configured.
