@@ -10,13 +10,13 @@ let kvInFlight: Promise<Deno.Kv> | null = null;
 export async function initKv(): Promise<Deno.Kv> {
   if (kv) return kv;
   if (!kvInFlight) {
-    kvInFlight = Deno.openKv().then((instance) => {
+    kvInFlight = Deno.openKv().then((instance: Deno.Kv) => {
       kv = instance;
       kvInFlight = null;
       return instance;
     });
   }
-  return kvInFlight;
+  return await kvInFlight!;
 }
 
 // ===== KEY LAYOUT =====
@@ -173,7 +173,7 @@ export async function getAllItems(): Promise<InventoryItem[]> {
   // Stale-while-revalidate: serve existing data immediately, refresh in background
   if (itemsCache) return itemsCache.items;
   // True cold start — no data yet, must wait
-  return itemsInFlight!;
+  return await itemsInFlight!;
 }
 
 function invalidateItemsCache(): void {
@@ -416,7 +416,7 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
     })();
   }
   if (checkoutsCache) return checkoutsCache.checkouts;
-  return checkoutsInFlight!;
+  return await checkoutsInFlight!;
 }
 
 export async function getActiveCheckOuts(): Promise<CheckOut[]> {
@@ -639,7 +639,7 @@ export async function getAllCampPlans(): Promise<CampPlan[]> {
     })();
   }
   if (campPlansCache) return campPlansCache.plans;
-  return campPlansInFlight!;
+  return await campPlansInFlight!;
 }
 
 export async function getCampPlanById(id: string): Promise<CampPlan | null> {
@@ -720,7 +720,7 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
     })();
   }
   if (templatesCache) return templatesCache.templates;
-  return templatesInFlight!;
+  return await templatesInFlight!;
 }
 
 export async function getCampTemplateById(id: string): Promise<CampTemplate | null> {
@@ -780,7 +780,7 @@ export async function getAllMeals(): Promise<Meal[]> {
     })();
   }
   if (mealsCache) return mealsCache.meals;
-  return mealsInFlight!;
+  return await mealsInFlight!;
 }
 
 export async function getMealById(id: string): Promise<Meal | null> {
@@ -905,7 +905,7 @@ export async function clearInventoryData(): Promise<ClearReport> {
 
   // Reset scalar keys
   deleteOps.push(db.delete(KEYS.neckers));
-  deleteOps.push(db.set(KEYS.computedStats, emptyStats()) as Promise<void>);
+  deleteOps.push(db.set(KEYS.computedStats, emptyStats()).then(() => {}));
 
   await Promise.all(deleteOps);
 

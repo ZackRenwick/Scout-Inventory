@@ -1,4 +1,3 @@
-/// <reference lib="deno.unstable" />
 // Authentication helpers: users and sessions stored in Deno KV
 import bcrypt from "bcryptjs";
 

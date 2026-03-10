@@ -1,4 +1,3 @@
-/// <reference lib="deno.unstable" />
 // Activity log — records key mutations to inventory, users, and camp plans in Deno KV.
 //
 // Key layout:
