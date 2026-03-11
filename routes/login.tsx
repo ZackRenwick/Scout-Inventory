@@ -1,5 +1,6 @@
 // Login page
 import { Handlers, PageProps } from "$fresh/server.ts";
+import { Head } from "$fresh/runtime.ts";
 import {
   getUserByUsername,
   verifyPassword,
@@ -15,10 +16,6 @@ import {
 } from "../lib/auth.ts";
 import { logActivity } from "../lib/activityLog.ts";
 import PasswordInput from "../islands/PasswordInput.tsx";
-
-// This page renders its own full HTML document, so skip the _app.tsx wrapper
-// to avoid nested <html>/<body> tags that break island hydration in production.
-export const config = { skipAppWrapper: true };
 
 interface LoginData {
   error?: string;
@@ -123,15 +120,11 @@ export const handler: Handlers<LoginData> = {
 
 export default function LoginPage({ data }: PageProps<LoginData>) {
   return (
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <>
+      <Head>
         <title>Sign In · 7th Whitburn Scouts Inventory</title>
-        <link rel="stylesheet" href="/styles.css" />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){var s=localStorage.getItem("theme");if(s==="dark"||(!s&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark");}})();` }} />
-      </head>
-      <body class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+      </Head>
+      <div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
         <div class="w-full max-w-sm">
           <div class="text-center mb-8">
             <span class="text-5xl">⛺</span>
@@ -184,7 +177,7 @@ export default function LoginPage({ data }: PageProps<LoginData>) {
             </form>
           </div>
         </div>
-      </body>
-    </html>
+      </div>
+    </>
   );
 }
