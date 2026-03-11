@@ -1,6 +1,9 @@
 // Component for displaying category icons
+import type { ItemCategory } from "../types/inventory.ts";
+import { getCategoryEmoji, getCategoryLabel } from "../types/inventory.ts";
+
 interface CategoryIconProps {
-  category: "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit";
+  category: ItemCategory;
   size?: "sm" | "md" | "lg";
 }
 
@@ -11,27 +14,9 @@ export default function CategoryIcon({ category, size = "md" }: CategoryIconProp
     lg: "text-4xl",
   };
   
-  const icons: Record<string, string> = {
-    tent: "⛺",
-    cooking: "🍳",
-    food: "🥫",
-    "camping-tools": "🪓",
-    games: "⚽",
-    kit: "📦",
-  };
-  
-  const labels: Record<string, string> = {
-    tent: "Tent",
-    cooking: "Cooking",
-    food: "Food",
-    "camping-tools": "Camping Tools",
-    games: "Games",
-    kit: "Box / Kit",
-  };
-  
   return (
-    <span class={`inline-flex items-center ${sizeClasses[size]}`} title={labels[category]}>
-      {icons[category]}
+    <span class={`inline-flex items-center ${sizeClasses[size]}`} title={getCategoryLabel(category)}>
+      {getCategoryEmoji(category)}
     </span>
   );
 }

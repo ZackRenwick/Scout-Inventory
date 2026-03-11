@@ -1,7 +1,7 @@
 // Print-optimised equipment list for a camp plan
 import { Handlers, PageProps } from "$fresh/server.ts";
 import type { CampPlan, CampPlanItem } from "../../../types/inventory.ts";
-import { ITEM_LOCATIONS } from "../../../types/inventory.ts";
+import { getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS } from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
 import { getCampPlanById, getItemById } from "../../../db/kv.ts";
 import PrintButton from "../../../islands/PrintButton.tsx";
@@ -16,15 +16,6 @@ function fmt(d: Date | string | undefined): string {
   const date = typeof d === "string" ? new Date(d) : d;
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  tent: "⛺",
-  cooking: "🍳",
-  food: "🥫",
-  "camping-tools": "🪓",
-  games: "⚽",
-  kit: "📦",
-};
 
 export const handler: Handlers<PrintPageData> = {
   async GET(_req, ctx) {
@@ -205,7 +196,7 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
           {/* Remaining gear grouped by category */}
           {Object.entries(categoryGear).map(([cat, items]) => (
             <div key={cat}>
-              <h2>{CATEGORY_EMOJI[cat] ?? "📦"} {cat.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</h2>
+              <h2>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</h2>
               <table>
                 <thead>
                   <tr>

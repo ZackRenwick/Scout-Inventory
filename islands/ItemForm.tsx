@@ -1,6 +1,6 @@
 // Form for adding/editing inventory items
 import { Signal, useSignal } from "@preact/signals";
-import { ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
+import { CAMP_STORE_CATEGORIES, getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS, LOFT_CATEGORIES, LOFT_LOCATIONS } from "../types/inventory.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
 interface ItemFormProps {
@@ -181,16 +181,15 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
         >
           {space.value === "camp-store" ? (
             <>
-              <option value="tent">⛺ Tent</option>
-              <option value="cooking">🍳 Cooking Equipment</option>
-              <option value="food">🥫 Food</option>
-              <option value="camping-tools">🪓 Camping Tools</option>
-              <option value="kit">📦 Box / Kit</option>
+              {CAMP_STORE_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
+              ))}
             </>
           ) : (
             <>
-              <option value="games">⚽ Games Equipment</option>
-              <option value="kit">📦 Box / Kit</option>
+              {LOFT_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
+              ))}
             </>
           )}
         </select>

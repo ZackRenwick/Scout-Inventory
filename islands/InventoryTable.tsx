@@ -3,6 +3,7 @@ import { useComputed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
 import { isFoodItem, isTentItem, ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
+import { getCategoryEmoji, getCategoryLabel, getCategorySearchLabel } from "../types/inventory.ts";
 import ExpiryBadge from "../components/ExpiryBadge.tsx";
 import CategoryIcon from "../components/CategoryIcon.tsx";
 import { getDaysUntil } from "../lib/date-utils.ts";
@@ -51,23 +52,13 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const atCampCount = useComputed(() => itemsSignal.value.filter((i) => (i as { atCamp?: boolean }).atCamp).length);
   const loanedCount = loanedIdSet.size;
   
-  // Human-readable labels for category slugs so "camping tools" or "first aid" match
-  const categoryLabels: Record<string, string> = {
-    "tent": "tents",
-    "cooking": "cooking",
-    "food": "food",
-    "camping-tools": "camping tools",
-    "games": "games",
-
-  };
-
   // Filter items based on search and filters — useComputed() memoises the result
   // and only re-runs when a signal dependency (searchQuery, categoryFilter, etc.) changes.
   const filteredItems = useComputed(() => {
     const filtered = itemsSignal.value.filter((item) => {
     // Search filter
     const q = searchQuery.value.toLowerCase();
-    const categoryLabel = categoryLabels[item.category] ?? item.category;
+    const categoryLabel = getCategorySearchLabel(item.category);
     const matchesSearch = item.name.toLowerCase().includes(q) ||
       item.location.toLowerCase().includes(q) ||
       item.category.toLowerCase().includes(q) ||
@@ -302,13 +293,13 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
             >
               <option value="all">All Categories</option>
               <optgroup label="🏪 Camp Store">
-                <option value="tent">⛺ Tents</option>
-                <option value="cooking">🍳 Cooking Equipment</option>
-                <option value="food">🥫 Food</option>
-                <option value="camping-tools">🪓 Camping Tools</option>
+                <option value="tent">{getCategoryEmoji("tent")} {getCategoryLabel("tent")}</option>
+                <option value="cooking">{getCategoryEmoji("cooking")} {getCategoryLabel("cooking")}</option>
+                <option value="food">{getCategoryEmoji("food")} {getCategoryLabel("food")}</option>
+                <option value="camping-tools">{getCategoryEmoji("camping-tools")} {getCategoryLabel("camping-tools")}</option>
               </optgroup>
               <optgroup label="🏠 Scout Post Loft">
-                <option value="games">⚽ Games</option>
+                <option value="games">{getCategoryEmoji("games")} {getCategoryLabel("games")}</option>
               </optgroup>
             </select>
           </div>

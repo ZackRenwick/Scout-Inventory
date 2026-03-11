@@ -1,6 +1,30 @@
 // Base inventory item interface
 export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit";
 
+export const CATEGORY_META: Record<ItemCategory, { emoji: string; label: string; searchLabel: string }> = {
+  tent: { emoji: "⛺", label: "Tents", searchLabel: "tents" },
+  cooking: { emoji: "🥘", label: "Cooking Equipment", searchLabel: "cooking equipment" },
+  food: { emoji: "🥫", label: "Food", searchLabel: "food" },
+  "camping-tools": { emoji: "🧰", label: "Camping Tools", searchLabel: "camping tools" },
+  games: { emoji: "⚽", label: "Games Equipment", searchLabel: "games" },
+  kit: { emoji: "📦", label: "Box / Kit", searchLabel: "box kit" },
+};
+
+export const CAMP_STORE_CATEGORIES: ItemCategory[] = ["tent", "cooking", "food", "camping-tools", "kit"];
+export const LOFT_CATEGORIES: ItemCategory[] = ["games", "kit"];
+
+export function getCategoryEmoji(category: string): string {
+  return CATEGORY_META[category as ItemCategory]?.emoji ?? "📦";
+}
+
+export function getCategoryLabel(category: string): string {
+  return CATEGORY_META[category as ItemCategory]?.label ?? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export function getCategorySearchLabel(category: string): string {
+  return CATEGORY_META[category as ItemCategory]?.searchLabel ?? category.replace(/-/g, " ");
+}
+
 export type ItemSpace = "camp-store" | "scout-post-loft";
 
 export type ItemLocation =

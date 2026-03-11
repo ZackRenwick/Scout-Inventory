@@ -1,18 +1,10 @@
 // Printable QR label page for a single inventory item
 import { Handlers, PageProps } from "$fresh/server.ts";
 import type { InventoryItem } from "../../../types/inventory.ts";
+import { getCategoryEmoji } from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
 import { getItemById } from "../../../db/kv.ts";
 import PrintButton from "../../../islands/PrintButton.tsx";
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  tent: "⛺",
-  cooking: "🍳",
-  food: "🥫",
-  "camping-tools": "🪓",
-  games: "⚽",
-  kit: "📦",
-};
 
 interface QrPageData {
   item: InventoryItem;
@@ -53,7 +45,7 @@ export const handler: Handlers<QrPageData> = {
 
 export default function QrLabelPage({ data }: PageProps<QrPageData>) {
   const { item, itemUrl, qrDataUri } = data;
-  const emoji = CATEGORY_EMOJI[item.category] ?? "📦";
+  const emoji = getCategoryEmoji(item.category);
 
   return (
     <html lang="en">

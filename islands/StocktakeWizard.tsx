@@ -1,5 +1,6 @@
 // Guided stock-take wizard island
 import { useSignal, useComputed } from "@preact/signals";
+import { getCategoryEmoji } from "../types/inventory.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
 export interface StocktakeItem {
@@ -26,14 +27,6 @@ interface Props {
 type Phase = "wizard" | "review" | "applying" | "done";
 
 const CONDITIONS = ["excellent", "good", "fair", "needs-repair"] as const;
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  tent: "⛺",
-  cooking: "🍳",
-  food: "🥫",
-  "camping-tools": "🪓",
-  games: "⚽",
-};
 
 const inputClass =
   "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500";
@@ -310,7 +303,7 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
         <div class="flex items-start justify-between gap-3 mb-4">
           <div>
             <div class="flex items-center gap-2 mb-1">
-              <span class="text-xl">{CATEGORY_EMOJI[entry.category] ?? "📦"}</span>
+              <span class="text-xl">{getCategoryEmoji(entry.category)}</span>
               <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{entry.name}</h3>
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400">{entry.location}</p>

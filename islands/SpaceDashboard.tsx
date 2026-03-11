@@ -1,5 +1,6 @@
 // Interactive space switcher for the dashboard category breakdown
 import { useSignal } from "@preact/signals";
+import { getCategoryEmoji, getCategoryLabel } from "../types/inventory.ts";
 
 interface CategoryBreakdown {
   tent: { count: number; quantity: number };
@@ -123,10 +124,10 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
         <div>
           <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🏪 Camp Store — Categories</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <CategoryCard title="⛺ Tents"         value={c.tent.quantity}             color="blue"   href="/inventory?category=tent" />
-            <CategoryCard title="🍳 Cooking"       value={c.cooking.quantity}          color="purple" href="/inventory?category=cooking" />
-            <CategoryCard title="🥫 Food"           value={c.food.quantity}             color="green"  href="/inventory?category=food" />
-            <CategoryCard title="🪓 Camping Tools"  value={c["camping-tools"].quantity} color="yellow" href="/inventory?category=camping-tools" />
+            <CategoryCard title={`${getCategoryEmoji("tent")} ${getCategoryLabel("tent")}`} value={c.tent.quantity} color="blue" href="/inventory?category=tent" />
+            <CategoryCard title={`${getCategoryEmoji("cooking")} ${getCategoryLabel("cooking")}`} value={c.cooking.quantity} color="purple" href="/inventory?category=cooking" />
+            <CategoryCard title={`${getCategoryEmoji("food")} ${getCategoryLabel("food")}`} value={c.food.quantity} color="green" href="/inventory?category=food" />
+            <CategoryCard title={`${getCategoryEmoji("camping-tools")} ${getCategoryLabel("camping-tools")}`} value={c["camping-tools"].quantity} color="yellow" href="/inventory?category=camping-tools" />
           </div>
         </div>
       )}
