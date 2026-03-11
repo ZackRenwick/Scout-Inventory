@@ -51,7 +51,7 @@ self.addEventListener("fetch", (event) => {
   // Non-hashed Fresh JS (island entrypoints, main.js, signals.js, etc.):
   // always try network first so redeployments are picked up immediately.
   // Fall back to cache only when offline.
-  if (url.pathname.startsWith("/_fresh/") && /\.js$/i.test(url.pathname)) {
+  if ((url.pathname.startsWith("/_frsh/") || url.pathname.startsWith("/_fresh/")) && /\.js$/i.test(url.pathname)) {
     event.respondWith(networkFirstStatic(request));
     return;
   }
@@ -75,7 +75,7 @@ function isStaticAsset(pathname) {
 // causes the stale entrypoint to reference chunk hashes that no longer exist,
 // breaking island hydration (e.g. the mobile nav menu stops working).
 function isHashedChunk(pathname) {
-  return pathname.startsWith("/_fresh/") &&
+  return (pathname.startsWith("/_frsh/") || pathname.startsWith("/_fresh/")) &&
     /\/chunk-[A-Z0-9]{8,}\.(js|css)$/i.test(pathname);
 }
 

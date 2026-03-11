@@ -69,12 +69,13 @@ export async function handler(req: Request, ctx: FreshContext) {
   // Allow public paths and static assets — add long-lived cache headers for immutable assets
   if (
     PUBLIC_PATHS.includes(path) ||
+    path.startsWith("/_frsh/") ||
     path.startsWith("/_fresh/") ||
     path.startsWith("/static/") ||
     /\.(png|ico|svg|webp)$/i.test(path)
   ) {
     const res = await ctx.next();
-    if (path.startsWith("/_fresh/")) {
+    if (path.startsWith("/_frsh/") || path.startsWith("/_fresh/")) {
       // Versioned chunks — immutable for 1 year
       res.headers.set("Cache-Control", "public, max-age=31536000, immutable");
     } else if (path === "/styles.css" || path.startsWith("/static/")) {
