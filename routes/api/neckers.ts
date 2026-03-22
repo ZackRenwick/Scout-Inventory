@@ -49,6 +49,16 @@ export const handler: Handlers = {
 
     try {
       const body = await req.json();
+      const isManagerOrAdmin = session.role === "admin" || session.role === "manager";
+      const requestedDelta = typeof body.delta === "number" && Number.isFinite(body.delta) && Number.isInteger(body.delta)
+        ? body.delta
+        : null;
+
+      // Editors can only add stock from the dashboard (+delta). All other necker actions are manager/admin only.
+      if (!isManagerOrAdmin && !(requestedDelta !== null && requestedDelta > 0)) {
+        return forbidden();
+      }
+
       const before = await getNeckerMetrics();
       if (body.resetCreated === true) {
         const metrics = await resetNeckersCreated();
@@ -174,9 +184,6 @@ export const handler: Handlers = {
         return Response.json({ count: metrics.inStock, ...metrics });
       }
 
-      const requestedDelta = typeof body.delta === "number" && Number.isFinite(body.delta) && Number.isInteger(body.delta)
-        ? body.delta
-        : null;
       const requestedValue = typeof body.value === "number" && Number.isFinite(body.value) && Number.isInteger(body.value)
         ? body.value
         : null;

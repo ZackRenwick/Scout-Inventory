@@ -10,12 +10,15 @@ interface NeckersPageData {
 export const handler: Handlers<NeckersPageData> = {
   GET(_req, ctx) {
     const session = ctx.state.session as Session;
+    if (!session || (session.role !== "admin" && session.role !== "manager")) {
+      return new Response(null, { status: 302, headers: { location: "/" } });
+    }
     return ctx.render({ session });
   },
 };
 
 export default function NeckersPage({ data }: PageProps<NeckersPageData>) {
-  const canEdit = data.session?.role !== "viewer";
+  const canEdit = data.session?.role === "admin" || data.session?.role === "manager";
 
   return (
     <Layout title="" username={data.session?.username} role={data.session?.role}>

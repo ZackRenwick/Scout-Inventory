@@ -263,7 +263,8 @@ export default function Home({ data }: PageProps<DashboardData>) {
         </a>
         <NeckerCounter
           csrfToken={session?.csrfToken ?? ""}
-          canEdit={session?.role !== "viewer"}
+          canIncrease={session?.role !== "viewer"}
+          canDecrease={session?.role === "admin" || session?.role === "manager"}
         />
       </div>
 

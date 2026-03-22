@@ -5,10 +5,11 @@ import { neckerCount } from "../lib/neckerSignal.ts";
 
 interface NeckerCounterProps {
   csrfToken: string;
-  canEdit?: boolean;
+  canIncrease?: boolean;
+  canDecrease?: boolean;
 }
 
-export default function NeckerCounter({ csrfToken, canEdit = true }: NeckerCounterProps) {
+export default function NeckerCounter({ csrfToken, canIncrease = true, canDecrease = true }: NeckerCounterProps) {
   // Use the shared signal so NeckerAlert reacts to every change
   const count = neckerCount;
   const saving = useSignal(false);
@@ -63,7 +64,7 @@ export default function NeckerCounter({ csrfToken, canEdit = true }: NeckerCount
         <div>
           <p class="text-sm font-medium">Neckers</p>
           <div class="flex items-center gap-1.5 mt-2">
-            {canEdit && (
+            {canDecrease && (
               <button
                 type="button"
                 aria-label="Remove one necker"
@@ -79,7 +80,7 @@ export default function NeckerCounter({ csrfToken, canEdit = true }: NeckerCount
             <p class="text-3xl font-bold tabular-nums">
               {count.value === null ? "…" : count.value}
             </p>
-            {canEdit && (
+            {canIncrease && (
               <button
                 type="button"
                 aria-label="Add one necker"
