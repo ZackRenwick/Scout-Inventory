@@ -10,7 +10,7 @@
 // If RESEND_API_KEY or NOTIFY_EMAIL are unset the helpers are safe no-ops — they
 // log to console instead so local dev works without any configuration.
 
-import { getAllItems, getFoodItemsSortedByExpiry, getNeckerCount, getAllCheckOuts } from "../db/kv.ts";
+import { getAllItems, getFoodItemsSortedByExpiry, getNeckerCountOrNull, getAllCheckOuts } from "../db/kv.ts";
 import { getDaysUntil } from "./date-utils.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
@@ -56,12 +56,13 @@ async function sendEmail(subject: string, html: string): Promise<void> {
  * if any items are at or below their minimum threshold.
  */
 export async function checkAndNotifyLowStock(): Promise<void> {
-  const [items, neckerCount] = await Promise.all([getAllItems(), getNeckerCount()]);
+  const [items, neckerCount] = await Promise.all([getAllItems(), getNeckerCountOrNull()]);
   const lowStock = items.filter((i) => i.quantity <= i.minThreshold);
 
   // Necker threshold: configurable via NECKER_MIN_THRESHOLD env var, default 5
   const neckerThreshold = parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10);
-  const neckersLow = neckerCount <= neckerThreshold;
+  const hasNeckerCount = neckerCount !== null;
+  const neckersLow = hasNeckerCount && neckerCount <= neckerThreshold;
 
   if (lowStock.length === 0 && !neckersLow) {
     return;
@@ -80,7 +81,7 @@ export async function checkAndNotifyLowStock(): Promise<void> {
     ? `<tr>
       <td style="padding:6px 12px">Neckers</td>
       <td style="padding:6px 12px">Uniform</td>
-      <td style="padding:6px 12px;text-align:center">${neckerCount}</td>
+      <td style="padding:6px 12px;text-align:center">${neckerCount ?? "n/a"}</td>
       <td style="padding:6px 12px;text-align:center">${neckerThreshold}</td>
     </tr>`
     : "";

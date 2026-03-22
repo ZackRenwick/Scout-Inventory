@@ -69,7 +69,7 @@ Sessions expire after 15 minutes of inactivity. Passwords are hashed with bcrypt
 - **Expiring Food** — items grouped by expiry tier with days-remaining display
 
 ### 🔔 Email Notifications
-Sent via the [Resend](https://resend.com/) API. Two checks run automatically at 08:00 daily (on Deno Deploy) and can also be triggered manually from the admin panel:
+Sent via the [Resend](https://resend.com/) API. Checks run automatically at 08:30 UTC on Wednesday + Friday (on Deno Deploy, only when `ENABLE_NOTIFY_CRON=true`) and can also be triggered manually from the admin panel:
 
 - **Low stock alert** — inventory items at or below threshold + neckers if low
 - **Food expiry alert** — food items expired or expiring within 30 days
@@ -82,6 +82,7 @@ Required environment variables:
 | `NOTIFY_EMAIL` | Recipient address for all alert emails |
 | `NOTIFY_FROM_EMAIL` | *(optional)* Sender address — defaults to `noreply@7thwhitburnscoutsinventory.co.uk` |
 | `NECKER_MIN_THRESHOLD` | *(optional)* Necker low-stock threshold — defaults to `10` |
+| `ENABLE_NOTIFY_CRON` | Set to `true` only in the one deployment that should run scheduled notifications |
 
 If `RESEND_API_KEY` or `NOTIFY_EMAIL` are unset the notification functions are safe no-ops (they log to console), so local dev works without any email configuration.
 
@@ -239,9 +240,10 @@ scout-inventory/
 
 The app is deployed to Deno Deploy via GitHub. Push to `main` to trigger a deploy.
 
-Two `Deno.cron` jobs run daily at 08:00:
+One notification `Deno.cron` job runs at 08:30 UTC on Wednesday + Friday (only when `ENABLE_NOTIFY_CRON=true`):
 - Low stock check — emails if any inventory items or neckers are below threshold
 - Food expiry check — emails if any food items are expired or expiring within 30 days
+- Overdue loans check — emails if any loans are overdue
 
 A third cron runs every 5 minutes to self-ping the app and keep the isolate warm, reducing cold-start latency. Set `APP_URL` in the Deno Deploy dashboard to the production URL.
 

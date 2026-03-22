@@ -550,6 +550,16 @@ export async function getNeckerCount(): Promise<number> {
   return result.value ?? 0;
 }
 
+/**
+ * Returns the persisted necker count, or null when no value has been stored yet.
+ * Useful for jobs that should ignore neckers until an explicit count is set.
+ */
+export async function getNeckerCountOrNull(): Promise<number | null> {
+  const db = await initKv();
+  const result = await db.get<number>(KEYS.neckers);
+  return typeof result.value === "number" ? result.value : null;
+}
+
 /** Adjust the necker count by `delta` (positive or negative). Returns the new total. */
 export async function adjustNeckerCount(delta: number): Promise<number> {
   const db = await initKv();

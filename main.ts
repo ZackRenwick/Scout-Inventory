@@ -43,15 +43,17 @@ async function claimNotificationRun(): Promise<boolean> {
 }
 
 async function runNotifications(source: string) {
+  const deploymentId = Deno.env.get("DENO_DEPLOYMENT_ID") ?? "local";
+  const sourceTag = `${source}:${deploymentId.slice(0, 8)}`;
   if (!await claimNotificationRun()) {
-    console.log(`[${source}] Notifications already sent today — skipping.`);
+    console.log(`[${sourceTag}] Notifications already sent today — skipping.`);
     return;
   }
-  console.log(`[${source}] Claimed notification run — sending checks.`);
+  console.log(`[${sourceTag}] Claimed notification run — sending checks.`);
   await Promise.all([
-    checkAndNotifyLowStock().catch((e) => console.error(`[${source}] notify-low-stock failed:`, e)),
-    checkAndNotifyExpiry().catch((e) => console.error(`[${source}] notify-expiry failed:`, e)),
-    checkAndNotifyOverdueLoans().catch((e) => console.error(`[${source}] notify-overdue-loans failed:`, e)),
+    checkAndNotifyLowStock().catch((e) => console.error(`[${sourceTag}] notify-low-stock failed:`, e)),
+    checkAndNotifyExpiry().catch((e) => console.error(`[${sourceTag}] notify-expiry failed:`, e)),
+    checkAndNotifyOverdueLoans().catch((e) => console.error(`[${sourceTag}] notify-overdue-loans failed:`, e)),
   ]);
 }
 
@@ -68,23 +70,28 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
     }
   });
 
-  // Daily 8:30 AM checks (Wed + Fri) — no-op when RESEND_API_KEY / NOTIFY_EMAIL not configured.
-  // Running at 08:30 rather than 08:00 gives a buffer so a deploy just before 08:00 doesn't
-  // cause the cron to be registered too late to fire that morning.
-  Deno.cron("notify-daily", "30 8 * * 3,5", () => runNotifications("cron"));
+  const cronEnabled = (Deno.env.get("ENABLE_NOTIFY_CRON") ?? "").toLowerCase() === "true";
+  if (cronEnabled) {
+    // Daily 8:30 AM checks (Wed + Fri) — no-op when RESEND_API_KEY / NOTIFY_EMAIL not configured.
+    // Running at 08:30 rather than 08:00 gives a buffer so a deploy just before 08:00 doesn't
+    // cause the cron to be registered too late to fire that morning.
+    Deno.cron("notify-daily", "30 8 * * 3,5", () => runNotifications("cron"));
 
-  // Startup catch-up: if we're deployed on a notification day (Wed=3, Fri=5) between
-  // 08:30 and 09:30 UTC, run notifications in case the 08:30 cron was missed.
-  // The claimNotificationRun() lock ensures this is a no-op if the cron already fired.
-  const now = new Date();
-  const dayOfWeek = now.getUTCDay(); // 0=Sun … 6=Sat
-  const utcHour = now.getUTCHours();
-  const utcMin = now.getUTCMinutes();
-  const minuteOfDay = utcHour * 60 + utcMin;
-  const isNotificationDay = dayOfWeek === 3 || dayOfWeek === 5;
-  const inCatchUpWindow = minuteOfDay >= 8 * 60 + 30 && minuteOfDay < 9 * 60 + 30;
-  if (isNotificationDay && inCatchUpWindow) {
-    runNotifications("startup-catchup");
+    // Startup catch-up: if we're deployed on a notification day (Wed=3, Fri=5) between
+    // 08:30 and 09:30 UTC, run notifications in case the 08:30 cron was missed.
+    // The claimNotificationRun() lock ensures this is a no-op if the cron already fired.
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay(); // 0=Sun … 6=Sat
+    const utcHour = now.getUTCHours();
+    const utcMin = now.getUTCMinutes();
+    const minuteOfDay = utcHour * 60 + utcMin;
+    const isNotificationDay = dayOfWeek === 3 || dayOfWeek === 5;
+    const inCatchUpWindow = minuteOfDay >= 8 * 60 + 30 && minuteOfDay < 9 * 60 + 30;
+    if (isNotificationDay && inCatchUpWindow) {
+      runNotifications("startup-catchup");
+    }
+  } else {
+    console.log("[notifications] Cron disabled in this deployment (set ENABLE_NOTIFY_CRON=true to enable).");
   }
 }
 await start(manifest, config);
