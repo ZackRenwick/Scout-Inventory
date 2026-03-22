@@ -170,6 +170,37 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
       : 0;
     return Math.max(0, inv.quantity - atCampQty);
   };
+
+  const maxPlannedQtyForItem = (item: CampPlanItem): number => {
+    const inv = allItems.find((i) => i.id === item.itemId);
+    if (!inv) {
+      // Legacy/missing inventory entries can remain in old plans; don't allow
+      // increasing them client-side.
+      return item.quantityPlanned;
+    }
+
+    const baseAvailable = availableToPlan(inv);
+    const thisPlanAllowance = item.itemCategory === "food"
+      ? (item.packedStatus ? item.quantityPlanned : 0)
+      : (item.packedStatus && !item.returnedStatus ? item.quantityPlanned : 0);
+
+    return Math.max(1, baseAvailable + thisPlanAllowance);
+  };
+
+  async function updatePlannedQuantity(itemId: string, nextQty: number) {
+    const current = plan.value.items.find((i) => i.itemId === itemId);
+    if (!current) return;
+
+    const maxQty = maxPlannedQtyForItem(current);
+    const clamped = Math.max(1, Math.min(nextQty, maxQty));
+    if (clamped === current.quantityPlanned) return;
+
+    const items = plan.value.items.map((i) =>
+      i.itemId === itemId ? { ...i, quantityPlanned: clamped } : i
+    );
+    await patch({ items });
+  }
+
   const selectedStock = useComputed(() => selectedInv.value ? availableToPlan(selectedInv.value) : 0);
   const addQtyTooHigh = useComputed(() => !!selectedInv.value && addQty.value > selectedStock.value);
 
@@ -875,6 +906,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
     const checked = mode === "pack" ? item.packedStatus : item.returnedStatus;
     // Use stored contents, or fall back to looking up the live inventory item
     const invItem = allItems.find((i) => i.id === item.itemId);
+    const maxPlannedQty = maxPlannedQtyForItem(item);
     const contents = item.contents ?? (invItem && "contents" in invItem ? (invItem as { contents?: { name: string; quantity: number }[] }).contents : undefined);
     return (
       <div key={item.itemId} class={`flex items-start gap-3 px-4 py-3 transition-colors ${(checked || isConsumed) ? "bg-green-50/50 dark:bg-green-900/10" : ""}`}>
@@ -902,6 +934,31 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
             {item.itemName}
             <span class="ml-2 font-normal text-gray-500 dark:text-gray-400">×{item.quantityPlanned}</span>
           </p>
+          {canEdit && mode === "pack" && (
+            <div class="mt-1 flex items-center gap-2">
+              <span class="text-xs text-gray-500 dark:text-gray-400">Qty</span>
+              <button
+                type="button"
+                onClick={() => updatePlannedQuantity(item.itemId, item.quantityPlanned - 1)}
+                disabled={saving.value || item.quantityPlanned <= 1}
+                class="w-6 h-6 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40"
+                aria-label={`Decrease planned quantity for ${item.itemName}`}
+              >
+                -
+              </button>
+              <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 min-w-[1.5rem] text-center">{item.quantityPlanned}</span>
+              <button
+                type="button"
+                onClick={() => updatePlannedQuantity(item.itemId, item.quantityPlanned + 1)}
+                disabled={saving.value || item.quantityPlanned >= maxPlannedQty}
+                class="w-6 h-6 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40"
+                aria-label={`Increase planned quantity for ${item.itemName}`}
+              >
+                +
+              </button>
+              <span class="text-xs text-gray-400 dark:text-gray-500">max {maxPlannedQty}</span>
+            </div>
+          )}
           <p class="text-xs text-gray-500 dark:text-gray-400">{item.itemCategory} · {item.itemLocation}</p>
           {item.notes && <p class="text-xs text-purple-600 dark:text-purple-400 mt-0.5 italic">{item.notes}</p>}
           {contents && contents.length > 0 && (
