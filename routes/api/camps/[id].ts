@@ -91,6 +91,69 @@ async function applyItemSideEffects(
   await Promise.all(tasks);
 }
 
+/**
+ * Validates that each planned quantity is a positive integer and does not
+ * exceed available inventory for that item.
+ *
+ * For food items that were already marked packed in the existing plan,
+ * inventory stock has already been deducted. We add that packed amount back
+ * when validating to avoid falsely rejecting unchanged items on later edits.
+ */
+async function validatePlannedItemQuantities(
+  oldItems: CampPlanItem[],
+  newItems: CampPlanItem[],
+): Promise<string | null> {
+  const oldMap = new Map(oldItems.map((i) => [i.itemId, i]));
+  const ids = [...new Set(newItems.map((i) => i.itemId))];
+
+  const inventoryEntries = await Promise.all(
+    ids.map(async (id) => [id, await getItemById(id)] as const),
+  );
+  const inventoryById = new Map(inventoryEntries);
+
+  for (const item of newItems) {
+    if (!Number.isInteger(item.quantityPlanned) || item.quantityPlanned < 1) {
+      return `Invalid quantity for "${item.itemName}". Quantity must be a whole number of at least 1.`;
+    }
+
+    const old = oldMap.get(item.itemId);
+    const inv = inventoryById.get(item.itemId);
+    if (!inv) {
+      // Legacy plans may reference items that were deleted from inventory.
+      // Allow unchanged legacy entries so users can still edit other items,
+      // but block adding or modifying deleted items.
+      const unchangedLegacyItem = !!old &&
+        old.quantityPlanned === item.quantityPlanned &&
+        old.packedStatus === item.packedStatus &&
+        old.returnedStatus === item.returnedStatus &&
+        (old.notes ?? "") === (item.notes ?? "");
+      if (unchangedLegacyItem) {
+        continue;
+      }
+      return `Item "${item.itemName}" no longer exists in inventory. Remove it from this plan before editing it.`;
+    }
+
+    const alreadyDeductedFoodQty = old && old.itemCategory === "food" && old.packedStatus
+      ? old.quantityPlanned
+      : 0;
+    const currentlyAtCampQty = inv.category !== "food" && inv.atCamp
+      ? Math.max(0, Math.min(inv.quantity, inv.quantityAtCamp ?? inv.quantity))
+      : 0;
+    const thisPlanReservedNonFoodQty = old && old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus
+      ? old.quantityPlanned
+      : 0;
+    const effectiveAvailable = (inv.quantity - currentlyAtCampQty)
+      + alreadyDeductedFoodQty
+      + thisPlanReservedNonFoodQty;
+
+    if (item.quantityPlanned > effectiveAvailable) {
+      return `Cannot add ${item.quantityPlanned} of "${item.itemName}". Only ${effectiveAvailable} in stock.`;
+    }
+  }
+
+  return null;
+}
+
 export const handler: Handlers = {
   // GET /api/camps/[id]
   async GET(_req, ctx) {
@@ -131,7 +194,15 @@ export const handler: Handlers = {
       }
 
       if (body.items) {
-        await applyItemSideEffects(existing.items, body.items as CampPlanItem[]);
+        if (!Array.isArray(body.items)) {
+          return Response.json({ error: "items must be an array" }, { status: 400 });
+        }
+        const nextItems = body.items as CampPlanItem[];
+        const quantityError = await validatePlannedItemQuantities(existing.items, nextItems);
+        if (quantityError) {
+          return Response.json({ error: quantityError }, { status: 400 });
+        }
+        await applyItemSideEffects(existing.items, nextItems);
       }
 
       const updated = await updateCampPlan(id, body, existing);

@@ -26,6 +26,21 @@ export default function App({ Component }: PageProps) {
 })();` }} />
         <script dangerouslySetInnerHTML={{ __html: `if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
+    var host = window.location.hostname;
+    var isLocal = host === "localhost" || host === "127.0.0.1";
+
+    if (isLocal) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        registrations.forEach(function(reg) { reg.unregister(); });
+      });
+      if ("caches" in window) {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(key) { caches.delete(key); });
+        });
+      }
+      return;
+    }
+
     navigator.serviceWorker.register("/sw.js");
   });
 }` }} />

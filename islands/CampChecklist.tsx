@@ -75,7 +75,7 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
   const totalFood = useComputed(() => foodItems.value.length);
   const totalItems = useComputed(() => plan.value.items.length);
 
-  async function patch(updates: Partial<CampPlan>) {
+  async function patch(updates: Partial<CampPlan>): Promise<boolean> {
     saving.value = true;
     error.value = null;
     try {
@@ -87,11 +87,49 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
         },
         body: JSON.stringify(updates),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+      if (!res.ok) {
+        let message = `Failed to save changes (${res.status}).`;
+        try {
+          if (contentType.includes("application/json")) {
+            const data = await res.json();
+            if (data && typeof data.error === "string" && data.error.trim()) {
+              message = data.error;
+            }
+          } else {
+            const text = (await res.text()).trim();
+            if (text) {
+              message = text;
+            }
+          }
+        } catch {
+          // Keep generic fallback when response body is not JSON.
+        }
+
+        if (res.redirected || res.url.includes("/login")) {
+          message = "Your session appears to have expired. Please refresh and sign in again.";
+        }
+
+        showAddPanel.value = true;
+        error.value = message;
+        return false;
+      }
+
+      if (!contentType.includes("application/json")) {
+        showAddPanel.value = true;
+        error.value = "Unexpected server response while saving. Please refresh and try again.";
+        return false;
+      }
+
       const updated: CampPlan = await res.json();
       plan.value = updated;
-    } catch (_e) {
-      error.value = "Failed to save changes. Please try again.";
+      return true;
+    } catch (e) {
+      showAddPanel.value = true;
+      error.value = e instanceof Error && e.message
+        ? `Failed to save changes: ${e.message}`
+        : "Failed to save changes. Please try again.";
+      return false;
     } finally {
       saving.value = false;
     }
@@ -123,6 +161,17 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
   }
 
   const selectedIsFood = useComputed(() => selectedInv.value?.category === "food");
+  const availableToPlan = (inv: InventoryItem): number => {
+    if (inv.category === "food") {
+      return inv.quantity;
+    }
+    const atCampQty = inv.atCamp
+      ? Math.max(0, Math.min(inv.quantity, inv.quantityAtCamp ?? inv.quantity))
+      : 0;
+    return Math.max(0, inv.quantity - atCampQty);
+  };
+  const selectedStock = useComputed(() => selectedInv.value ? availableToPlan(selectedInv.value) : 0);
+  const addQtyTooHigh = useComputed(() => !!selectedInv.value && addQty.value > selectedStock.value);
 
   function removeItem(itemId: string) {
     const items = plan.value.items.filter((i) => i.itemId !== itemId);
@@ -137,12 +186,18 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
     if (!inv) {
       return;
     }
+    const available = availableToPlan(inv);
+    if (available < 1) {
+      error.value = `Cannot add "${inv.name}" because there is no available stock.`;
+      return;
+    }
+    const plannedQty = Math.min(Math.max(1, addQty.value), available);
     const newEntry: CampPlanItem = {
       itemId: inv.id,
       itemName: inv.name,
       itemCategory: inv.category,
       itemLocation: inv.location,
-      quantityPlanned: addQty.value,
+      quantityPlanned: plannedQty,
       packedStatus: false,
       returnedStatus: false,
       notes: addNote.value.trim() || undefined,
@@ -151,12 +206,14 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
         : undefined,
     };
     const items = [...plan.value.items, newEntry];
-    await patch({ items });
+    const ok = await patch({ items });
+    if (!ok) {
+      return;
+    }
     addingItem.value = "";
     addQty.value = 1;
     addNote.value = "";
     itemSearch.value = "";
-    showAddPanel.value = false;
   }
 
   const inputClass =
@@ -179,7 +236,9 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
 
   async function addWholeBox() {
     if (!selectedBox.value || boxItems.value.length === 0) return;
-    const newEntries: CampPlanItem[] = boxItems.value.map((inv) => ({
+    const newEntries: CampPlanItem[] = boxItems.value
+      .filter((inv) => inv.quantity > 0)
+      .map((inv) => ({
       itemId: inv.id,
       itemName: inv.name,
       itemCategory: inv.category,
@@ -187,11 +246,17 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
       quantityPlanned: inv.quantity,
       packedStatus: false,
       returnedStatus: false,
-    }));
+      }));
+    if (newEntries.length === 0) {
+      error.value = `All items in ${selectedBox.value} are out of stock.`;
+      return;
+    }
     const items = [...plan.value.items, ...newEntries];
-    await patch({ items });
+    const ok = await patch({ items });
+    if (!ok) {
+      return;
+    }
     selectedBox.value = "";
-    showAddPanel.value = false;
   }
 
   const selectedTemplate = useComputed(() =>
@@ -216,9 +281,11 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
       notes: ti.notes,
     }));
     const items = [...plan.value.items, ...newEntries];
-    await patch({ items });
+    const ok = await patch({ items });
+    if (!ok) {
+      return;
+    }
     selectedTemplateId.value = "";
-    showAddPanel.value = false;
   }
 
   async function saveAsTemplate() {
@@ -590,6 +657,9 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
               {filteredInventory.value.length > 0 && (
                 <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
                   {filteredInventory.value.slice(0, 50).map((inv) => (
+                    (() => {
+                      const available = availableToPlan(inv);
+                      return (
                     <button
                       type="button"
                       key={inv.id}
@@ -600,14 +670,24 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                     >
                       <div class="flex items-baseline justify-between gap-2">
                         <span class="font-medium text-gray-800 dark:text-gray-100 truncate">{inv.name}</span>
-                        <span class="text-gray-500 dark:text-gray-400 text-xs shrink-0">
-                          qty: {inv.quantity}{inv.category === "food" && <span class="ml-1 text-orange-500">🍽️</span>}
+                        <span
+                          class={`text-xs shrink-0 px-2 py-0.5 rounded-full border font-semibold ${
+                            available > 5
+                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700"
+                              : available > 0
+                              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+                              : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700"
+                          }`}
+                        >
+                          Available: {available}{inv.category === "food" && <span class="ml-1 text-orange-500">🍽️</span>}
                         </span>
                       </div>
                       <div class="text-gray-400 dark:text-gray-500 text-xs truncate mt-0.5">
                         {inv.category} · {inv.location}
                       </div>
                     </button>
+                      );
+                    })()
                   ))}
                 </div>
               )}
@@ -625,11 +705,24 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                     </div>
                   )}
                   <div class="flex items-end gap-2">
-                    <div class="shrink-0 w-24">
-                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                        {selectedIsFood.value ? "Qty (to take)" : "Qty (to pack)"}
-                        <span class="font-normal text-gray-400 dark:text-gray-500 ml-1">· {selectedInv.value.quantity} in stock</span>
-                      </label>
+                    <div class="shrink-0 w-36">
+                      <div class="mb-1 space-y-1">
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                          {selectedIsFood.value ? "Qty (to take)" : "Qty (to pack)"}
+                        </label>
+                        <span
+                          class={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border font-semibold whitespace-nowrap ${
+                            selectedStock.value > 5
+                              ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700"
+                              : selectedStock.value > 0
+                              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+                              : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700"
+                          }`}
+                        >
+                          <span>📦</span>
+                          <span>In stock {selectedStock.value}</span>
+                        </span>
+                      </div>
                       <NumberInput
                         key={selectedInv.value.id}
                         value={addQty.value}
@@ -637,6 +730,11 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                         onChange={(n) => { addQty.value = n; }}
                         class={`${inputClass} w-full`}
                       />
+                      {addQtyTooHigh.value && (
+                        <p class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
+                          Only {selectedStock.value} available in stock.
+                        </p>
+                      )}
                     </div>
                     <div class="flex-1 min-w-0">
                       <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Note (optional)</label>
@@ -651,10 +749,16 @@ export default function CampChecklist({ plan: initialPlan, allItems, templates: 
                     <button
                       type="button"
                       onClick={addItem}
-                      disabled={saving.value}
+                      disabled={saving.value || selectedStock.value < 1 || addQtyTooHigh.value}
                       class="shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors"
                     >
-                      {saving.value ? "…" : "Add"}
+                      {saving.value
+                        ? "…"
+                        : selectedStock.value < 1
+                        ? "Out of stock"
+                        : addQtyTooHigh.value
+                        ? "Exceeds stock"
+                        : "Add"}
                     </button>
                   </div>
                 </div>
