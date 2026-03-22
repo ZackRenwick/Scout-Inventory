@@ -4,7 +4,8 @@
 //   {
 //     delta?: number; value?: number; made?: number; moveToStock?: number;
 //     adultMade?: number; adultDelivered?: number;
-//     setTotalMade?: number; resetCreated?: boolean
+//     setTotalMade?: number; setAdultTotalMade?: number;
+//     resetCreated?: boolean; resetAdultCreated?: boolean
 //   }
 //   → { count: number, inStock: number, created: number, totalMade: number, adultCreated: number, adultTotalMade: number }
 import { Handlers } from "$fresh/server.ts";
@@ -15,7 +16,9 @@ import {
   moveCreatedToStock,
   recordAdultNeckersMade,
   recordNeckersMade,
+  resetAdultNeckersCreated,
   resetNeckersCreated,
+  setAdultNeckersTotalMade,
   setNeckersTotalMade,
   setNeckerCount,
 } from "../../db/kv.ts";
@@ -54,6 +57,17 @@ export const handler: Handlers = {
           action: "neckers.created_reset",
           resource: "Neckers",
           details: `created ${before.created} -> ${metrics.created}; in-stock ${metrics.inStock}; total-made ${metrics.totalMade}`,
+        });
+        return Response.json({ count: metrics.inStock, ...metrics });
+      }
+
+      if (body.resetAdultCreated === true) {
+        const metrics = await resetAdultNeckersCreated();
+        await logActivity({
+          username: session.username,
+          action: "neckers.created_reset",
+          resource: "Adult Neckers",
+          details: `adult-created ${before.adultCreated} -> ${metrics.adultCreated}; adult-total-made ${metrics.adultTotalMade}`,
         });
         return Response.json({ count: metrics.inStock, ...metrics });
       }
@@ -142,6 +156,24 @@ export const handler: Handlers = {
         return Response.json({ count: metrics.inStock, ...metrics });
       }
 
+      if (
+        typeof body.setAdultTotalMade === "number" &&
+        Number.isFinite(body.setAdultTotalMade) &&
+        Number.isInteger(body.setAdultTotalMade)
+      ) {
+        if (body.setAdultTotalMade < 0) {
+          return Response.json({ error: "'setAdultTotalMade' must be a non-negative integer" }, { status: 400 });
+        }
+        const metrics = await setAdultNeckersTotalMade(body.setAdultTotalMade);
+        await logActivity({
+          username: session.username,
+          action: "neckers.total_set",
+          resource: "Adult Neckers",
+          details: `adult-total-made ${before.adultTotalMade} -> ${metrics.adultTotalMade}; adult-created ${metrics.adultCreated}`,
+        });
+        return Response.json({ count: metrics.inStock, ...metrics });
+      }
+
       const requestedDelta = typeof body.delta === "number" && Number.isFinite(body.delta) && Number.isInteger(body.delta)
         ? body.delta
         : null;
@@ -154,7 +186,7 @@ export const handler: Handlers = {
       } else if (typeof body.delta === "number" && Number.isFinite(body.delta) && Number.isInteger(body.delta)) {
         await adjustNeckerCount(body.delta);
       } else {
-        return Response.json({ error: "Provide integer 'delta', 'value', positive 'made', positive 'moveToStock', positive 'adultMade', positive 'adultDelivered', integer 'setTotalMade', or 'resetCreated'" }, {
+        return Response.json({ error: "Provide integer 'delta', 'value', positive 'made', positive 'moveToStock', positive 'adultMade', positive 'adultDelivered', integer 'setTotalMade', integer 'setAdultTotalMade', 'resetCreated', or 'resetAdultCreated'" }, {
           status: 400,
         });
       }

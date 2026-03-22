@@ -21,6 +21,7 @@ export default function NeckerDashboard({ csrfToken, canEdit = true }: NeckerDas
   const message = useSignal<string | null>(null);
   const setStockInput = useSignal("0");
   const setTotalMadeInput = useSignal("0");
+  const setAdultTotalMadeInput = useSignal("0");
   const moveToStockInput = useSignal("1");
   const madeInput = useSignal("1");
   const adultMadeInput = useSignal("1");
@@ -40,6 +41,7 @@ export default function NeckerDashboard({ csrfToken, canEdit = true }: NeckerDas
       };
       setStockInput.value = String(metrics.value.inStock);
       setTotalMadeInput.value = String(metrics.value.totalMade);
+      setAdultTotalMadeInput.value = String(metrics.value.adultTotalMade);
     } catch {
       error.value = "Could not load necker metrics.";
     }
@@ -78,6 +80,7 @@ export default function NeckerDashboard({ csrfToken, canEdit = true }: NeckerDas
       };
       setStockInput.value = String(metrics.value.inStock);
       setTotalMadeInput.value = String(metrics.value.totalMade);
+      setAdultTotalMadeInput.value = String(metrics.value.adultTotalMade);
       message.value = okMessage ?? "Updated.";
     } catch (e) {
       error.value = e instanceof Error ? e.message : "Failed to update necker metrics.";
@@ -333,6 +336,7 @@ export default function NeckerDashboard({ csrfToken, canEdit = true }: NeckerDas
                     </div>
                   </div>
                 </div>
+
               </div>
             </section>
           </div>
@@ -435,6 +439,66 @@ export default function NeckerDashboard({ csrfToken, canEdit = true }: NeckerDas
                   >
                     Reset Created Counter
                   </button>
+                </div>
+
+                <div class="rounded-lg border border-amber-300 dark:border-amber-700/70 p-4 bg-amber-50/60 dark:bg-amber-900/10">
+                  <p class="text-sm font-medium text-amber-900 dark:text-amber-300">Adult Created Counter Controls</p>
+                  <p class="text-xs text-amber-800/80 dark:text-amber-400 mt-1">Resets only Adult Neckers Created. Adult Total Made remains unchanged.</p>
+                  <button
+                    type="button"
+                    disabled={saving.value}
+                    onClick={() => {
+                      if (!globalThis.confirm("Reset adult neckers created counter to 0? Adult total made will stay unchanged.")) {
+                        return;
+                      }
+                      update({ resetAdultCreated: true }, "Adult neckers created counter reset.");
+                    }}
+                    class="mt-3 px-3 py-2 rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    Reset Adult Created Counter
+                  </button>
+                </div>
+
+                <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">Adult Legacy Total Made Baseline</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Set or reset all-time adult neckers made for legacy imports.</p>
+                  <div class="mt-3 flex items-center gap-2 flex-wrap">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={setAdultTotalMadeInput.value}
+                      onInput={(e) => {
+                        const target = e.currentTarget as HTMLInputElement;
+                        setAdultTotalMadeInput.value = target.value;
+                      }}
+                      class="w-36 px-2 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                    />
+                    <button
+                      type="button"
+                      disabled={saving.value}
+                      onClick={() => {
+                        const parsed = Number.parseInt(setAdultTotalMadeInput.value, 10);
+                        if (!Number.isInteger(parsed) || parsed < 0) {
+                          error.value = "Adult total made must be a non-negative integer.";
+                          return;
+                        }
+                        update({ setAdultTotalMade: parsed }, `Adult total made set to ${parsed}.`);
+                      }}
+                      class="px-3 py-2 rounded bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50"
+                    >Set Adult Total Made</button>
+                    <button
+                      type="button"
+                      disabled={saving.value}
+                      onClick={() => {
+                        if (!globalThis.confirm("Reset adult total made to 0?")) {
+                          return;
+                        }
+                        update({ setAdultTotalMade: 0 }, "Adult total made reset to 0.");
+                      }}
+                      class="px-3 py-2 rounded bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+                    >Reset Adult Total Made</button>
+                  </div>
                 </div>
               </div>
           </section>

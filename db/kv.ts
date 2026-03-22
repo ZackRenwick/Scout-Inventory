@@ -810,10 +810,25 @@ export async function setNeckersTotalMade(value: number): Promise<NeckerMetrics>
   return await getNeckerMetrics();
 }
 
+/** Sets all-time adult total made, useful for importing a legacy adult baseline. */
+export async function setAdultNeckersTotalMade(value: number): Promise<NeckerMetrics> {
+  const db = await initKv();
+  const next = Math.max(0, Math.floor(value));
+  await db.set(KEYS.adultNeckersTotalMade, next);
+  return await getNeckerMetrics();
+}
+
 /** Resets only the current created counter; all-time total remains unchanged. */
 export async function resetNeckersCreated(): Promise<NeckerMetrics> {
   const db = await initKv();
   await db.set(KEYS.neckersCreated, 0);
+  return await getNeckerMetrics();
+}
+
+/** Resets only the current adult created counter; adult total made remains unchanged. */
+export async function resetAdultNeckersCreated(): Promise<NeckerMetrics> {
+  const db = await initKv();
+  await db.set(KEYS.adultNeckersCreated, 0);
   return await getNeckerMetrics();
 }
 
