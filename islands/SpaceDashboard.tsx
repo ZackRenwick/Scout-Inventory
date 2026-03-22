@@ -100,7 +100,7 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
       <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-4">Inventory by Space</h2>
 
       {/* Space selector cards */}
-      <div role="group" aria-label="Filter by space" class="flex gap-4 mb-8">
+      <div role="group" aria-label="Filter by space" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
         {spaces.map((s) => {
           const isActive = space.value === s.value;
           return (
@@ -109,17 +109,17 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
               type="button"
               aria-pressed={isActive}
               onClick={() => space.value = s.value}
-              class={`flex-1 text-left rounded-xl p-4 border-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-purple-500 ${
+              class={`text-left rounded-xl p-3 md:p-4 border-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-purple-500 ${
                 isActive
                   ? s.activeClass
                   : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500"
               }`}
             >
-              <div class="text-3xl mb-2" aria-hidden="true">{s.icon}</div>
-              <div class={`font-semibold text-base ${
+              <div class="text-2xl md:text-3xl mb-2" aria-hidden="true">{s.icon}</div>
+              <div class={`font-semibold text-sm md:text-base ${
                 isActive ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-200"
               }`}>{s.label}</div>
-              <div class="text-sm text-gray-500 dark:text-gray-300 mt-1">
+              <div class="text-xs md:text-sm text-gray-500 dark:text-gray-300 mt-1">
                 {s.count} item{s.count !== 1 ? "s" : ""} &middot; {s.qty} units
               </div>
               {isActive && (
