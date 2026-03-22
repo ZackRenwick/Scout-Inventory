@@ -52,6 +52,22 @@ export const handler: Handlers<TemplatesPageData> = {
 
         if (template && inv) {
           const idx = template.items.findIndex((i) => i.itemId === itemId);
+          const existingQty = idx >= 0 ? template.items[idx].quantityPlanned : 0;
+
+          const availableNow = inv.category === "food"
+            ? inv.quantity
+            : Math.max(
+              0,
+              inv.quantity - (inv.atCamp ? Math.max(0, Math.min(inv.quantity, inv.quantityAtCamp ?? inv.quantity)) : 0),
+            );
+          const maxAppendQty = Math.max(0, availableNow - existingQty);
+          if (quantity > maxAppendQty) {
+            return new Response(
+              `Only ${maxAppendQty} more can be added for \"${inv.name}\" (available now: ${availableNow}, already in template: ${existingQty}).`,
+              { status: 400 },
+            );
+          }
+
           const nextItems = [...template.items];
 
           if (idx >= 0) {
@@ -163,7 +179,7 @@ export default function CampTemplatesPage({ data }: PageProps<TemplatesPageData>
                   <summary class="cursor-pointer text-sm font-medium text-purple-700 dark:text-purple-300 select-none">
                     ➕ Add item to this template
                   </summary>
-                  <TemplateAppendForm templateId={tpl.id} allItems={data.allItems} csrfToken={csrfToken} />
+                  <TemplateAppendForm templateId={tpl.id} allItems={data.allItems} templateItems={tpl.items} csrfToken={csrfToken} />
                 </details>
               )}
 
