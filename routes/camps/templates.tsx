@@ -5,6 +5,7 @@ import Layout from "../../components/Layout.tsx";
 import type { Session } from "../../lib/auth.ts";
 import { getAllCampTemplates, deleteCampTemplate, getAllItems, getCampTemplateById, getItemById, updateCampTemplate } from "../../db/kv.ts";
 import TemplateBuilder from "../../islands/TemplateBuilder.tsx";
+import TemplateAppendForm from "../../islands/TemplateAppendForm.tsx";
 
 interface TemplatesPageData {
   templates: CampTemplate[];
@@ -83,7 +84,6 @@ export default function CampTemplatesPage({ data }: PageProps<TemplatesPageData>
   const isAdmin = data.session?.role === "admin";
   const canEditTemplates = data.session?.role === "admin" || data.session?.role === "editor";
   const csrfToken = data.session?.csrfToken ?? "";
-  const sortedItems = [...data.allItems].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
   return (
     <Layout title="Camp Equipment Templates" username={data.session?.username} role={data.session?.role}>
@@ -163,40 +163,7 @@ export default function CampTemplatesPage({ data }: PageProps<TemplatesPageData>
                   <summary class="cursor-pointer text-sm font-medium text-purple-700 dark:text-purple-300 select-none">
                     ➕ Add item to this template
                   </summary>
-                  <form method="POST" action="/camps/templates" class="mt-3 grid sm:grid-cols-[minmax(0,1fr)_90px_minmax(0,1fr)_auto] gap-2 items-end">
-                    <input type="hidden" name="action" value="append_item" />
-                    <input type="hidden" name="templateId" value={tpl.id} />
-                    <input type="hidden" name="_csrf" value={csrfToken} />
-
-                    <label class="block text-xs text-gray-500 dark:text-gray-400">
-                      Item
-                      <select name="itemId" required class="mt-1 w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <option value="">Select item…</option>
-                        {sortedItems.map((inv) => (
-                          <option key={inv.id} value={inv.id}>
-                            {inv.name} · {inv.category} · stock {inv.quantity}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label class="block text-xs text-gray-500 dark:text-gray-400">
-                      Qty
-                      <input name="quantity" type="number" min="1" value="1" required class="mt-1 w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                    </label>
-
-                    <label class="block text-xs text-gray-500 dark:text-gray-400">
-                      Note (optional)
-                      <input name="notes" type="text" placeholder="e.g. spare set" class="mt-1 w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
-                    </label>
-
-                    <button
-                      type="submit"
-                      class="px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
-                    >
-                      Add item
-                    </button>
-                  </form>
+                  <TemplateAppendForm templateId={tpl.id} allItems={data.allItems} csrfToken={csrfToken} />
                 </details>
               )}
 

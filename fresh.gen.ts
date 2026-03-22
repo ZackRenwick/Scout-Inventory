@@ -78,6 +78,7 @@ import * as $PrintButton from "./islands/PrintButton.tsx";
 import * as $RebuildIndexes from "./islands/RebuildIndexes.tsx";
 import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
 import * as $StocktakeWizard from "./islands/StocktakeWizard.tsx";
+import * as $TemplateAppendForm from "./islands/TemplateAppendForm.tsx";
 import * as $TemplateBuilder from "./islands/TemplateBuilder.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
 import type { Manifest } from "$fresh/server.ts";
@@ -162,6 +163,7 @@ const manifest = {
     "./islands/RebuildIndexes.tsx": $RebuildIndexes,
     "./islands/SpaceDashboard.tsx": $SpaceDashboard,
     "./islands/StocktakeWizard.tsx": $StocktakeWizard,
+    "./islands/TemplateAppendForm.tsx": $TemplateAppendForm,
     "./islands/TemplateBuilder.tsx": $TemplateBuilder,
     "./islands/ThemeToggle.tsx": $ThemeToggle,
   },
