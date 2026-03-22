@@ -3,6 +3,7 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
 import NotificationButtons from "../../islands/NotificationButtons.tsx";
 import BulkImport from "../../islands/BulkImport.tsx";
+import TemplateBulkImport from "../../islands/TemplateBulkImport.tsx";
 import RebuildIndexes from "../../islands/RebuildIndexes.tsx";
 import DbCleanup from "../../islands/DbCleanup.tsx";
 import DbClear from "../../islands/DbClear.tsx";
@@ -188,6 +189,14 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           )}
           {isAdmin && (
           <a
+            href="/admin/export-templates-json"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg border border-indigo-500 shadow-sm transition-colors"
+          >
+            📋 Download Camp Templates JSON
+          </a>
+          )}
+          {isAdmin && (
+          <a
             href="/admin/activity"
             class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
@@ -196,7 +205,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           )}
         </div>
         {isAdmin && (
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">The JSON file is import-ready — use it directly with the Bulk Import below to seed another environment.</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Inventory JSON and camp templates JSON can both be re-uploaded from the import section below.</p>
         )}
       </div>
 
@@ -220,6 +229,22 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         </a>
 
         <BulkImport csrfToken={csrfToken} />
+
+        <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Camp Templates Import</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            Upload templates exported from <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">Download Camp Templates JSON</code>.
+            All templates are validated before anything is saved.
+          </p>
+          <a
+            href="/camp-templates-import-template.json"
+            download
+            class="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition-colors mb-3"
+          >
+            📄 Download Camp Templates Import Sample
+          </a>
+          <TemplateBulkImport csrfToken={csrfToken} />
+        </div>
       </div>
       )}
 

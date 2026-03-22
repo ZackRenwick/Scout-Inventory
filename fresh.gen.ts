@@ -12,7 +12,9 @@ import * as $admin_admin_panel from "./routes/admin/admin-panel.tsx";
 import * as $admin_cleanup from "./routes/admin/cleanup.ts";
 import * as $admin_clear_db from "./routes/admin/clear-db.ts";
 import * as $admin_export_json from "./routes/admin/export-json.ts";
+import * as $admin_export_templates_json from "./routes/admin/export-templates-json.ts";
 import * as $admin_export from "./routes/admin/export.ts";
+import * as $admin_import_templates from "./routes/admin/import-templates.ts";
 import * as $admin_import from "./routes/admin/import.ts";
 import * as $admin_notify from "./routes/admin/notify.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
@@ -80,6 +82,7 @@ import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
 import * as $StocktakeWizard from "./islands/StocktakeWizard.tsx";
 import * as $TemplateAppendForm from "./islands/TemplateAppendForm.tsx";
 import * as $TemplateBuilder from "./islands/TemplateBuilder.tsx";
+import * as $TemplateBulkImport from "./islands/TemplateBulkImport.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -95,7 +98,9 @@ const manifest = {
     "./routes/admin/cleanup.ts": $admin_cleanup,
     "./routes/admin/clear-db.ts": $admin_clear_db,
     "./routes/admin/export-json.ts": $admin_export_json,
+    "./routes/admin/export-templates-json.ts": $admin_export_templates_json,
     "./routes/admin/export.ts": $admin_export,
+    "./routes/admin/import-templates.ts": $admin_import_templates,
     "./routes/admin/import.ts": $admin_import,
     "./routes/admin/notify.ts": $admin_notify,
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
@@ -165,6 +170,7 @@ const manifest = {
     "./islands/StocktakeWizard.tsx": $StocktakeWizard,
     "./islands/TemplateAppendForm.tsx": $TemplateAppendForm,
     "./islands/TemplateBuilder.tsx": $TemplateBuilder,
+    "./islands/TemplateBulkImport.tsx": $TemplateBulkImport,
     "./islands/ThemeToggle.tsx": $ThemeToggle,
   },
   baseUrl: import.meta.url,

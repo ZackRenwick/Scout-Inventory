@@ -22,6 +22,7 @@ export type ActivityAction =
   | "camp.created"
   | "camp.updated"
   | "camp.deleted"
+  | "camp_templates.imported"
   | "meal.created"
   | "meal.updated"
   | "meal.deleted"

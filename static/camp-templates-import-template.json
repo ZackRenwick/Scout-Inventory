@@ -1,0 +1,32 @@
+[
+  {
+    "_comment": "Replace item IDs/names with real values from your inventory export if needed. This file shows required structure.",
+    "name": "Weekend Base Camp",
+    "description": "Default gear set for a standard weekend camp",
+    "items": [
+      {
+        "itemId": "replace-with-real-item-id-1",
+        "itemName": "Patrol Tent",
+        "itemCategory": "tent",
+        "itemLocation": "Plastic Shelf 1 - Level 1",
+        "quantityPlanned": 2,
+        "notes": "Check pegs before packing"
+      },
+      {
+        "itemId": "replace-with-real-item-id-2",
+        "itemName": "Camp Stove",
+        "itemCategory": "cooking",
+        "itemLocation": "Metal Shelf 1 - Slot 1",
+        "quantityPlanned": 1,
+        "notes": "Bring spare regulator"
+      },
+      {
+        "itemId": "replace-with-real-item-id-3",
+        "itemName": "First Aid Kit",
+        "itemCategory": "kit",
+        "itemLocation": "Red Box",
+        "quantityPlanned": 1
+      }
+    ]
+  }
+]
