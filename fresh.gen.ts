@@ -54,6 +54,7 @@ import * as $login from "./routes/login.tsx";
 import * as $meals_id_edit from "./routes/meals/[id]/edit.tsx";
 import * as $meals_index from "./routes/meals/index.tsx";
 import * as $meals_new from "./routes/meals/new.tsx";
+import * as $neckers from "./routes/neckers.tsx";
 import * as $reports_expiring from "./routes/reports/expiring.tsx";
 import * as $BulkImport from "./islands/BulkImport.tsx";
 import * as $CampCalendar from "./islands/CampCalendar.tsx";
@@ -74,6 +75,7 @@ import * as $MealPlannerForm from "./islands/MealPlannerForm.tsx";
 import * as $MobileNav from "./islands/MobileNav.tsx";
 import * as $NeckerAlert from "./islands/NeckerAlert.tsx";
 import * as $NeckerCounter from "./islands/NeckerCounter.tsx";
+import * as $NeckerDashboard from "./islands/NeckerDashboard.tsx";
 import * as $NotificationButtons from "./islands/NotificationButtons.tsx";
 import * as $PasswordInput from "./islands/PasswordInput.tsx";
 import * as $PrintButton from "./islands/PrintButton.tsx";
@@ -140,6 +142,7 @@ const manifest = {
     "./routes/meals/[id]/edit.tsx": $meals_id_edit,
     "./routes/meals/index.tsx": $meals_index,
     "./routes/meals/new.tsx": $meals_new,
+    "./routes/neckers.tsx": $neckers,
     "./routes/reports/expiring.tsx": $reports_expiring,
   },
   islands: {
@@ -162,6 +165,7 @@ const manifest = {
     "./islands/MobileNav.tsx": $MobileNav,
     "./islands/NeckerAlert.tsx": $NeckerAlert,
     "./islands/NeckerCounter.tsx": $NeckerCounter,
+    "./islands/NeckerDashboard.tsx": $NeckerDashboard,
     "./islands/NotificationButtons.tsx": $NotificationButtons,
     "./islands/PasswordInput.tsx": $PasswordInput,
     "./islands/PrintButton.tsx": $PrintButton,

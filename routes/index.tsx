@@ -168,7 +168,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
       {/* Quick Actions */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-4">Quick Actions</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <a
             href="/inventory/add"
             class="flex items-center justify-center p-4 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
@@ -203,6 +203,13 @@ export default function Home({ data }: PageProps<DashboardData>) {
           >
             <span class="text-xl mr-2">🔧</span>
             <span class="font-medium">Needs Repair</span>
+          </a>
+          <a
+            href="/neckers"
+            class="flex items-center justify-center p-4 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors"
+          >
+            <span class="text-xl mr-2">🧣</span>
+            <span class="font-medium">Neckers</span>
           </a>
         </div>
       </div>

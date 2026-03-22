@@ -22,6 +22,16 @@ Four item categories, each with their own tracked fields:
 ### 🧣 Necker Tracking
 A dedicated counter on the dashboard tracks the number of neckers (scout neckerchiefs) in stock. The count updates instantly across tabs via a shared signal. An alert banner appears when stock falls at or below the threshold (default: 10, configurable via `NECKER_MIN_THRESHOLD`).
 
+A dedicated `/neckers` page provides:
+- **In stock** — current neckers available
+- **Created** — current created counter (resettable)
+- **Total made** — all-time neckers made
+- **Adult created** — adult neckers currently marked as created
+- **Adult total made** — all-time adult neckers made
+
+Newly made neckers are tracked in **Created** first, then explicitly moved into **In stock** when they are issued/available; direct increases to **In stock** also increase **Total made** (for returned/acquired neckers), and total made can be set to a legacy baseline for historical tracking.
+Adult neckers are tracked separately: mark them made, then mark them delivered to reduce the adult created counter.
+
 ### 🔍 Search & Filtering
 - Full-text search across name, location, and notes
 - Filter by category

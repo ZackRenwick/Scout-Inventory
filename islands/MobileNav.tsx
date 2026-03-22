@@ -14,6 +14,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
     <div>
       {/* Hamburger button — only shown on small/tablet screens */}
       <button
+        type="button"
         onClick={() => open.value = !open.value}
         class="lg:hidden flex items-center px-2 py-1 rounded text-white hover:bg-white/20 transition-colors"
         aria-label="Toggle menu"
@@ -29,6 +30,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         {role === "admin" && (
           <a href="/meals" class="hover:text-purple-200 transition-colors">Meal Planner</a>
         )}
+        <a href="/neckers" class="hover:text-purple-200 transition-colors">Neckers</a>
         <a href="/loans" class="hover:text-purple-200 transition-colors">Loans</a>
         {(role === "admin" || role === "manager") && (
           <a href="/admin/admin-panel" class="hover:text-purple-200 transition-colors">Admin</a>
@@ -55,6 +57,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           {role === "admin" && (
             <a href="/meals" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🍽️ Meal Planner</a>
           )}
+          <a href="/neckers" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🧣 Neckers</a>
           <a href="/loans" class="block px-6 py-3 hover:bg-purple-800 transition-colors">📤 Loans</a>
           {(role === "admin" || role === "manager") && (
             <a href="/admin/admin-panel" class="block px-6 py-3 hover:bg-purple-800 transition-colors">⚙️ Admin</a>

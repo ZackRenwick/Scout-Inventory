@@ -25,6 +25,10 @@ export async function initKv(): Promise<Deno.Kv> {
 //   ["inventory", "items", <id>]                          → InventoryItem
 //   ["inventory", "checkouts", <id>]                      → CheckOut
 //   ["inventory", "neckers", "count"]                     → number
+//   ["inventory", "neckers", "created"]                   → number
+//   ["inventory", "neckers", "total-made"]                → number
+//   ["inventory", "neckers", "adult-created"]             → number
+//   ["inventory", "neckers", "adult-total-made"]          → number
 //
 // Secondary indexes (value = item id):
 //   ["inventory", "idx", "category", <category>, <id>]   → id
@@ -38,6 +42,10 @@ const KEYS = {
   items:         ["inventory", "items"] as const,
   checkouts:     ["inventory", "checkouts"] as const,
   neckers:       ["inventory", "neckers", "count"] as const,
+  neckersCreated:["inventory", "neckers", "created"] as const,
+  neckersTotalMade:["inventory", "neckers", "total-made"] as const,
+  adultNeckersCreated:["inventory", "neckers", "adult-created"] as const,
+  adultNeckersTotalMade:["inventory", "neckers", "adult-total-made"] as const,
   computedStats: ["inventory", "stats", "computed"] as const,
   camps:         ["camps", "plans"] as const,
   templates:     ["camps", "templates"] as const,
@@ -544,6 +552,24 @@ export async function deleteCheckOut(id: string): Promise<boolean> {
 
 // ===== NECKER COUNT =====
 
+export interface NeckerMetrics {
+  inStock: number;
+  created: number;
+  totalMade: number;
+  adultCreated: number;
+  adultTotalMade: number;
+}
+
+export interface MoveCreatedToStockResult {
+  metrics: NeckerMetrics;
+  moved: number;
+}
+
+export interface DeliverAdultNeckersResult {
+  metrics: NeckerMetrics;
+  delivered: number;
+}
+
 export async function getNeckerCount(): Promise<number> {
   const db = await initKv();
   const result = await db.get<number>(KEYS.neckers);
@@ -560,21 +586,235 @@ export async function getNeckerCountOrNull(): Promise<number | null> {
   return typeof result.value === "number" ? result.value : null;
 }
 
+/** Returns all persisted necker metrics, defaulting missing values to zero. */
+export async function getNeckerMetrics(): Promise<NeckerMetrics> {
+  const db = await initKv();
+  const [inStock, created, totalMade, adultCreated, adultTotalMade] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.neckersTotalMade),
+    db.get<number>(KEYS.adultNeckersCreated),
+    db.get<number>(KEYS.adultNeckersTotalMade),
+  ]);
+
+  return {
+    inStock: inStock.value ?? 0,
+    created: created.value ?? 0,
+    totalMade: totalMade.value ?? 0,
+    adultCreated: adultCreated.value ?? 0,
+    adultTotalMade: adultTotalMade.value ?? 0,
+  };
+}
+
 /** Adjust the necker count by `delta` (positive or negative). Returns the new total. */
 export async function adjustNeckerCount(delta: number): Promise<number> {
   const db = await initKv();
-  const current = (await db.get<number>(KEYS.neckers)).value ?? 0;
-  const next = Math.max(0, current + delta);
-  await db.set(KEYS.neckers, next);
-  return next;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const [stockRes, totalRes] = await Promise.all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersTotalMade),
+    ]);
+    const currentStock = stockRes.value ?? 0;
+    const nextStock = Math.max(0, currentStock + delta);
+    const positiveIncrease = Math.max(0, nextStock - currentStock);
+    const nextTotal = (totalRes.value ?? 0) + positiveIncrease;
+
+    const result = await db.atomic()
+      .check(stockRes)
+      .check(totalRes)
+      .set(KEYS.neckers, nextStock)
+      .set(KEYS.neckersTotalMade, nextTotal)
+      .commit();
+
+    if (result.ok) {
+      return nextStock;
+    }
+  }
+
+  // Fallback to current persisted stock if all retries lose a race.
+  return await getNeckerCount();
 }
 
 /** Set the necker count to an absolute value. Returns the new total. */
 export async function setNeckerCount(value: number): Promise<number> {
   const db = await initKv();
-  const next = Math.max(0, value);
-  await db.set(KEYS.neckers, next);
-  return next;
+  const requested = Math.max(0, value);
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const [stockRes, totalRes] = await Promise.all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersTotalMade),
+    ]);
+    const currentStock = stockRes.value ?? 0;
+    const positiveIncrease = Math.max(0, requested - currentStock);
+    const nextTotal = (totalRes.value ?? 0) + positiveIncrease;
+
+    const result = await db.atomic()
+      .check(stockRes)
+      .check(totalRes)
+      .set(KEYS.neckers, requested)
+      .set(KEYS.neckersTotalMade, nextTotal)
+      .commit();
+
+    if (result.ok) {
+      return requested;
+    }
+  }
+
+  // Fallback to current persisted stock if all retries lose a race.
+  return await getNeckerCount();
+}
+
+/**
+ * Records newly made neckers.
+ * Increases current created counter and all-time total made.
+ */
+export async function recordNeckersMade(
+  quantity: number,
+): Promise<NeckerMetrics> {
+  const db = await initKv();
+  const made = Math.max(0, Math.floor(quantity));
+  if (made <= 0) {
+    return await getNeckerMetrics();
+  }
+
+  const [stockRes, createdRes, totalRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.neckersTotalMade),
+  ]);
+
+  const next = {
+    inStock: stockRes.value ?? 0,
+    created: (createdRes.value ?? 0) + made,
+    totalMade: (totalRes.value ?? 0) + made,
+  };
+
+  const result = await db.atomic()
+    .check(stockRes)
+    .check(createdRes)
+    .check(totalRes)
+    .set(KEYS.neckers, next.inStock)
+    .set(KEYS.neckersCreated, next.created)
+    .set(KEYS.neckersTotalMade, next.totalMade)
+    .commit();
+
+  if (!result.ok) {
+    return await getNeckerMetrics();
+  }
+
+  return await getNeckerMetrics();
+}
+
+/**
+ * Moves neckers from "created" into "in stock".
+ * Returns the actual moved quantity (clamped to available created count).
+ */
+export async function moveCreatedToStock(quantity: number): Promise<MoveCreatedToStockResult> {
+  const db = await initKv();
+  const requested = Math.max(0, Math.floor(quantity));
+  if (requested <= 0) {
+    return { metrics: await getNeckerMetrics(), moved: 0 };
+  }
+
+  const [stockRes, createdRes, totalRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.neckersTotalMade),
+  ]);
+
+  const created = createdRes.value ?? 0;
+  const moved = Math.min(created, requested);
+  const next = {
+    inStock: (stockRes.value ?? 0) + moved,
+    created: created - moved,
+    totalMade: totalRes.value ?? 0,
+  };
+
+  const result = await db.atomic()
+    .check(stockRes)
+    .check(createdRes)
+    .check(totalRes)
+    .set(KEYS.neckers, next.inStock)
+    .set(KEYS.neckersCreated, next.created)
+    .set(KEYS.neckersTotalMade, next.totalMade)
+    .commit();
+
+  if (!result.ok) {
+    return { metrics: await getNeckerMetrics(), moved: 0 };
+  }
+
+  return { metrics: await getNeckerMetrics(), moved };
+}
+
+/** Records newly made adult neckers (affects adult counters only). */
+export async function recordAdultNeckersMade(quantity: number): Promise<NeckerMetrics> {
+  const db = await initKv();
+  const made = Math.max(0, Math.floor(quantity));
+  if (made <= 0) {
+    return await getNeckerMetrics();
+  }
+
+  const [adultCreatedRes, adultTotalRes] = await Promise.all([
+    db.get<number>(KEYS.adultNeckersCreated),
+    db.get<number>(KEYS.adultNeckersTotalMade),
+  ]);
+
+  const nextAdultCreated = (adultCreatedRes.value ?? 0) + made;
+  const nextAdultTotal = (adultTotalRes.value ?? 0) + made;
+
+  const result = await db.atomic()
+    .check(adultCreatedRes)
+    .check(adultTotalRes)
+    .set(KEYS.adultNeckersCreated, nextAdultCreated)
+    .set(KEYS.adultNeckersTotalMade, nextAdultTotal)
+    .commit();
+
+  if (!result.ok) {
+    return await getNeckerMetrics();
+  }
+
+  return await getNeckerMetrics();
+}
+
+/** Marks adult neckers as delivered (decrements adult created, does not add extra counters). */
+export async function deliverAdultNeckers(quantity: number): Promise<DeliverAdultNeckersResult> {
+  const db = await initKv();
+  const requested = Math.max(0, Math.floor(quantity));
+  if (requested <= 0) {
+    return { metrics: await getNeckerMetrics(), delivered: 0 };
+  }
+
+  const adultCreatedRes = await db.get<number>(KEYS.adultNeckersCreated);
+  const current = adultCreatedRes.value ?? 0;
+  const delivered = Math.min(current, requested);
+  const next = current - delivered;
+
+  const result = await db.atomic()
+    .check(adultCreatedRes)
+    .set(KEYS.adultNeckersCreated, next)
+    .commit();
+
+  if (!result.ok) {
+    return { metrics: await getNeckerMetrics(), delivered: 0 };
+  }
+
+  return { metrics: await getNeckerMetrics(), delivered };
+}
+
+/** Sets all-time total made, useful for importing a legacy baseline. */
+export async function setNeckersTotalMade(value: number): Promise<NeckerMetrics> {
+  const db = await initKv();
+  const next = Math.max(0, Math.floor(value));
+  await db.set(KEYS.neckersTotalMade, next);
+  return await getNeckerMetrics();
+}
+
+/** Resets only the current created counter; all-time total remains unchanged. */
+export async function resetNeckersCreated(): Promise<NeckerMetrics> {
+  const db = await initKv();
+  await db.set(KEYS.neckersCreated, 0);
+  return await getNeckerMetrics();
 }
 
 // ===== SERIALIZATION HELPERS =====
@@ -959,6 +1199,10 @@ export async function clearInventoryData(): Promise<ClearReport> {
 
   // Reset scalar keys
   deleteOps.push(db.delete(KEYS.neckers));
+  deleteOps.push(db.delete(KEYS.neckersCreated));
+  deleteOps.push(db.delete(KEYS.neckersTotalMade));
+  deleteOps.push(db.delete(KEYS.adultNeckersCreated));
+  deleteOps.push(db.delete(KEYS.adultNeckersTotalMade));
   deleteOps.push(db.set(KEYS.computedStats, emptyStats()).then(() => {}));
 
   await Promise.all(deleteOps);

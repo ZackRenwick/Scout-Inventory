@@ -30,6 +30,10 @@ export type ActivityAction =
   | "loan.created"
   | "loan.returned"
   | "loan.cancelled"
+  | "neckers.made"
+  | "neckers.stock_adjusted"
+  | "neckers.created_reset"
+  | "neckers.total_set"
   | "stocktake.completed"
   | "db.cleared";
 
