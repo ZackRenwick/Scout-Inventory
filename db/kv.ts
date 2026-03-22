@@ -751,6 +751,27 @@ export async function createCampTemplate(
   return template;
 }
 
+export async function updateCampTemplate(
+  id: string,
+  updates: Partial<CampTemplate>,
+  existing?: CampTemplate,
+): Promise<CampTemplate | null> {
+  const template = existing ?? await getCampTemplateById(id);
+  if (!template) return null;
+
+  const updated: CampTemplate = {
+    ...template,
+    ...updates,
+    id,
+    lastUpdated: new Date(),
+  };
+
+  const db = await initKv();
+  await db.set([...KEYS.templates, id], serializeCampTemplate(updated));
+  invalidateTemplatesCache();
+  return updated;
+}
+
 export async function deleteCampTemplate(id: string): Promise<boolean> {
   const existing = await getCampTemplateById(id);
   if (!existing) return false;

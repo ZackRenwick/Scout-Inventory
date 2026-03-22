@@ -3,7 +3,7 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import type { CampTemplate, InventoryItem } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import type { Session } from "../../lib/auth.ts";
-import { getAllCampTemplates, deleteCampTemplate, getAllItems } from "../../db/kv.ts";
+import { getAllCampTemplates, deleteCampTemplate, getAllItems, getCampTemplateById, getItemById, updateCampTemplate } from "../../db/kv.ts";
 import TemplateBuilder from "../../islands/TemplateBuilder.tsx";
 
 interface TemplatesPageData {
@@ -21,7 +21,7 @@ export const handler: Handlers<TemplatesPageData> = {
 
   async POST(req, ctx) {
     const session = ctx.state.session as Session;
-    if (!session || session.role !== "admin") {
+    if (!session || session.role === "viewer") {
       return new Response("Forbidden", { status: 403 });
     }
     const form = await req.formData();
@@ -31,8 +31,49 @@ export const handler: Handlers<TemplatesPageData> = {
       return new Response("Invalid CSRF token", { status: 403 });
     }
     if (action === "delete") {
+      if (session.role !== "admin") {
+        return new Response("Forbidden", { status: 403 });
+      }
       const id = form.get("id")?.toString();
       if (id) await deleteCampTemplate(id);
+    } else if (action === "append_item") {
+      const templateId = form.get("templateId")?.toString();
+      const itemId = form.get("itemId")?.toString();
+      const qtyRaw = form.get("quantity")?.toString() ?? "1";
+      const quantity = Math.max(1, Number.parseInt(qtyRaw, 10) || 1);
+      const notes = form.get("notes")?.toString().trim();
+
+      if (templateId && itemId) {
+        const [template, inv] = await Promise.all([
+          getCampTemplateById(templateId),
+          getItemById(itemId),
+        ]);
+
+        if (template && inv) {
+          const idx = template.items.findIndex((i) => i.itemId === itemId);
+          const nextItems = [...template.items];
+
+          if (idx >= 0) {
+            const existing = nextItems[idx];
+            nextItems[idx] = {
+              ...existing,
+              quantityPlanned: existing.quantityPlanned + quantity,
+              notes: notes || existing.notes,
+            };
+          } else {
+            nextItems.push({
+              itemId: inv.id,
+              itemName: inv.name,
+              itemCategory: inv.category,
+              itemLocation: inv.location,
+              quantityPlanned: quantity,
+              notes: notes || undefined,
+            });
+          }
+
+          await updateCampTemplate(template.id, { items: nextItems }, template);
+        }
+      }
     }
     return new Response(null, { status: 303, headers: { Location: "/camps/templates" } });
   },
@@ -40,7 +81,9 @@ export const handler: Handlers<TemplatesPageData> = {
 
 export default function CampTemplatesPage({ data }: PageProps<TemplatesPageData>) {
   const isAdmin = data.session?.role === "admin";
+  const canEditTemplates = data.session?.role === "admin" || data.session?.role === "editor";
   const csrfToken = data.session?.csrfToken ?? "";
+  const sortedItems = [...data.allItems].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
   return (
     <Layout title="Camp Equipment Templates" username={data.session?.username} role={data.session?.role}>
@@ -114,6 +157,48 @@ export default function CampTemplatesPage({ data }: PageProps<TemplatesPageData>
                   </form>
                 )}
               </div>
+
+              {canEditTemplates && (
+                <details class="mt-3 border border-gray-200 dark:border-gray-700 rounded-md p-3">
+                  <summary class="cursor-pointer text-sm font-medium text-purple-700 dark:text-purple-300 select-none">
+                    ➕ Add item to this template
+                  </summary>
+                  <form method="POST" action="/camps/templates" class="mt-3 grid sm:grid-cols-[minmax(0,1fr)_90px_minmax(0,1fr)_auto] gap-2 items-end">
+                    <input type="hidden" name="action" value="append_item" />
+                    <input type="hidden" name="templateId" value={tpl.id} />
+                    <input type="hidden" name="_csrf" value={csrfToken} />
+
+                    <label class="block text-xs text-gray-500 dark:text-gray-400">
+                      Item
+                      <select name="itemId" required class="mt-1 w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Select item…</option>
+                        {sortedItems.map((inv) => (
+                          <option key={inv.id} value={inv.id}>
+                            {inv.name} · {inv.category} · stock {inv.quantity}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label class="block text-xs text-gray-500 dark:text-gray-400">
+                      Qty
+                      <input name="quantity" type="number" min="1" value="1" required class="mt-1 w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    </label>
+
+                    <label class="block text-xs text-gray-500 dark:text-gray-400">
+                      Note (optional)
+                      <input name="notes" type="text" placeholder="e.g. spare set" class="mt-1 w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    </label>
+
+                    <button
+                      type="submit"
+                      class="px-3 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 transition-colors"
+                    >
+                      Add item
+                    </button>
+                  </form>
+                </details>
+              )}
 
               {tpl.items.length > 0 && (
                 <details class="mt-3">
