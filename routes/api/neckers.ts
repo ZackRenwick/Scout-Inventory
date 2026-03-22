@@ -59,25 +59,24 @@ export const handler: Handlers = {
         return forbidden();
       }
 
-      const before = await getNeckerMetrics();
       if (body.resetCreated === true) {
         const metrics = await resetNeckersCreated();
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.created_reset",
           resource: "Neckers",
-          details: `created ${before.created} -> ${metrics.created}; in-stock ${metrics.inStock}; total-made ${metrics.totalMade}`,
+          details: `created reset to ${metrics.created}; in-stock ${metrics.inStock}; total-made ${metrics.totalMade}`,
         });
         return Response.json({ count: metrics.inStock, ...metrics });
       }
 
       if (body.resetAdultCreated === true) {
         const metrics = await resetAdultNeckersCreated();
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.created_reset",
           resource: "Adult Neckers",
-          details: `adult-created ${before.adultCreated} -> ${metrics.adultCreated}; adult-total-made ${metrics.adultTotalMade}`,
+          details: `adult-created reset to ${metrics.adultCreated}; adult-total-made ${metrics.adultTotalMade}`,
         });
         return Response.json({ count: metrics.inStock, ...metrics });
       }
@@ -87,11 +86,11 @@ export const handler: Handlers = {
           return Response.json({ error: "'made' must be a positive integer" }, { status: 400 });
         }
         const metrics = await recordNeckersMade(body.made);
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.made",
           resource: "Neckers",
-          details: `made +${body.made}; created ${before.created} -> ${metrics.created}; total-made ${before.totalMade} -> ${metrics.totalMade}; in-stock ${before.inStock} -> ${metrics.inStock}`,
+          details: `made +${body.made}; created ${metrics.created}; total-made ${metrics.totalMade}; in-stock ${metrics.inStock}`,
         });
         return Response.json({ count: metrics.inStock, ...metrics });
       }
@@ -101,11 +100,11 @@ export const handler: Handlers = {
           return Response.json({ error: "'adultMade' must be a positive integer" }, { status: 400 });
         }
         const metrics = await recordAdultNeckersMade(body.adultMade);
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.made",
           resource: "Adult Neckers",
-          details: `adult made +${body.adultMade}; adult-created ${before.adultCreated} -> ${metrics.adultCreated}; adult-total-made ${before.adultTotalMade} -> ${metrics.adultTotalMade}`,
+          details: `adult made +${body.adultMade}; adult-created ${metrics.adultCreated}; adult-total-made ${metrics.adultTotalMade}`,
         });
         return Response.json({ count: metrics.inStock, ...metrics });
       }
@@ -118,11 +117,11 @@ export const handler: Handlers = {
         if (delivered <= 0) {
           return Response.json({ error: "No adult neckers currently marked as created" }, { status: 400 });
         }
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.created_reset",
           resource: "Adult Neckers",
-          details: `adult delivered ${delivered}; adult-created ${before.adultCreated} -> ${metrics.adultCreated}; adult-total-made ${metrics.adultTotalMade}`,
+          details: `adult delivered ${delivered}; adult-created ${metrics.adultCreated}; adult-total-made ${metrics.adultTotalMade}`,
         });
         return Response.json({ count: metrics.inStock, delivered, ...metrics });
       }
@@ -139,11 +138,11 @@ export const handler: Handlers = {
         if (moved <= 0) {
           return Response.json({ error: "No created neckers available to move into stock" }, { status: 400 });
         }
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.stock_adjusted",
           resource: "Neckers",
-          details: `moved ${moved} from created to stock; created ${before.created} -> ${metrics.created}; in-stock ${before.inStock} -> ${metrics.inStock}`,
+          details: `moved ${moved} from created to stock; created ${metrics.created}; in-stock ${metrics.inStock}`,
         });
         return Response.json({ count: metrics.inStock, moved, ...metrics });
       }
@@ -157,11 +156,11 @@ export const handler: Handlers = {
           return Response.json({ error: "'setTotalMade' must be a non-negative integer" }, { status: 400 });
         }
         const metrics = await setNeckersTotalMade(body.setTotalMade);
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.total_set",
           resource: "Neckers",
-          details: `total-made ${before.totalMade} -> ${metrics.totalMade}; in-stock ${metrics.inStock}; created ${metrics.created}`,
+          details: `total-made set to ${metrics.totalMade}; in-stock ${metrics.inStock}; created ${metrics.created}`,
         });
         return Response.json({ count: metrics.inStock, ...metrics });
       }
@@ -175,11 +174,11 @@ export const handler: Handlers = {
           return Response.json({ error: "'setAdultTotalMade' must be a non-negative integer" }, { status: 400 });
         }
         const metrics = await setAdultNeckersTotalMade(body.setAdultTotalMade);
-        await logActivity({
+        void logActivity({
           username: session.username,
           action: "neckers.total_set",
           resource: "Adult Neckers",
-          details: `adult-total-made ${before.adultTotalMade} -> ${metrics.adultTotalMade}; adult-created ${metrics.adultCreated}`,
+          details: `adult-total-made set to ${metrics.adultTotalMade}; adult-created ${metrics.adultCreated}`,
         });
         return Response.json({ count: metrics.inStock, ...metrics });
       }
@@ -199,13 +198,13 @@ export const handler: Handlers = {
       }
 
       const metrics = await getNeckerMetrics();
-      await logActivity({
+      void logActivity({
         username: session.username,
         action: "neckers.stock_adjusted",
         resource: "Neckers",
         details: requestedValue !== null
-          ? `set in-stock ${before.inStock} -> ${metrics.inStock}; total-made ${before.totalMade} -> ${metrics.totalMade}`
-          : `adjust in-stock by ${requestedDelta ?? 0}; ${before.inStock} -> ${metrics.inStock}; total-made ${before.totalMade} -> ${metrics.totalMade}`,
+          ? `set in-stock to ${metrics.inStock}; total-made ${metrics.totalMade}`
+          : `adjust in-stock by ${requestedDelta ?? 0}; in-stock ${metrics.inStock}; total-made ${metrics.totalMade}`,
       });
       return Response.json({ count: metrics.inStock, ...metrics });
     } catch (_e) {

@@ -678,10 +678,12 @@ export async function recordNeckersMade(
     return await getNeckerMetrics();
   }
 
-  const [stockRes, createdRes, totalRes] = await Promise.all([
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
     db.get<number>(KEYS.neckers),
     db.get<number>(KEYS.neckersCreated),
     db.get<number>(KEYS.neckersTotalMade),
+    db.get<number>(KEYS.adultNeckersCreated),
+    db.get<number>(KEYS.adultNeckersTotalMade),
   ]);
 
   const next = {
@@ -703,7 +705,13 @@ export async function recordNeckersMade(
     return await getNeckerMetrics();
   }
 
-  return await getNeckerMetrics();
+  return {
+    inStock: next.inStock,
+    created: next.created,
+    totalMade: next.totalMade,
+    adultCreated: adultCreatedRes.value ?? 0,
+    adultTotalMade: adultTotalRes.value ?? 0,
+  };
 }
 
 /**
@@ -717,10 +725,12 @@ export async function moveCreatedToStock(quantity: number): Promise<MoveCreatedT
     return { metrics: await getNeckerMetrics(), moved: 0 };
   }
 
-  const [stockRes, createdRes, totalRes] = await Promise.all([
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
     db.get<number>(KEYS.neckers),
     db.get<number>(KEYS.neckersCreated),
     db.get<number>(KEYS.neckersTotalMade),
+    db.get<number>(KEYS.adultNeckersCreated),
+    db.get<number>(KEYS.adultNeckersTotalMade),
   ]);
 
   const created = createdRes.value ?? 0;
@@ -744,7 +754,16 @@ export async function moveCreatedToStock(quantity: number): Promise<MoveCreatedT
     return { metrics: await getNeckerMetrics(), moved: 0 };
   }
 
-  return { metrics: await getNeckerMetrics(), moved };
+  return {
+    metrics: {
+      inStock: next.inStock,
+      created: next.created,
+      totalMade: next.totalMade,
+      adultCreated: adultCreatedRes.value ?? 0,
+      adultTotalMade: adultTotalRes.value ?? 0,
+    },
+    moved,
+  };
 }
 
 /** Records newly made adult neckers (affects adult counters only). */
@@ -755,7 +774,10 @@ export async function recordAdultNeckersMade(quantity: number): Promise<NeckerMe
     return await getNeckerMetrics();
   }
 
-  const [adultCreatedRes, adultTotalRes] = await Promise.all([
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.neckersTotalMade),
     db.get<number>(KEYS.adultNeckersCreated),
     db.get<number>(KEYS.adultNeckersTotalMade),
   ]);
@@ -774,7 +796,13 @@ export async function recordAdultNeckersMade(quantity: number): Promise<NeckerMe
     return await getNeckerMetrics();
   }
 
-  return await getNeckerMetrics();
+  return {
+    inStock: stockRes.value ?? 0,
+    created: createdRes.value ?? 0,
+    totalMade: totalRes.value ?? 0,
+    adultCreated: nextAdultCreated,
+    adultTotalMade: nextAdultTotal,
+  };
 }
 
 /** Marks adult neckers as delivered (decrements adult created, does not add extra counters). */
@@ -785,7 +813,13 @@ export async function deliverAdultNeckers(quantity: number): Promise<DeliverAdul
     return { metrics: await getNeckerMetrics(), delivered: 0 };
   }
 
-  const adultCreatedRes = await db.get<number>(KEYS.adultNeckersCreated);
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.neckersTotalMade),
+    db.get<number>(KEYS.adultNeckersCreated),
+    db.get<number>(KEYS.adultNeckersTotalMade),
+  ]);
   const current = adultCreatedRes.value ?? 0;
   const delivered = Math.min(current, requested);
   const next = current - delivered;
@@ -799,37 +833,94 @@ export async function deliverAdultNeckers(quantity: number): Promise<DeliverAdul
     return { metrics: await getNeckerMetrics(), delivered: 0 };
   }
 
-  return { metrics: await getNeckerMetrics(), delivered };
+  return {
+    metrics: {
+      inStock: stockRes.value ?? 0,
+      created: createdRes.value ?? 0,
+      totalMade: totalRes.value ?? 0,
+      adultCreated: next,
+      adultTotalMade: adultTotalRes.value ?? 0,
+    },
+    delivered,
+  };
 }
 
 /** Sets all-time total made, useful for importing a legacy baseline. */
 export async function setNeckersTotalMade(value: number): Promise<NeckerMetrics> {
   const db = await initKv();
   const next = Math.max(0, Math.floor(value));
+  const [stockRes, createdRes, adultCreatedRes, adultTotalRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.adultNeckersCreated),
+    db.get<number>(KEYS.adultNeckersTotalMade),
+  ]);
   await db.set(KEYS.neckersTotalMade, next);
-  return await getNeckerMetrics();
+  return {
+    inStock: stockRes.value ?? 0,
+    created: createdRes.value ?? 0,
+    totalMade: next,
+    adultCreated: adultCreatedRes.value ?? 0,
+    adultTotalMade: adultTotalRes.value ?? 0,
+  };
 }
 
 /** Sets all-time adult total made, useful for importing a legacy adult baseline. */
 export async function setAdultNeckersTotalMade(value: number): Promise<NeckerMetrics> {
   const db = await initKv();
   const next = Math.max(0, Math.floor(value));
+  const [stockRes, createdRes, totalRes, adultCreatedRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.neckersTotalMade),
+    db.get<number>(KEYS.adultNeckersCreated),
+  ]);
   await db.set(KEYS.adultNeckersTotalMade, next);
-  return await getNeckerMetrics();
+  return {
+    inStock: stockRes.value ?? 0,
+    created: createdRes.value ?? 0,
+    totalMade: totalRes.value ?? 0,
+    adultCreated: adultCreatedRes.value ?? 0,
+    adultTotalMade: next,
+  };
 }
 
 /** Resets only the current created counter; all-time total remains unchanged. */
 export async function resetNeckersCreated(): Promise<NeckerMetrics> {
   const db = await initKv();
+  const [stockRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersTotalMade),
+    db.get<number>(KEYS.adultNeckersCreated),
+    db.get<number>(KEYS.adultNeckersTotalMade),
+  ]);
   await db.set(KEYS.neckersCreated, 0);
-  return await getNeckerMetrics();
+  return {
+    inStock: stockRes.value ?? 0,
+    created: 0,
+    totalMade: totalRes.value ?? 0,
+    adultCreated: adultCreatedRes.value ?? 0,
+    adultTotalMade: adultTotalRes.value ?? 0,
+  };
 }
 
 /** Resets only the current adult created counter; adult total made remains unchanged. */
 export async function resetAdultNeckersCreated(): Promise<NeckerMetrics> {
   const db = await initKv();
+  const [stockRes, createdRes, totalRes, adultTotalRes] = await Promise.all([
+    db.get<number>(KEYS.neckers),
+    db.get<number>(KEYS.neckersCreated),
+    db.get<number>(KEYS.neckersTotalMade),
+    db.get<number>(KEYS.adultNeckersTotalMade),
+  ]);
   await db.set(KEYS.adultNeckersCreated, 0);
-  return await getNeckerMetrics();
+  return {
+    inStock: stockRes.value ?? 0,
+    created: createdRes.value ?? 0,
+    totalMade: totalRes.value ?? 0,
+    adultCreated: 0,
+    adultTotalMade: adultTotalRes.value ?? 0,
+  };
 }
 
 // ===== SERIALIZATION HELPERS =====
