@@ -74,6 +74,7 @@ function emptyStats(): ComputedStats {
       tent: { count: 0, quantity: 0 },
       cooking: { count: 0, quantity: 0 },
       food: { count: 0, quantity: 0 },
+      fuel: { count: 0, quantity: 0 },
       "camping-tools": { count: 0, quantity: 0 },
       games: { count: 0, quantity: 0 },
       kit: { count: 0, quantity: 0 },

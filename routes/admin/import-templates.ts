@@ -13,7 +13,7 @@ import { logActivity } from "../../lib/activityLog.ts";
 import type { CampTemplateItem } from "../../types/inventory.ts";
 import type { ItemCategory } from "../../types/inventory.ts";
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
+const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel"]);
 
 interface RawTemplate {
   // deno-lint-ignore no-explicit-any

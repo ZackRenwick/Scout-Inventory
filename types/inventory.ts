@@ -1,10 +1,11 @@
 // Base inventory item interface
-export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit";
+export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit" | "fuel";
 
 export const CATEGORY_META: Record<ItemCategory, { emoji: string; label: string; searchLabel: string }> = {
   tent: { emoji: "⛺", label: "Tents", searchLabel: "tents" },
   cooking: { emoji: "🥘", label: "Cooking Equipment", searchLabel: "cooking equipment" },
   food: { emoji: "🥫", label: "Food", searchLabel: "food" },
+  fuel: { emoji: "🛢️", label: "Fuel", searchLabel: "fuel gas" },
   "camping-tools": { emoji: "🧰", label: "Camping Tools", searchLabel: "camping tools" },
   games: { emoji: "⚽", label: "Games Equipment", searchLabel: "games" },
   kit: { emoji: "📦", label: "Box / Kit", searchLabel: "box kit" },
@@ -12,6 +13,7 @@ export const CATEGORY_META: Record<ItemCategory, { emoji: string; label: string;
 
 export const CAMP_STORE_CATEGORIES: ItemCategory[] = ["tent", "cooking", "food", "camping-tools", "kit"];
 export const LOFT_CATEGORIES: ItemCategory[] = ["games", "kit"];
+export const GAS_STORAGE_CATEGORIES: ItemCategory[] = ["fuel"];
 
 export function getCategoryEmoji(category: string): string {
   return CATEGORY_META[category as ItemCategory]?.emoji ?? "📦";
@@ -147,6 +149,15 @@ export interface CookingEquipment extends BaseInventoryItem {
   contents?: BoxContentItem[];
 }
 
+// Fuel properties (stored in gas storage box)
+export interface FuelItem extends BaseInventoryItem {
+  category: "fuel";
+  fuelType: string; // e.g. butane canister, methylated spirit, propane cylinder
+  condition: "excellent" | "good" | "fair" | "needs-repair";
+  brand?: string;
+  yearPurchased?: number;
+}
+
 // Food item properties with expiry tracking
 export interface FoodItem extends BaseInventoryItem {
   category: "food";
@@ -191,7 +202,7 @@ export interface GamesItem extends BaseInventoryItem {
 }
 
 // Union type for all inventory items
-export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | KitItem;
+export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | KitItem | FuelItem;
 
 // Helper type guards
 export function isTentItem(item: InventoryItem): item is TentItem {
@@ -204,6 +215,10 @@ export function isCookingEquipment(item: InventoryItem): item is CookingEquipmen
 
 export function isFoodItem(item: InventoryItem): item is FoodItem {
   return item.category === "food";
+}
+
+export function isFuelItem(item: InventoryItem): item is FuelItem {
+  return item.category === "fuel";
 }
 
 export function isCampingToolItem(item: InventoryItem): item is CampingToolItem {

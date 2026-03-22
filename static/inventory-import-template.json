@@ -76,12 +76,11 @@
   {
     "_comment": "GAS STORAGE BOX EXAMPLE — use space 'gas-storage-box' with location 'Gas Storage Box'",
     "name": "Example Propane Cylinder (Full)",
-    "category": "cooking",
+    "category": "fuel",
     "space": "gas-storage-box",
     "quantity": 6,
     "minThreshold": 2,
     "location": "Gas Storage Box",
-    "equipmentType": "stove",
     "condition": "good",
     "fuelType": "gas",
     "notes": "Stored separately for safety"

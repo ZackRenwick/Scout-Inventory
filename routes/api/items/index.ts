@@ -3,7 +3,7 @@ import { Handlers } from "$fresh/server.ts";
 import type { InventoryItem } from "../../../types/inventory.ts";
 import { getAllItems, createItem, searchItems } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
-import { validateItemBase, validateFoodItem } from "../../../lib/validation.ts";
+import { validateFuelItem, validateGasStorageItem, validateItemBase, validateFoodItem } from "../../../lib/validation.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 
 export const handler: Handlers = {
@@ -22,7 +22,7 @@ export const handler: Handlers = {
       }
       
       // Apply category filter
-      const validCategories = ["tent", "cooking", "food", "camping-tools", "games", "kit"];
+      const validCategories = ["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel"];
       if (category && validCategories.includes(category)) {
         items = items.filter(item => item.category === category);
       }
@@ -69,6 +69,16 @@ export const handler: Handlers = {
         if (foodErr) {
           return Response.json({ error: foodErr }, { status: 400 });
         }
+      }
+      if (body.category === "fuel") {
+        const fuelErr = validateFuelItem(body);
+        if (fuelErr) {
+          return Response.json({ error: fuelErr }, { status: 400 });
+        }
+      }
+      const gasErr = validateGasStorageItem(body);
+      if (gasErr) {
+        return Response.json({ error: gasErr }, { status: 400 });
       }
       
       // Create new item with defaults

@@ -3,6 +3,7 @@ import { Handlers } from "$fresh/server.ts";
 import { getItemById, updateItem, deleteItem } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
+import { validateFuelItem, validateGasStorageItem, validateItemBase, validateFoodItem } from "../../../lib/validation.ts";
 
 export const handler: Handlers = {
   // GET /api/items/[id] - Get a specific item
@@ -34,15 +35,41 @@ export const handler: Handlers = {
     const { id } = ctx.params;
     
     try {
+      const existing = await getItemById(id);
+      if (!existing) {
+        return Response.json({ error: "Item not found" }, { status: 404 });
+      }
+
       const updates = await req.json();
       
       // Convert date strings to Date objects if needed
       if (updates.expiryDate) {
         updates.expiryDate = new Date(updates.expiryDate);
       }
+
+      const merged = { ...existing, ...updates };
+      const baseErr = validateItemBase(merged);
+      if (baseErr) {
+        return Response.json({ error: baseErr }, { status: 400 });
+      }
+      if (merged.category === "food") {
+        const foodErr = validateFoodItem(merged);
+        if (foodErr) {
+          return Response.json({ error: foodErr }, { status: 400 });
+        }
+      }
+      if (merged.category === "fuel") {
+        const fuelErr = validateFuelItem(merged);
+        if (fuelErr) {
+          return Response.json({ error: fuelErr }, { status: 400 });
+        }
+      }
+      const gasErr = validateGasStorageItem(merged);
+      if (gasErr) {
+        return Response.json({ error: gasErr }, { status: 400 });
+      }
       
       const updatedItem = await updateItem(id, updates);
-      
       if (!updatedItem) {
         return Response.json({ error: "Item not found" }, { status: 404 });
       }

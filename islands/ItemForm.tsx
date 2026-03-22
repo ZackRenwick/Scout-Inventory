@@ -1,6 +1,6 @@
 // Form for adding/editing inventory items
 import { Signal, useSignal } from "@preact/signals";
-import { CAMP_STORE_CATEGORIES, GAS_STORAGE_LOCATIONS, getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS, LOFT_CATEGORIES, LOFT_LOCATIONS } from "../types/inventory.ts";
+import { CAMP_STORE_CATEGORIES, GAS_STORAGE_CATEGORIES, GAS_STORAGE_LOCATIONS, getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS, LOFT_CATEGORIES, LOFT_LOCATIONS } from "../types/inventory.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
 interface ItemFormProps {
@@ -10,9 +10,9 @@ interface ItemFormProps {
 }
 
 export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
-  const initialSpace = initialData?.space ?? (initialData?.category === "games" ? "scout-post-loft" : "camp-store");
+  const initialSpace = initialData?.space ?? (initialData?.category === "games" ? "scout-post-loft" : initialData?.category === "fuel" ? "gas-storage-box" : "camp-store");
   const space = useSignal<"camp-store" | "scout-post-loft" | "gas-storage-box">(initialSpace);
-  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games" | "kit">(initialData?.category || "tent");
+  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games" | "kit" | "fuel">(initialData?.category || "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
   const success = useSignal("");
@@ -103,6 +103,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       if (allergens) {
         data.allergens = allergens.split(",").map(a => a.trim());
       }
+    } else if (category.value === "fuel") {
+      data.fuelType = formData.get("fuelType");
+      data.condition = formData.get("condition");
+      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.brand = formData.get("brand") || undefined;
+      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
     }
     
     try {
@@ -176,7 +182,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               name="spaceRadio"
               value="gas-storage-box"
               checked={space.value === "gas-storage-box"}
-              onChange={() => { space.value = "gas-storage-box"; if (!isEdit) { category.value = "cooking"; locationGroup.value = GAS_STORAGE_LOCATIONS[0].group; locationValue.value = GAS_STORAGE_LOCATIONS[0].options[0]; } }}
+              onChange={() => { space.value = "gas-storage-box"; if (!isEdit) { category.value = "fuel"; locationGroup.value = GAS_STORAGE_LOCATIONS[0].group; locationValue.value = GAS_STORAGE_LOCATIONS[0].options[0]; } }}
               disabled={isEdit}
               class="text-purple-600"
             />
@@ -200,6 +206,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           {space.value === "scout-post-loft" ? (
             <>
               {LOFT_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
+              ))}
+            </>
+          ) : space.value === "gas-storage-box" ? (
+            <>
+              {GAS_STORAGE_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
               ))}
             </>
@@ -332,7 +344,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Equipment Type *</label>
-              <select name="equipmentType" required class={inputClass} onChange={(e) => { equipmentType.value = (e.target as HTMLSelectElement).value; }}>
+              <select name="equipmentType" required class={inputClass} onChange={(e) => { equipmentType.value = (e.target as HTMLSelectElement).value; }} value={equipmentType.value}>
                 <option value="stove" selected={initialData?.equipmentType === "stove"}>Stove</option>
                 <option value="pots" selected={initialData?.equipmentType === "pots"}>Pots</option>
                 <option value="pans" selected={initialData?.equipmentType === "pans"}>Pans</option>
@@ -427,6 +439,46 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             )}
           </div>
           )}
+        </div>
+      )}
+
+      {/* Fuel-specific fields */}
+      {category.value === "fuel" && (
+        <div class="mb-6 p-4 bg-orange-50 dark:bg-orange-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Fuel Details</h3>
+          <p class="text-sm text-orange-800 dark:text-orange-300 mb-3">Use this category for butane canisters, methylated spirits, and BBQ gas cylinders.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelClass}>Fuel Type *</label>
+              <input type="text" name="fuelType" defaultValue={initialData?.fuelType} placeholder="e.g., butane canister, methylated spirit, propane" required class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Condition *</label>
+              <select name="condition" required class={inputClass}>
+                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
+                <option value="good" selected={initialData?.condition === "good"}>Good</option>
+                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
+                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Units needing repair</label>
+              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Brand</label>
+              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Year Purchased</label>
+              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
       )}
       

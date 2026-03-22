@@ -3,7 +3,7 @@
 
 import type { ItemCategory, ItemSpace } from "../types/inventory.ts";
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
+const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel"]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft", "gas-storage-box"]);
 const VALID_FOOD_TYPES = new Set(["canned", "jarred", "dried", "packaged", "fresh", "frozen"]);
 
@@ -91,4 +91,29 @@ export function validateFoodItem(body: Record<string, any>): string | null {
   }
   const expiry = new Date(body.expiryDate);
   return validateExpiryDate(expiry);
+}
+
+/**
+ * Validates fuel-specific fields.
+ */
+// deno-lint-ignore no-explicit-any
+export function validateFuelItem(body: Record<string, any>): string | null {
+  if (!body.fuelType || typeof body.fuelType !== "string" || body.fuelType.trim() === "") {
+    return "fuelType is required for fuel items";
+  }
+  return null;
+}
+
+/**
+ * Gas storage box accepts fuel records only.
+ */
+// deno-lint-ignore no-explicit-any
+export function validateGasStorageItem(body: Record<string, any>): string | null {
+  if (body.space === "gas-storage-box" && body.category !== "fuel") {
+    return "Gas storage box can only contain fuel category items";
+  }
+  if (body.category === "fuel" && body.space !== "gas-storage-box") {
+    return "Fuel category items must be stored in gas-storage-box";
+  }
+  return null;
 }

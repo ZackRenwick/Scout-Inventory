@@ -14,13 +14,14 @@ import { logActivity } from "../../lib/activityLog.ts";
 
 // ===== CONSTANTS =====
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
+const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel"]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft", "gas-storage-box"]);
 
 // Required extra fields per category (beyond the base fields)
 const CATEGORY_REQUIRED: Record<ItemCategory, string[]> = {
   tent:            ["tentType", "capacity", "size", "condition"],
   cooking:         ["equipmentType", "condition"],
+  fuel:            ["fuelType", "condition"],
   food:            ["foodType", "expiryDate"],
   "camping-tools": ["toolType", "condition"],
   games:           ["gameType", "condition"],
@@ -90,6 +91,15 @@ function validateItem(
     return err(`Row ${index + 1} ("${raw.name}"): invalid space "${raw.space}" — must be camp-store, scout-post-loft, or gas-storage-box`);
   }
 
+  if (raw.space === "gas-storage-box") {
+    if (raw.category !== "fuel") {
+      return err(`Row ${index + 1} ("${raw.name}"): gas-storage-box only accepts fuel category items`);
+    }
+  }
+  if (raw.category === "fuel" && raw.space !== "gas-storage-box") {
+    return err(`Row ${index + 1} ("${raw.name}"): fuel items must be stored in gas-storage-box`);
+  }
+
   const category = raw.category as ItemCategory;
 
   // Category-specific required fields
@@ -132,6 +142,19 @@ function validateItem(
         fuelType: raw.fuelType,
         capacity: raw.capacity,
         contents: contents.length ? contents : undefined,
+      },
+    };
+  }
+  if (category === "fuel") {
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "fuel",
+        fuelType: raw.fuelType,
+        condition: raw.condition,
+        brand: raw.brand,
+        yearPurchased: raw.yearPurchased,
       },
     };
   }

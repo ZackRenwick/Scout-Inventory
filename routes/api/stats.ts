@@ -10,6 +10,7 @@ interface Stats {
     tent: { count: number; quantity: number };
     cooking: { count: number; quantity: number };
     food: { count: number; quantity: number };
+    fuel: { count: number; quantity: number };
     "camping-tools": { count: number; quantity: number };
     kit: { count: number; quantity: number };
   };
@@ -47,6 +48,7 @@ export const handler: Handlers = {
           tent:            computed.categoryBreakdown.tent,
           cooking:         computed.categoryBreakdown.cooking,
           food:            computed.categoryBreakdown.food,
+          fuel:            computed.categoryBreakdown.fuel,
           "camping-tools": computed.categoryBreakdown["camping-tools"],
           kit:             computed.categoryBreakdown.kit,
         },

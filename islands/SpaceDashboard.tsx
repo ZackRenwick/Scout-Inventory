@@ -6,6 +6,7 @@ interface CategoryBreakdown {
   tent: { count: number; quantity: number };
   cooking: { count: number; quantity: number };
   food: { count: number; quantity: number };
+  fuel: { count: number; quantity: number };
   "camping-tools": { count: number; quantity: number };
   games: { count: number; quantity: number };
 }
@@ -195,13 +196,9 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
       {(space.value === "all" || space.value === "gas-storage-box") && (
         <div>
           <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🛢️ Gas Storage Box</h3>
-          <a href="/inventory" class="block rounded-lg hover:shadow-lg transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-purple-500">
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-t-4 border-orange-500 rounded-lg p-5">
-              <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">Stored Units</p>
-              <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{gasStorageBox.quantity}</p>
-              <p class="text-xs text-gray-400 dark:text-gray-400 mt-1">Across {gasStorageBox.count} item{gasStorageBox.count !== 1 ? "s" : ""}</p>
-            </div>
-          </a>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <CategoryCard title={`${getCategoryEmoji("fuel")} ${getCategoryLabel("fuel")}`} value={c.fuel.quantity} color="orange" href="/inventory?category=fuel" />
+          </div>
         </div>
       )}
 

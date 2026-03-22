@@ -301,6 +301,9 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
               <optgroup label="🏠 Scout Post Loft">
                 <option value="games">{getCategoryEmoji("games")} {getCategoryLabel("games")}</option>
               </optgroup>
+              <optgroup label="🛢️ Gas Storage Box">
+                <option value="fuel">{getCategoryEmoji("fuel")} {getCategoryLabel("fuel")}</option>
+              </optgroup>
             </select>
           </div>
           {(categoryFilter.value === "all" || categoryFilter.value === "cooking") && (

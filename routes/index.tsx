@@ -18,6 +18,7 @@ interface DashboardData {
       tent: { count: number; quantity: number };
       cooking: { count: number; quantity: number };
       food: { count: number; quantity: number };
+      fuel: { count: number; quantity: number };
       "camping-tools": { count: number; quantity: number };
       games: { count: number; quantity: number };
       kit: { count: number; quantity: number };
@@ -92,6 +93,7 @@ export const handler: Handlers<DashboardData> = {
             tent: { count: 0, quantity: 0 },
             cooking: { count: 0, quantity: 0 },
             food: { count: 0, quantity: 0 },
+            fuel: { count: 0, quantity: 0 },
             "camping-tools": { count: 0, quantity: 0 },
             games: { count: 0, quantity: 0 },
             kit: { count: 0, quantity: 0 },
