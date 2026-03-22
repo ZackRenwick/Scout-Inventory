@@ -16,6 +16,9 @@ interface MealsPageData {
 export const handler: Handlers<MealsPageData> = {
   async GET(_req, ctx) {
     const session = ctx.state.session as Session;
+    if (session.role !== "admin") {
+      return new Response(null, { status: 302, headers: { location: "/" } });
+    }
     const [meals, rawFood] = await Promise.all([
       getAllMeals(),
       getItemsByCategory("food"),
@@ -32,7 +35,7 @@ export const handler: Handlers<MealsPageData> = {
 
 export default function MealsPage({ data }: PageProps<MealsPageData>) {
   const { meals, foodItems, session, csrfToken } = data;
-  const isAdmin = session.role === "admin" || session.role === "manager";
+  const isAdmin = session.role === "admin";
 
   return (
     <Layout title="Meal Planner" username={session.username} role={session.role}>

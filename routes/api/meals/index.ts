@@ -1,5 +1,5 @@
-// GET /api/meals        — list all meals (any authenticated user)
-// POST /api/meals       — create a meal (admin/manager only)
+// GET /api/meals        — list all meals (admin only)
+// POST /api/meals       — create a meal (admin only)
 import { Handlers } from "$fresh/server.ts";
 import { getAllMeals, createMeal } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
@@ -8,7 +8,8 @@ import { logActivity } from "../../../lib/activityLog.ts";
 
 export const handler: Handlers = {
   async GET(_req, ctx) {
-    if (!ctx.state.session) return forbidden();
+    const session = ctx.state.session as Session | undefined;
+    if (!session || session.role !== "admin") return forbidden();
     try {
       const meals = await getAllMeals();
       return Response.json(meals);
@@ -19,7 +20,7 @@ export const handler: Handlers = {
 
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
+    if (!session || session.role !== "admin") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     try {

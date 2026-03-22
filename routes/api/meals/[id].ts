@@ -1,6 +1,6 @@
-// GET    /api/meals/:id  — fetch a single meal (any authenticated user)
-// PUT    /api/meals/:id  — update a meal (admin/manager only)
-// DELETE /api/meals/:id  — delete a meal (admin/manager only)
+// GET    /api/meals/:id  — fetch a single meal (admin only)
+// PUT    /api/meals/:id  — update a meal (admin only)
+// DELETE /api/meals/:id  — delete a meal (admin only)
 import { Handlers } from "$fresh/server.ts";
 import { getMealById, updateMeal, deleteMeal } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
@@ -9,7 +9,8 @@ import { logActivity } from "../../../lib/activityLog.ts";
 
 export const handler: Handlers = {
   async GET(req, ctx) {
-    if (!ctx.state.session) return forbidden();
+    const session = ctx.state.session as Session | undefined;
+    if (!session || session.role !== "admin") return forbidden();
     const meal = await getMealById(ctx.params.id);
     if (!meal) return Response.json({ error: "Not found" }, { status: 404 });
     return Response.json(meal);
@@ -17,7 +18,7 @@ export const handler: Handlers = {
 
   async PUT(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
+    if (!session || session.role !== "admin") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     try {
@@ -59,7 +60,7 @@ export const handler: Handlers = {
 
   async DELETE(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
+    if (!session || session.role !== "admin") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     const meal = await getMealById(ctx.params.id);
