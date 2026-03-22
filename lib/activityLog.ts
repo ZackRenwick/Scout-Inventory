@@ -19,6 +19,7 @@ export type ActivityAction =
   | "item.updated"
   | "item.deleted"
   | "item.qr_failed"
+  | "item.maintenance_logged"
   | "items.imported"
   | "camp.created"
   | "camp.updated"

@@ -1,6 +1,16 @@
 /// <reference lib="deno.unstable" />
 // Deno KV database setup and operations
-import type { InventoryItem, CheckOut, FoodItem, ItemCategory, ItemSpace, CampPlan, CampTemplate, CampTemplateItem } from "../types/inventory.ts";
+import type {
+  InventoryItem,
+  CheckOut,
+  FoodItem,
+  ItemCategory,
+  ItemSpace,
+  CampPlan,
+  CampTemplate,
+  CampTemplateItem,
+  MaintenanceRecord,
+} from "../types/inventory.ts";
 import type { Meal, MealPayload } from "../types/meals.ts";
 
 // Initialize Deno KV
@@ -455,6 +465,12 @@ export async function getActiveCheckOuts(): Promise<CheckOut[]> {
   return allCheckOuts.filter((co) => co.status === "checked-out" || co.status === "overdue");
 }
 
+export async function getActiveCheckOutsByItemId(itemId: string): Promise<CheckOut[]> {
+  const active = await getActiveCheckOuts();
+  return active.filter((co) => co.itemId === itemId)
+    .sort((a, b) => new Date(a.expectedReturnDate).getTime() - new Date(b.expectedReturnDate).getTime());
+}
+
 export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
   const db = await initKv();
   const serializedCheckOut = serializeCheckOut(checkout);
@@ -548,6 +564,64 @@ export async function deleteCheckOut(id: string): Promise<boolean> {
 
   invalidateCheckoutsCache();
   return true;
+}
+
+// ===== MAINTENANCE OPERATIONS =====
+
+export interface MaintenanceUpdateInput {
+  date: Date;
+  type: MaintenanceRecord["type"];
+  notes: string;
+  performedBy?: string;
+  conditionAfter?: "excellent" | "good" | "fair" | "needs-repair";
+  nextInspectionDate?: Date;
+}
+
+/**
+ * Append a maintenance/inspection entry to an item and update inspection metadata.
+ */
+export async function addMaintenanceRecord(
+  itemId: string,
+  input: MaintenanceUpdateInput,
+): Promise<InventoryItem | null> {
+  const existing = await getItemById(itemId);
+  if (!existing) return null;
+
+  const history = existing.maintenanceHistory ?? [];
+  const newRecord: MaintenanceRecord = {
+    id: crypto.randomUUID(),
+    date: input.date,
+    type: input.type,
+    notes: input.notes,
+    performedBy: input.performedBy,
+    conditionAfter: input.conditionAfter,
+  };
+
+  const updates: Partial<InventoryItem> = {
+    lastInspectedDate: input.date,
+    nextInspectionDate: input.nextInspectionDate,
+    maintenanceHistory: [newRecord, ...history],
+  };
+
+  if (input.conditionAfter && "condition" in existing) {
+    (updates as Partial<InventoryItem> & { condition?: string }).condition = input.conditionAfter;
+  }
+
+  return await updateItem(itemId, updates);
+}
+
+/** Update only inspection scheduling metadata for an item. */
+export async function updateInspectionSchedule(
+  itemId: string,
+  updates: { lastInspectedDate?: Date; nextInspectionDate?: Date },
+): Promise<InventoryItem | null> {
+  const existing = await getItemById(itemId);
+  if (!existing) return null;
+
+  return await updateItem(itemId, {
+    lastInspectedDate: updates.lastInspectedDate ?? existing.lastInspectedDate,
+    nextInspectionDate: updates.nextInspectionDate ?? existing.nextInspectionDate,
+  });
 }
 
 // ===== NECKER COUNT =====
@@ -932,6 +1006,19 @@ function serializeItem(item: InventoryItem): any {
   const serialized: any = { ...item };
   serialized.addedDate = item.addedDate.toISOString();
   serialized.lastUpdated = item.lastUpdated.toISOString();
+
+  if (item.lastInspectedDate) {
+    serialized.lastInspectedDate = item.lastInspectedDate.toISOString();
+  }
+  if (item.nextInspectionDate) {
+    serialized.nextInspectionDate = item.nextInspectionDate.toISOString();
+  }
+  if (item.maintenanceHistory && item.maintenanceHistory.length > 0) {
+    serialized.maintenanceHistory = item.maintenanceHistory.map((entry) => ({
+      ...entry,
+      date: entry.date.toISOString(),
+    }));
+  }
   
   if (item.category === "food") {
     serialized.expiryDate = item.expiryDate.toISOString();
@@ -946,6 +1033,19 @@ function deserializeItem(data: any): InventoryItem {
   const item: any = { ...data };
   item.addedDate = new Date(data.addedDate);
   item.lastUpdated = new Date(data.lastUpdated);
+
+  if (data.lastInspectedDate) {
+    item.lastInspectedDate = new Date(data.lastInspectedDate);
+  }
+  if (data.nextInspectionDate) {
+    item.nextInspectionDate = new Date(data.nextInspectionDate);
+  }
+  if (Array.isArray(data.maintenanceHistory)) {
+    item.maintenanceHistory = data.maintenanceHistory.map((entry: any) => ({
+      ...entry,
+      date: new Date(entry.date),
+    }));
+  }
   
   if (data.category === "food") {
     item.expiryDate = new Date(data.expiryDate);

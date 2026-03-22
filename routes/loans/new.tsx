@@ -7,15 +7,18 @@ import { getAllItems } from "../../db/kv.ts";
 
 interface NewLoanPageData {
   items: LoanableItem[];
+  initialItemId?: string;
   session?: Session;
 }
 
 export const handler: Handlers<NewLoanPageData> = {
-  async GET(_req, ctx) {
+  async GET(req, ctx) {
     const session = ctx.state.session as Session;
     if (session.role === "viewer") {
       return new Response(null, { status: 302, headers: { location: "/loans" } });
     }
+
+    const initialItemId = new URL(req.url).searchParams.get("itemId") ?? undefined;
 
     // Only non-food items can be loaned (food is consumable).
     // Exclude items already at camp or fully out-of-stock due to active loans.
@@ -31,7 +34,7 @@ export const handler: Handlers<NewLoanPageData> = {
       }))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
-    return ctx.render({ items: loanable, session });
+    return ctx.render({ items: loanable, initialItemId, session });
   },
 };
 
@@ -48,7 +51,11 @@ export default function NewLoanPage({ data }: PageProps<NewLoanPageData>) {
           </p>
         </div>
         <div class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <LoanForm items={data.items} csrfToken={data.session?.csrfToken} />
+          <LoanForm
+            items={data.items}
+            initialItemId={data.initialItemId}
+            csrfToken={data.session?.csrfToken}
+          />
         </div>
       </div>
     </Layout>

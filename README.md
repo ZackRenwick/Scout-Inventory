@@ -39,6 +39,19 @@ Adult neckers are tracked separately: mark them made, then mark them delivered t
 - Toggle needs-repair-only view
 - Clickable table rows for quick item access
 
+### 📱 QR Check-Out / Check-In Flow
+- Print item-specific QR labels from each item page
+- Scanning a label opens a mobile-friendly quick-actions page for that item
+- One-tap **Check Out This Item** jump to pre-filled loan form
+- View active loans for the scanned item and mark returns directly from the scan page
+
+### 🛠️ Maintenance Lifecycle Tracking
+- Dedicated maintenance page per item (`/inventory/[id]/maintenance`)
+- Log inspections, repairs, cleaning, and replacement-part events with notes and performer
+- Track `lastInspectedDate`, `nextInspectionDate`, and maintenance history per item
+- Optional condition update when logging maintenance for condition-tracked categories
+- Visual due status for upcoming or overdue inspections
+
 ### ⚠️ Alerts
 - **Low stock** — items at or below their minimum threshold
 - **Neckers low** — necker count at or below configurable threshold
@@ -256,6 +269,13 @@ One notification `Deno.cron` job runs at 08:30 UTC on Wednesday + Friday (only w
 - Overdue loans check — emails if any loans are overdue
 
 A third cron runs every 5 minutes to self-ping the app and keep the isolate warm, reducing cold-start latency. Set `APP_URL` in the Deno Deploy dashboard to the production URL.
+
+---
+
+## Next Standout Feature (Planned)
+
+### 🧭 Camp Pack Auto-Builder
+Planned next step: a smart camp planning assistant that suggests quantities based on camp type, duration, and headcount, using historical camp usage to pre-fill likely equipment and food needs.
 
 ---
 

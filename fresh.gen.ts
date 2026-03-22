@@ -44,7 +44,9 @@ import * as $camps_templates from "./routes/camps/templates.tsx";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $inventory_id_ from "./routes/inventory/[id].tsx";
+import * as $inventory_id_maintenance from "./routes/inventory/[id]/maintenance.tsx";
 import * as $inventory_id_qr from "./routes/inventory/[id]/qr.tsx";
+import * as $inventory_id_scan from "./routes/inventory/[id]/scan.tsx";
 import * as $inventory_add from "./routes/inventory/add.tsx";
 import * as $inventory_edit_id_ from "./routes/inventory/edit/[id].tsx";
 import * as $inventory_index from "./routes/inventory/index.tsx";
@@ -132,7 +134,9 @@ const manifest = {
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/inventory/[id].tsx": $inventory_id_,
+    "./routes/inventory/[id]/maintenance.tsx": $inventory_id_maintenance,
     "./routes/inventory/[id]/qr.tsx": $inventory_id_qr,
+    "./routes/inventory/[id]/scan.tsx": $inventory_id_scan,
     "./routes/inventory/add.tsx": $inventory_add,
     "./routes/inventory/edit/[id].tsx": $inventory_edit_id_,
     "./routes/inventory/index.tsx": $inventory_index,

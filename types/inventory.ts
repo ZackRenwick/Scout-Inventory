@@ -118,6 +118,21 @@ export interface BaseInventoryItem {
   quantityAtCamp?: number;
   /** How many units of this item currently need repair (for multi-quantity items where only some units are damaged) */
   quantityNeedsRepair?: number;
+  /** Last date this item was formally inspected */
+  lastInspectedDate?: Date;
+  /** Next scheduled inspection date for this item */
+  nextInspectionDate?: Date;
+  /** Historical inspection and maintenance records */
+  maintenanceHistory?: MaintenanceRecord[];
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  date: Date;
+  type: "inspection" | "repair" | "cleaning" | "replacement-part" | "other";
+  notes: string;
+  performedBy?: string;
+  conditionAfter?: "excellent" | "good" | "fair" | "needs-repair";
 }
 
 // Tent-specific properties

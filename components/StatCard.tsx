@@ -17,15 +17,15 @@ export default function StatCard({ title, value, icon, color = "blue", subtitle 
   };
   
   return (
-    <div class={`border-2 rounded-lg p-3 sm:p-6 h-full ${colorClasses[color]}`}>
+    <div class={`border-2 rounded-lg p-3 max-[380px]:p-2.5 sm:p-4 lg:p-3.5 h-full ${colorClasses[color]}`}>
       <div class="flex items-center justify-between gap-2">
         <div class="min-w-0">
-          <p class="text-xs sm:text-sm font-medium leading-tight">{title}</p>
-          <p class="text-2xl sm:text-3xl font-bold mt-1 sm:mt-2">{value}</p>
-          {subtitle && <p class="text-xs mt-1 opacity-70 leading-tight">{subtitle}</p>}
+          <p class="text-xs max-[380px]:text-[11px] sm:text-sm font-medium leading-tight">{title}</p>
+          <p class="text-2xl max-[380px]:text-xl sm:text-[1.7rem] lg:text-2xl font-bold mt-1 max-[380px]:mt-0.5 sm:mt-1.5">{value}</p>
+          {subtitle && <p class="text-xs max-[380px]:text-[10px] mt-1 max-[380px]:mt-0.5 opacity-70 leading-tight">{subtitle}</p>}
         </div>
         {icon && (
-          <div class="text-2xl sm:text-4xl shrink-0">
+          <div class="text-2xl max-[380px]:text-xl sm:text-3xl lg:text-[1.9rem] shrink-0">
             {icon}
           </div>
         )}

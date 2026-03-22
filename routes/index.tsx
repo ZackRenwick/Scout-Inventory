@@ -6,7 +6,7 @@ import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import NeckerCounter from "../islands/NeckerCounter.tsx";
 import NeckerAlert from "../islands/NeckerAlert.tsx";
 import type { Session } from "../lib/auth.ts";
-import { getComputedStats, getFoodItemsSortedByExpiry, getActiveCheckOuts } from "../db/kv.ts";
+import { getComputedStats, getFoodItemsSortedByExpiry, getActiveCheckOuts, getAllItems } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
 interface DashboardData {
@@ -37,6 +37,10 @@ interface DashboardData {
       expiringSoon: number;
       expiringWarning: number;
     };
+    inspections: {
+      dueSoon: number;
+      overdue: number;
+    };
   };
   session?: Session;
 }
@@ -44,13 +48,17 @@ interface DashboardData {
 export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
     try {
+      const session = ctx.state.session as Session;
+      const canViewInspections = session.role === "manager" || session.role === "admin";
+
       // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
       // getActiveCheckOuts is cache-backed after the first request.
-      // All three run concurrently.
-      const [computed, foodItems, activeLoansData] = await Promise.all([
+      // getAllItems is only needed for manager inspection stats.
+      const [computed, foodItems, activeLoansData, allItems] = await Promise.all([
         getComputedStats(),
         getFoodItemsSortedByExpiry(),
         getActiveCheckOuts(),
+        canViewInspections ? getAllItems() : Promise.resolve([]),
       ]);
 
       const expiringFood = { expired: 0, expiringSoon: 0, expiringWarning: 0 };
@@ -69,6 +77,16 @@ export const handler: Handlers<DashboardData> = {
         (l) => new Date(l.expectedReturnDate) < now,
       ).length;
 
+      const inspections = { dueSoon: 0, overdue: 0 };
+      if (canViewInspections) {
+        for (const item of allItems) {
+          if (!item.nextInspectionDate) continue;
+          const days = getDaysUntil(item.nextInspectionDate);
+          if (days < 0) inspections.overdue++;
+          else if (days <= 30) inspections.dueSoon++;
+        }
+      }
+
       const stats: DashboardData["stats"] = {
         totalItems:        computed.totalItems,
         totalQuantity:     computed.totalQuantity,
@@ -79,9 +97,10 @@ export const handler: Handlers<DashboardData> = {
         activeLoans:       computed.activeLoansCount ?? activeLoansData.length,
         overdueLoans,
         expiringFood,
+        inspections,
       };
       const neckerThreshold = parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10);
-      return ctx.render({ stats, session: ctx.state.session as Session, neckerThreshold });
+      return ctx.render({ stats, session, neckerThreshold });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       // Return empty stats on error
@@ -108,6 +127,7 @@ export const handler: Handlers<DashboardData> = {
           activeLoans: 0,
           overdueLoans: 0,
           expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
+          inspections: { dueSoon: 0, overdue: 0 },
         },
         session: ctx.state.session as Session,
         neckerThreshold: parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10),
@@ -118,6 +138,13 @@ export const handler: Handlers<DashboardData> = {
 
 export default function Home({ data }: PageProps<DashboardData>) {
   const { stats, session, neckerThreshold } = data;
+  const canViewInspections = session?.role === "manager" || session?.role === "admin";
+  const inspectionTotal = stats.inspections.overdue + stats.inspections.dueSoon;
+  const hasExpiredFoodIssue = stats.expiringFood.expired > 0;
+  const hasLowStockIssue = stats.lowStockItems > 0;
+  const hasNeedsRepairIssue = stats.needsRepairItems > 0;
+  const hasInspectionDueIssue = canViewInspections && inspectionTotal > 0;
+  const hasComplianceIssues = hasExpiredFoodIssue || hasLowStockIssue || hasNeedsRepairIssue || hasInspectionDueIssue;
   const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning + stats.needsRepairItems;
   
   return (
@@ -214,61 +241,92 @@ export default function Home({ data }: PageProps<DashboardData>) {
         </div>
       </div>
       
-      {/* Overview Stats */}
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-8">
-        <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
-          <StatCard
-            title="Expired Food"
-            value={stats.expiringFood.expired}
-            icon="🚫"
-            color={stats.expiringFood.expired > 0 ? "red" : "green"}
-            subtitle="Remove from stock"
-          />
-        </a>
-        <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
-          <StatCard
-            title="Expiring Soon"
-            value={stats.expiringFood.expiringSoon}
-            icon="⏰"
-            color={stats.expiringFood.expiringSoon > 0 ? "yellow" : "green"}
-            subtitle="Within 7 days"
-          />
-        </a>
-        <a href="/inventory?lowstock=true" class="block hover:shadow-lg transition-shadow">
-          <StatCard
-            title="Low Stock"
-            value={stats.lowStockItems}
-            icon="⚠️"
-            color={stats.lowStockItems > 0 ? "red" : "green"}
-            subtitle="Need restocking"
-          />
-        </a>
-        <a href="/inventory?onloan=true" class="block hover:shadow-lg transition-shadow">
-          <StatCard
-            title="Active Loans"
-            value={stats.activeLoans}
-            icon="📤"
-            color={stats.overdueLoans > 0 ? "red" : stats.activeLoans > 0 ? "yellow" : "green"}
-            subtitle={stats.overdueLoans > 0 ? `${stats.overdueLoans} overdue` : "Items out on loan"}
-          />
-        </a>
-        <a href="/inventory?needsrepair=true" class="block hover:shadow-lg transition-shadow">
-          <StatCard
-            title="Needs Repair"
-            value={stats.needsRepairItems}
-            icon="🔧"
-            color={stats.needsRepairItems > 0 ? "yellow" : "green"}
-            subtitle="Items flagged for repair"
-          />
-        </a>
-        <NeckerCounter
-          csrfToken={session?.csrfToken ?? ""}
-          canIncrease={session?.role !== "viewer"}
-          canDecrease={session?.role === "admin" || session?.role === "manager"}
-        />
-      </div>
+      <div class="w-full">
+        {/* Overview Stats */}
+        {hasComplianceIssues && (
+          <div class="mb-6 space-y-3 sm:space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-purple-100">Alerts &amp; Compliance</h2>
+              <span class="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">
+                High-priority checks first
+              </span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
+              {hasExpiredFoodIssue && (
+                <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
+                  <StatCard
+                    title="Expired Food"
+                    value={stats.expiringFood.expired}
+                    icon="🚫"
+                    color="red"
+                    subtitle="Remove from stock"
+                  />
+                </a>
+              )}
+              {hasLowStockIssue && (
+                <a href="/inventory?lowstock=true" class="block hover:shadow-lg transition-shadow">
+                  <StatCard
+                    title="Low Stock"
+                    value={stats.lowStockItems}
+                    icon="⚠️"
+                    color="red"
+                    subtitle="Need restocking"
+                  />
+                </a>
+              )}
+              {hasNeedsRepairIssue && (
+                <a href="/inventory?needsrepair=true" class="block hover:shadow-lg transition-shadow">
+                  <StatCard
+                    title="Needs Repair"
+                    value={stats.needsRepairItems}
+                    icon="🔧"
+                    color="yellow"
+                    subtitle="Items flagged for repair"
+                  />
+                </a>
+              )}
+              {hasInspectionDueIssue && (
+                <a href="/inventory" class="block hover:shadow-lg transition-shadow">
+                  <StatCard
+                    title="Inspections"
+                    value={inspectionTotal}
+                    icon="🛠️"
+                    color={stats.inspections.overdue > 0 ? "red" : "yellow"}
+                    subtitle={stats.inspections.overdue > 0 ? `${stats.inspections.overdue} overdue` : `${stats.inspections.dueSoon} due in 30d`}
+                  />
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
-      <SpaceDashboard categoryBreakdown={stats.categoryBreakdown} spaceBreakdown={stats.spaceBreakdown} expiringFood={stats.expiringFood} />
+        <div class="mb-6 space-y-3 sm:space-y-4">
+          <div class="flex items-center justify-between pt-1">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-purple-100">Operations</h2>
+            <span class="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">
+              Live stock movement
+            </span>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-3.5">
+            <a href="/inventory?onloan=true" class="block hover:shadow-lg transition-shadow">
+              <StatCard
+                title="Active Loans"
+                value={stats.activeLoans}
+                icon="📤"
+                color={stats.overdueLoans > 0 ? "red" : stats.activeLoans > 0 ? "yellow" : "green"}
+                subtitle={stats.overdueLoans > 0 ? `${stats.overdueLoans} overdue` : "Items out on loan"}
+              />
+            </a>
+            <NeckerCounter
+              csrfToken={session?.csrfToken ?? ""}
+              canIncrease={session?.role !== "viewer"}
+              canDecrease={session?.role === "admin" || session?.role === "manager"}
+            />
+          </div>
+        </div>
+
+        <SpaceDashboard categoryBreakdown={stats.categoryBreakdown} spaceBreakdown={stats.spaceBreakdown} expiringFood={stats.expiringFood} />
+      </div>
       
     </Layout>
   );

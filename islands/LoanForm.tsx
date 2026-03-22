@@ -1,5 +1,6 @@
 // Island for creating a new loan record
 import { useSignal, useComputed } from "@preact/signals";
+import { useEffect } from "preact/hooks";
 import NumberInput from "../components/NumberInput.tsx";
 
 export interface LoanableItem {
@@ -13,6 +14,7 @@ export interface LoanableItem {
 interface LoanFormProps {
   items: LoanableItem[];
   csrfToken?: string;
+  initialItemId?: string;
 }
 
 function todayIso(): string {
@@ -30,7 +32,7 @@ const inputClass =
   "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500";
 const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
 
-export default function LoanForm({ items, csrfToken }: LoanFormProps) {
+export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormProps) {
   const search = useSignal("");
   const selectedItem = useSignal<LoanableItem | null>(null);
   const borrower = useSignal("");
@@ -53,6 +55,16 @@ export default function LoanForm({ items, csrfToken }: LoanFormProps) {
       )
       .slice(0, 10);
   });
+
+  useEffect(() => {
+    if (!initialItemId) return;
+    const match = items.find((item) => item.id === initialItemId);
+    if (!match) return;
+    selectedItem.value = match;
+    search.value = match.name;
+    showDropdown.value = false;
+    quantity.value = 1;
+  }, [initialItemId, items]);
 
   function selectItem(item: LoanableItem) {
     selectedItem.value = item;

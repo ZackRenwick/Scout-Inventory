@@ -27,7 +27,7 @@ export const handler: Handlers<QrPageData> = {
       return new Response(null, { status: 302, headers: { location: `/inventory/${id}` } });
     }
     const origin = new URL(req.url).origin;
-    const itemUrl = `${origin}/inventory/${id}`;
+    const itemUrl = `${origin}/inventory/${id}/scan`;
 
     // Generate QR server-side so item URLs are never sent to third-party services.
     let qrDataUri = "";

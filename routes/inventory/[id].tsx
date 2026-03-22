@@ -164,6 +164,12 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
               ✏️ Edit
             </a>
             )}
+            <a
+              href={`/inventory/${item.id}/maintenance`}
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              🛠️ Maintenance
+            </a>
             {data.session?.role !== "viewer" && (
             <form method="POST" action={`/inventory/${item.id}`}>
               <input type="hidden" name="csrf" value={data.csrfToken ?? ""} />
@@ -185,6 +191,12 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
               🖨️ QR Label
             </a>
             )}
+            <a
+              href={`/inventory/${item.id}/scan`}
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              🔎 QR Quick Actions
+            </a>
           </div>
         </div>
         
