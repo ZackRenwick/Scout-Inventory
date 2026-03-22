@@ -1,9 +1,11 @@
 // Printable QR label page for a single inventory item
 import { Handlers, PageProps } from "$fresh/server.ts";
+import QRCode from "npm:qrcode@1.5.4";
 import type { InventoryItem } from "../../../types/inventory.ts";
 import { getCategoryEmoji } from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
 import { getItemById } from "../../../db/kv.ts";
+import { logActivity } from "../../../lib/activityLog.ts";
 import PrintButton from "../../../islands/PrintButton.tsx";
 
 interface QrPageData {
@@ -27,17 +29,24 @@ export const handler: Handlers<QrPageData> = {
     const origin = new URL(req.url).origin;
     const itemUrl = `${origin}/inventory/${id}`;
 
-    // Fetch QR SVG server-side so no external request leaves the browser (avoids CSP img-src issues)
+    // Generate QR server-side so item URLs are never sent to third-party services.
     let qrDataUri = "";
     try {
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&format=svg&data=${encodeURIComponent(itemUrl)}`;
-      const qrRes = await fetch(qrApiUrl);
-      if (qrRes.ok) {
-        const svgText = await qrRes.text();
-        const b64 = btoa(unescape(encodeURIComponent(svgText)));
-        qrDataUri = `data:image/svg+xml;base64,${b64}`;
-      }
-    } catch (_) { /* leave qrDataUri empty; label still prints with URL */ }
+      qrDataUri = await QRCode.toDataURL(itemUrl, {
+        width: 220,
+        margin: 1,
+        errorCorrectionLevel: "M",
+      });
+    } catch (err) {
+      // Keep label page usable while recording failed QR generation for admin follow-up.
+      await logActivity({
+        username: session.username,
+        action: "item.qr_failed",
+        resource: item.name,
+        resourceId: item.id,
+        details: err instanceof Error ? err.message : "Unknown QR generation error",
+      });
+    }
 
     return ctx.render({ item, itemUrl, qrDataUri, session });
   },
