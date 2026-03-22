@@ -1,7 +1,7 @@
 // Interactive inventory table with search and filtering
 import { useComputed, useSignal } from "@preact/signals";
 import type { InventoryItem } from "../types/inventory.ts";
-import { isFoodItem, isTentItem, ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
+import { GAS_STORAGE_LOCATIONS, isFoodItem, isTentItem, ITEM_LOCATIONS, LOFT_LOCATIONS } from "../types/inventory.ts";
 import type { ItemCategory } from "../types/inventory.ts";
 import { getCategoryEmoji, getCategoryLabel, getCategorySearchLabel } from "../types/inventory.ts";
 import ExpiryBadge from "../components/ExpiryBadge.tsx";
@@ -22,7 +22,7 @@ interface InventoryTableProps {
 export default function InventoryTable({ items, canEdit = true, initialNeedsRepair = false, initialLowStock = false, initialCategory = "all", csrfToken = "", loanedItemIds = [], initialOnLoan = false }: InventoryTableProps) {
   const searchQuery = useSignal("");
   const categoryFilter = useSignal<"all" | ItemCategory>(initialCategory as "all" | ItemCategory);
-  const spaceFilter = useSignal<"all" | "camp-store" | "scout-post-loft">("all");
+  const spaceFilter = useSignal<"all" | "camp-store" | "scout-post-loft" | "gas-storage-box">("all");
   const locationFilter = useSignal<string>("all");
   const showLowStock = useSignal(initialLowStock);
   const showNeedsRepair = useSignal(initialNeedsRepair);
@@ -37,8 +37,8 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
   const sortDir = useSignal<"asc" | "desc">("asc");
 
   const uniqueLocations = [...new Set(items.map((i) => i.location))] as string[];
-  const allDefinedLocations = new Set([...ITEM_LOCATIONS, ...LOFT_LOCATIONS].flatMap((g) => g.options as string[]));
-  const knownGroups = [...ITEM_LOCATIONS, ...LOFT_LOCATIONS]
+  const allDefinedLocations = new Set([...ITEM_LOCATIONS, ...LOFT_LOCATIONS, ...GAS_STORAGE_LOCATIONS].flatMap((g) => g.options as string[]));
+  const knownGroups = [...ITEM_LOCATIONS, ...LOFT_LOCATIONS, ...GAS_STORAGE_LOCATIONS]
     .map((group) => ({ ...group, options: group.options.filter((o) => uniqueLocations.includes(o as string)) }))
     .filter((group) => group.options.length > 0);
   const ungroupedLocations = uniqueLocations.filter((l) => !allDefinedLocations.has(l)).sort();
@@ -255,7 +255,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
         <div class="flex items-center gap-2 px-4 pt-3">
           <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Space</span>
           <div class="flex rounded-md overflow-hidden border border-gray-300 dark:border-gray-600 text-xs font-medium">
-            {(["all", "camp-store", "scout-post-loft"] as const).map((s) => (
+            {(["all", "camp-store", "scout-post-loft", "gas-storage-box"] as const).map((s) => (
               <button
                 key={s}
                 type="button"
@@ -266,7 +266,7 @@ export default function InventoryTable({ items, canEdit = true, initialNeedsRepa
                     : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >
-                {s === "all" ? "All" : s === "camp-store" ? "🏪 Camp Store" : "🏠 Scout Post Loft"}
+                {s === "all" ? "All" : s === "camp-store" ? "🏪 Camp Store" : s === "scout-post-loft" ? "🏠 Scout Post Loft" : "🛢️ Gas Storage Box"}
               </button>
             ))}
           </div>

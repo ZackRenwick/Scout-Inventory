@@ -25,6 +25,7 @@ interface DashboardData {
     spaceBreakdown: {
       "camp-store": { count: number; quantity: number };
       "scout-post-loft": { count: number; quantity: number };
+      "gas-storage-box": { count: number; quantity: number };
     };
     lowStockItems: number;
     needsRepairItems: number;
@@ -98,6 +99,7 @@ export const handler: Handlers<DashboardData> = {
           spaceBreakdown: {
             "camp-store": { count: 0, quantity: 0 },
             "scout-post-loft": { count: 0, quantity: 0 },
+            "gas-storage-box": { count: 0, quantity: 0 },
           },
           lowStockItems: 0,
           needsRepairItems: 0,

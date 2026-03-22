@@ -15,7 +15,7 @@ import { logActivity } from "../../lib/activityLog.ts";
 // ===== CONSTANTS =====
 
 const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
-const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft"]);
+const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft", "gas-storage-box"]);
 
 // Required extra fields per category (beyond the base fields)
 const CATEGORY_REQUIRED: Record<ItemCategory, string[]> = {
@@ -87,7 +87,7 @@ function validateItem(
     return err(`Row ${index + 1} ("${raw.name}"): "location" is required`);
   }
   if (raw.space !== undefined && !VALID_SPACES.has(raw.space)) {
-    return err(`Row ${index + 1} ("${raw.name}"): invalid space "${raw.space}" — must be camp-store or scout-post-loft`);
+    return err(`Row ${index + 1} ("${raw.name}"): invalid space "${raw.space}" — must be camp-store, scout-post-loft, or gas-storage-box`);
   }
 
   const category = raw.category as ItemCategory;

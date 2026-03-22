@@ -25,7 +25,7 @@ export function getCategorySearchLabel(category: string): string {
   return CATEGORY_META[category as ItemCategory]?.searchLabel ?? category.replace(/-/g, " ");
 }
 
-export type ItemSpace = "camp-store" | "scout-post-loft";
+export type ItemSpace = "camp-store" | "scout-post-loft" | "gas-storage-box";
 
 export type ItemLocation =
   | "Plastic Shelf 1 - Level 1" | "Plastic Shelf 1 - Level 2" | "Plastic Shelf 1 - Level 3" | "Plastic Shelf 1 - Level 4"
@@ -42,7 +42,8 @@ export type ItemLocation =
   | "Cubby Hole"
   | "Axe/Saw Hanging Space"
   | "On Top of Red Box" | "On Top of Green Box"
-  | "Loft Shelf 1" | "Loft Shelf 2" | "Loft Shelf 3" | "Loft Shelf 4";
+  | "Loft Shelf 1" | "Loft Shelf 2" | "Loft Shelf 3" | "Loft Shelf 4"
+  | "Gas Storage Box";
 
 export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
@@ -88,6 +89,13 @@ export const LOFT_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
     options: [
       "Loft Shelf 1", "Loft Shelf 2", "Loft Shelf 3", "Loft Shelf 4",
     ],
+  },
+];
+
+export const GAS_STORAGE_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
+  {
+    group: "Gas Storage",
+    options: ["Gas Storage Box"],
   },
 ];
 

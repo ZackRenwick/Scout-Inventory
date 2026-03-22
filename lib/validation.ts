@@ -4,7 +4,7 @@
 import type { ItemCategory, ItemSpace } from "../types/inventory.ts";
 
 const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit"]);
-const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft"]);
+const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft", "gas-storage-box"]);
 const VALID_FOOD_TYPES = new Set(["canned", "jarred", "dried", "packaged", "fresh", "frozen"]);
 
 export function validateQuantity(quantity: number): string | null {
@@ -66,7 +66,7 @@ export function validateItemBase(body: Record<string, any>): string | null {
     return locationErr;
   }
   if (body.space !== undefined && !VALID_SPACES.has(body.space)) {
-    return `Invalid space "${body.space}" — must be camp-store or scout-post-loft`;
+    return `Invalid space "${body.space}" — must be camp-store, scout-post-loft, or gas-storage-box`;
   }
   if (typeof body.minThreshold === "number") {
     const threshErr = validateMinThreshold(body.minThreshold, body.quantity);

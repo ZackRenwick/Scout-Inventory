@@ -81,6 +81,7 @@ function emptyStats(): ComputedStats {
     spaceBreakdown: {
       "camp-store": { count: 0, quantity: 0 },
       "scout-post-loft": { count: 0, quantity: 0 },
+      "gas-storage-box": { count: 0, quantity: 0 },
     },
     lowStockItems: 0,
     needsRepairItems: 0,
@@ -125,10 +126,31 @@ function applyItemToStats(stats: ComputedStats, item: InventoryItem, sign: 1 | -
 }
 
 /** Read the precomputed stats from KV (O(1)). Falls back to zero-state if not yet built. */
+function normalizeComputedStats(stats: ComputedStats | null): ComputedStats {
+  const base = emptyStats();
+  if (!stats) {
+    return base;
+  }
+
+  return {
+    ...base,
+    ...stats,
+    categoryBreakdown: {
+      ...base.categoryBreakdown,
+      ...(stats.categoryBreakdown ?? {}),
+    },
+    spaceBreakdown: {
+      ...base.spaceBreakdown,
+      ...(stats.spaceBreakdown ?? {}),
+    },
+    activeLoansCount: stats.activeLoansCount ?? 0,
+  };
+}
+
 export async function getComputedStats(): Promise<ComputedStats> {
   const db = await initKv();
   const result = await db.get<ComputedStats>(KEYS.computedStats);
-  return result.value ?? emptyStats();
+  return normalizeComputedStats(result.value);
 }
 
 // ===== IN-MEMORY CACHE (for getAllItems / full-list pages) =====

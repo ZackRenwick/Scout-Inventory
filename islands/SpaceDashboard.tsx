@@ -13,6 +13,7 @@ interface CategoryBreakdown {
 interface SpaceBreakdown {
   "camp-store": { count: number; quantity: number };
   "scout-post-loft": { count: number; quantity: number };
+  "gas-storage-box": { count: number; quantity: number };
 }
 
 interface SpaceDashboardProps {
@@ -21,7 +22,7 @@ interface SpaceDashboardProps {
   expiringFood: { expired: number; expiringSoon: number; expiringWarning: number };
 }
 
-type Space = "all" | "camp-store" | "scout-post-loft";
+type Space = "all" | "camp-store" | "scout-post-loft" | "gas-storage-box";
 
 function CategoryCard({ title, value, color, href }: { title: string; value: number; color: string; href: string }) {
   // Top-border accent + neutral card background — works in both light and dark mode
@@ -51,9 +52,12 @@ function CategoryCard({ title, value, color, href }: { title: string; value: num
 
 export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: sb, expiringFood }: SpaceDashboardProps) {
   const space = useSignal<Space>("all");
+  const campStore = sb["camp-store"] ?? { count: 0, quantity: 0 };
+  const scoutPostLoft = sb["scout-post-loft"] ?? { count: 0, quantity: 0 };
+  const gasStorageBox = sb["gas-storage-box"] ?? { count: 0, quantity: 0 };
 
-  const totalCount = sb["camp-store"].count + sb["scout-post-loft"].count;
-  const totalQty   = sb["camp-store"].quantity + sb["scout-post-loft"].quantity;
+  const totalCount = campStore.count + scoutPostLoft.count + gasStorageBox.count;
+  const totalQty   = campStore.quantity + scoutPostLoft.quantity + gasStorageBox.quantity;
 
   const spaces: { value: Space; icon: string; label: string; count: number; qty: number; activeClass: string }[] = [
     {
@@ -68,17 +72,25 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
       value: "camp-store",
       icon: "🏪",
       label: "Camp Store",
-      count: sb["camp-store"].count,
-      qty: sb["camp-store"].quantity,
+      count: campStore.count,
+      qty: campStore.quantity,
       activeClass: "border-blue-500 bg-blue-50 dark:bg-blue-800 ring-2 ring-blue-400",
     },
     {
       value: "scout-post-loft",
       icon: "🏠",
       label: "Scout Post Loft",
-      count: sb["scout-post-loft"].count,
-      qty: sb["scout-post-loft"].quantity,
+      count: scoutPostLoft.count,
+      qty: scoutPostLoft.quantity,
       activeClass: "border-indigo-500 bg-indigo-50 dark:bg-indigo-800 ring-2 ring-indigo-400",
+    },
+    {
+      value: "gas-storage-box",
+      icon: "🛢️",
+      label: "Gas Storage Box",
+      count: gasStorageBox.count,
+      qty: gasStorageBox.quantity,
+      activeClass: "border-orange-500 bg-orange-50 dark:bg-orange-900/40 ring-2 ring-orange-400",
     },
   ];
 
@@ -176,6 +188,20 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <CategoryCard title="⚽ Games" value={c.games.quantity} color="indigo" href="/inventory?category=games" />
           </div>
+        </div>
+      )}
+
+      {/* Gas Storage summary */}
+      {(space.value === "all" || space.value === "gas-storage-box") && (
+        <div>
+          <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🛢️ Gas Storage Box</h3>
+          <a href="/inventory" class="block rounded-lg hover:shadow-lg transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-purple-500">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-t-4 border-orange-500 rounded-lg p-5">
+              <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">Stored Units</p>
+              <p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{gasStorageBox.quantity}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-400 mt-1">Across {gasStorageBox.count} item{gasStorageBox.count !== 1 ? "s" : ""}</p>
+            </div>
+          </a>
         </div>
       )}
 

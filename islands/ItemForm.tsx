@@ -1,6 +1,6 @@
 // Form for adding/editing inventory items
 import { Signal, useSignal } from "@preact/signals";
-import { CAMP_STORE_CATEGORIES, getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS, LOFT_CATEGORIES, LOFT_LOCATIONS } from "../types/inventory.ts";
+import { CAMP_STORE_CATEGORIES, GAS_STORAGE_LOCATIONS, getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS, LOFT_CATEGORIES, LOFT_LOCATIONS } from "../types/inventory.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
 interface ItemFormProps {
@@ -11,7 +11,7 @@ interface ItemFormProps {
 
 export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
   const initialSpace = initialData?.space ?? (initialData?.category === "games" ? "scout-post-loft" : "camp-store");
-  const space = useSignal<"camp-store" | "scout-post-loft">(initialSpace);
+  const space = useSignal<"camp-store" | "scout-post-loft" | "gas-storage-box">(initialSpace);
   const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games" | "kit">(initialData?.category || "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
@@ -20,8 +20,14 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
   const equipmentType = useSignal<string>(initialData?.equipmentType ?? "stove");
   const gameType = useSignal<string>(initialData?.gameType ?? "board-game");
 
+  const getLocationsForSpace = (spaceValue: "camp-store" | "scout-post-loft" | "gas-storage-box") => {
+    if (spaceValue === "scout-post-loft") return LOFT_LOCATIONS;
+    if (spaceValue === "gas-storage-box") return GAS_STORAGE_LOCATIONS;
+    return ITEM_LOCATIONS;
+  };
+
   // Find the group that contains the initial location value (for edit mode)
-  const initialLocationList = initialSpace === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS;
+  const initialLocationList = getLocationsForSpace(initialSpace);
   const initialGroup = initialData?.location
     ? (initialLocationList.find((g) => g.options.includes(initialData.location))?.group ?? initialLocationList[0].group)
     : initialLocationList[0].group;
@@ -164,6 +170,18 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             />
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🏠 Scout Post Loft</span>
           </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="spaceRadio"
+              value="gas-storage-box"
+              checked={space.value === "gas-storage-box"}
+              onChange={() => { space.value = "gas-storage-box"; if (!isEdit) { category.value = "cooking"; locationGroup.value = GAS_STORAGE_LOCATIONS[0].group; locationValue.value = GAS_STORAGE_LOCATIONS[0].options[0]; } }}
+              disabled={isEdit}
+              class="text-purple-600"
+            />
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🛢️ Gas Storage Box</span>
+          </label>
         </div>
       </div>
 
@@ -179,15 +197,15 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           class={inputClass}
           required
         >
-          {space.value === "camp-store" ? (
+          {space.value === "scout-post-loft" ? (
             <>
-              {CAMP_STORE_CATEGORIES.map((cat) => (
+              {LOFT_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
               ))}
             </>
           ) : (
             <>
-              {LOFT_CATEGORIES.map((cat) => (
+              {CAMP_STORE_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
               ))}
             </>
@@ -214,12 +232,12 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               onChange={(e) => {
                 const group = (e.target as HTMLSelectElement).value;
                 locationGroup.value = group;
-                const locs = space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS;
+                const locs = getLocationsForSpace(space.value);
                 const firstOption = locs.find((g) => g.group === group)?.options[0] ?? locs[0].options[0];
                 locationValue.value = firstOption;
               }}
             >
-              {(space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS).map(({ group }) => (
+              {getLocationsForSpace(space.value).map(({ group }) => (
                 <option key={group} value={group} selected={group === locationGroup.value}>{group}</option>
               ))}
             </select>
@@ -231,7 +249,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               value={locationValue.value}
               onChange={(e) => { locationValue.value = (e.target as HTMLSelectElement).value; }}
             >
-              {(space.value === "scout-post-loft" ? LOFT_LOCATIONS : ITEM_LOCATIONS).find((g) => g.group === locationGroup.value)?.options.map((loc) => (
+              {getLocationsForSpace(space.value).find((g) => g.group === locationGroup.value)?.options.map((loc) => (
                 <option key={loc} value={loc} selected={loc === locationValue.value}>{loc}</option>
               ))}
             </select>
