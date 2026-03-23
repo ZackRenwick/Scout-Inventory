@@ -949,18 +949,18 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
                       </div>
                     )}
 
-                    <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex gap-2">
+                    <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex flex-wrap gap-2">
                       <a
                         href={isEditingKit
                           ? "/first-aid"
                           : `/first-aid?edit=${kit.id}`}
-                        class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        class="flex-1 min-w-[5.5rem] text-center text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       >
                         {isEditingKit ? "Close" : canEdit ? "Edit" : "View"}
                       </a>
                       <a
                         href={`/first-aid/check?kit=${kit.id}`}
-                        class="text-sm px-3 py-1.5 border border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                        class="flex-1 min-w-[5.5rem] text-center text-sm px-3 py-1.5 border border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                       >
                         Check
                       </a>
@@ -968,12 +968,12 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
                         href={`/first-aid/print?kit=${kit.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="flex-1 text-center text-sm font-medium px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                        class="flex-1 min-w-[5.5rem] text-center text-sm font-medium px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
                       >
                         Print
                       </a>
                       {canEdit && (
-                        <form method="POST">
+                        <form method="POST" class="flex-1 min-w-[6.75rem]">
                           <input
                             type="hidden"
                             name="_csrf"
@@ -987,14 +987,14 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
                           <input type="hidden" name="kitId" value={kit.id} />
                           <button
                             type="submit"
-                            class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            class="w-full text-center text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                           >
                             Duplicate
                           </button>
                         </form>
                       )}
                       {canEdit && (
-                        <form method="POST">
+                        <form method="POST" class="flex-1 min-w-[6.25rem]">
                           <input
                             type="hidden"
                             name="_csrf"
@@ -1008,7 +1008,7 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
                           <input type="hidden" name="kitId" value={kit.id} />
                           <button
                             type="submit"
-                            class="text-sm px-3 py-1.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            class="w-full text-center text-sm px-3 py-1.5 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           >
                             Delete
                           </button>
