@@ -4,7 +4,7 @@
 //   - Navigation/HTML pages: network-first, cached opportunistically
 //   - API / admin routes: network-only (never cache sensitive data)
 
-const CACHE_VERSION = "v10";
+const CACHE_VERSION = "v11";
 const STATIC_CACHE  = `scouts-static-${CACHE_VERSION}`;
 const PAGE_CACHE    = `scouts-pages-${CACHE_VERSION}`;
 
