@@ -6,8 +6,28 @@ import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import NeckerCounter from "../islands/NeckerCounter.tsx";
 import NeckerAlert from "../islands/NeckerAlert.tsx";
 import type { Session } from "../lib/auth.ts";
-import { getComputedStats, getFoodItemsSortedByExpiry, getActiveCheckOuts, getAllItems } from "../db/kv.ts";
+import {
+  getActiveCheckOuts,
+  getAllFirstAidKitIds,
+  getAllItems,
+  getComputedStats,
+  getFirstAidKitCheckStates,
+  getFirstAidOverallCheckState,
+  getFoodItemsSortedByExpiry,
+} from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
+
+const MONTHLY_CHECK_DAYS = 30;
+
+function isDismissed(dismissedUntil: Date | null | undefined): boolean {
+  return !!dismissedUntil && dismissedUntil.getTime() > Date.now();
+}
+
+function isMonthlyDue(lastCheckedAt: Date | null | undefined): boolean {
+  if (!lastCheckedAt) return true;
+  const ageMs = Date.now() - lastCheckedAt.getTime();
+  return ageMs >= MONTHLY_CHECK_DAYS * 24 * 60 * 60 * 1000;
+}
 
 interface DashboardData {
   neckerThreshold: number;
@@ -42,6 +62,10 @@ interface DashboardData {
       overdue: number;
     };
   };
+  firstAid: {
+    overallDue: boolean;
+    dueKitCount: number;
+  };
   session?: Session;
 }
 
@@ -49,23 +73,43 @@ export const handler: Handlers<DashboardData> = {
   async GET(_req, ctx) {
     try {
       const session = ctx.state.session as Session;
-      const canViewInspections = session.role === "manager" || session.role === "admin";
+      const canViewInspections = session.role === "manager" ||
+        session.role === "admin";
 
       // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
       // getActiveCheckOuts is cache-backed after the first request.
       // getAllItems is only needed for manager inspection stats.
-      const [computed, foodItems, activeLoansData, allItems] = await Promise.all([
+      const [
+        computed,
+        foodItems,
+        activeLoansData,
+        allItems,
+        firstAidKitIds,
+        overallFirstAidCheck,
+        firstAidKitStates,
+      ] = await Promise.all([
         getComputedStats(),
         getFoodItemsSortedByExpiry(),
         getActiveCheckOuts(),
         canViewInspections ? getAllItems() : Promise.resolve([]),
+        getAllFirstAidKitIds(),
+        getFirstAidOverallCheckState(),
+        getFirstAidKitCheckStates(),
       ]);
+      const overallFirstAidDue =
+        isMonthlyDue(overallFirstAidCheck?.lastCheckedAt) &&
+        !isDismissed(overallFirstAidCheck?.dismissedUntil);
+      const dueKitCount = firstAidKitIds.filter((kitId) => {
+        const kitState = firstAidKitStates[kitId];
+        return isMonthlyDue(kitState?.lastCheckedAt) &&
+          !isDismissed(kitState?.dismissedUntil);
+      }).length;
 
       const expiringFood = { expired: 0, expiringSoon: 0, expiringWarning: 0 };
       for (const item of foodItems) {
         const d = getDaysUntil(item.expiryDate);
-        if (d < 0)       expiringFood.expired++;
-        else if (d <= 7)  expiringFood.expiringSoon++;
+        if (d < 0) expiringFood.expired++;
+        else if (d <= 7) expiringFood.expiringSoon++;
         else if (d <= 30) expiringFood.expiringWarning++;
       }
 
@@ -88,19 +132,30 @@ export const handler: Handlers<DashboardData> = {
       }
 
       const stats: DashboardData["stats"] = {
-        totalItems:        computed.totalItems,
-        totalQuantity:     computed.totalQuantity,
+        totalItems: computed.totalItems,
+        totalQuantity: computed.totalQuantity,
         categoryBreakdown: computed.categoryBreakdown,
-        spaceBreakdown:    computed.spaceBreakdown,
-        lowStockItems:     computed.lowStockItems,
-        needsRepairItems:  computed.needsRepairItems,
-        activeLoans:       computed.activeLoansCount ?? activeLoansData.length,
+        spaceBreakdown: computed.spaceBreakdown,
+        lowStockItems: computed.lowStockItems,
+        needsRepairItems: computed.needsRepairItems,
+        activeLoans: computed.activeLoansCount ?? activeLoansData.length,
         overdueLoans,
         expiringFood,
         inspections,
       };
-      const neckerThreshold = parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10);
-      return ctx.render({ stats, session, neckerThreshold });
+      const neckerThreshold = parseInt(
+        Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10",
+        10,
+      );
+      return ctx.render({
+        stats,
+        session,
+        neckerThreshold,
+        firstAid: {
+          overallDue: overallFirstAidDue,
+          dueKitCount,
+        },
+      });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
       // Return empty stats on error
@@ -130,28 +185,44 @@ export const handler: Handlers<DashboardData> = {
           inspections: { dueSoon: 0, overdue: 0 },
         },
         session: ctx.state.session as Session,
-        neckerThreshold: parseInt(Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10", 10),
+        neckerThreshold: parseInt(
+          Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10",
+          10,
+        ),
+        firstAid: {
+          overallDue: false,
+          dueKitCount: 0,
+        },
       });
     }
   },
 };
 
 export default function Home({ data }: PageProps<DashboardData>) {
-  const { stats, session, neckerThreshold } = data;
-  const canViewInspections = session?.role === "manager" || session?.role === "admin";
+  const { stats, session, neckerThreshold, firstAid } = data;
+  const canViewInspections = session?.role === "manager" ||
+    session?.role === "admin";
   const inspectionTotal = stats.inspections.overdue + stats.inspections.dueSoon;
   const hasExpiredFoodIssue = stats.expiringFood.expired > 0;
   const hasLowStockIssue = stats.lowStockItems > 0;
   const hasNeedsRepairIssue = stats.needsRepairItems > 0;
   const hasInspectionDueIssue = canViewInspections && inspectionTotal > 0;
-  const hasComplianceIssues = hasExpiredFoodIssue || hasLowStockIssue || hasNeedsRepairIssue || hasInspectionDueIssue;
-  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired + stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning + stats.needsRepairItems;
-  
+  const hasComplianceIssues = hasExpiredFoodIssue || hasLowStockIssue ||
+    hasNeedsRepairIssue || hasInspectionDueIssue;
+  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired +
+    stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning +
+    stats.needsRepairItems;
+  const hasFirstAidDue = firstAid.overallDue || firstAid.dueKitCount > 0;
+
   return (
     <Layout username={session?.username} role={session?.role}>
       <div class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-800 dark:text-purple-100 mb-2">📊 Dashboard</h1>
-        <p class="text-gray-600 dark:text-gray-400">Overview of your scout inventory</p>
+        <h1 class="text-4xl font-bold text-gray-800 dark:text-purple-100 mb-2">
+          📊 Dashboard
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          Overview of your scout inventory
+        </p>
       </div>
 
       {/* Alert Banner */}
@@ -168,19 +239,67 @@ export default function Home({ data }: PageProps<DashboardData>) {
               <div class="mt-2 text-sm text-red-800 dark:text-red-200">
                 <ul class="list-disc list-inside space-y-1">
                   {stats.lowStockItems > 0 && (
-                    <li><a href="/inventory?lowstock=true" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.lowStockItems} item{stats.lowStockItems !== 1 ? 's' : ''} running low on stock</a></li>
+                    <li>
+                      <a
+                        href="/inventory?lowstock=true"
+                        class="underline hover:text-red-900 dark:hover:text-red-50"
+                      >
+                        {stats.lowStockItems}{" "}
+                        item{stats.lowStockItems !== 1 ? "s" : ""}{" "}
+                        running low on stock
+                      </a>
+                    </li>
                   )}
                   {stats.expiringFood.expired > 0 && (
-                    <li><a href="/reports/expiring" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.expiringFood.expired} food item{stats.expiringFood.expired !== 1 ? 's' : ''} expired</a></li>
+                    <li>
+                      <a
+                        href="/reports/expiring"
+                        class="underline hover:text-red-900 dark:hover:text-red-50"
+                      >
+                        {stats.expiringFood.expired}{" "}
+                        food item{stats.expiringFood.expired !== 1 ? "s" : ""}
+                        {" "}
+                        expired
+                      </a>
+                    </li>
                   )}
                   {stats.expiringFood.expiringSoon > 0 && (
-                    <li><a href="/reports/expiring" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.expiringFood.expiringSoon} food item{stats.expiringFood.expiringSoon !== 1 ? 's' : ''} expiring within 7 days</a></li>
+                    <li>
+                      <a
+                        href="/reports/expiring"
+                        class="underline hover:text-red-900 dark:hover:text-red-50"
+                      >
+                        {stats.expiringFood.expiringSoon}{" "}
+                        food item{stats.expiringFood.expiringSoon !== 1
+                          ? "s"
+                          : ""} expiring within 7 days
+                      </a>
+                    </li>
                   )}
                   {stats.expiringFood.expiringWarning > 0 && (
-                    <li><a href="/reports/expiring" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.expiringFood.expiringWarning} food item{stats.expiringFood.expiringWarning !== 1 ? 's' : ''} expiring within 30 days</a></li>
+                    <li>
+                      <a
+                        href="/reports/expiring"
+                        class="underline hover:text-red-900 dark:hover:text-red-50"
+                      >
+                        {stats.expiringFood.expiringWarning}{" "}
+                        food item{stats.expiringFood.expiringWarning !== 1
+                          ? "s"
+                          : ""} expiring within 30 days
+                      </a>
+                    </li>
                   )}
                   {stats.needsRepairItems > 0 && (
-                    <li><a href="/inventory?needsrepair=true" class="underline hover:text-red-900 dark:hover:text-red-50">{stats.needsRepairItems} item{stats.needsRepairItems !== 1 ? 's' : ''} need repair</a></li>
+                    <li>
+                      <a
+                        href="/inventory?needsrepair=true"
+                        class="underline hover:text-red-900 dark:hover:text-red-50"
+                      >
+                        {stats.needsRepairItems}{" "}
+                        item{stats.needsRepairItems !== 1 ? "s" : ""}{" "}
+                        need repair
+                      </a>
+                    </li>
                   )}
                 </ul>
               </div>
@@ -192,9 +311,42 @@ export default function Home({ data }: PageProps<DashboardData>) {
       {/* Dynamic necker low-stock alert (client-side, updates with NeckerCounter) */}
       <NeckerAlert minThreshold={neckerThreshold} />
 
+      {hasFirstAidDue && (
+        <div class="bg-amber-100 dark:bg-amber-900/60 border-l-4 border-amber-500 dark:border-amber-400 p-4 mb-8">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <span class="text-2xl">🩹</span>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-base font-medium text-amber-900 dark:text-amber-100">
+                First Aid Checks Due
+              </h3>
+              <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                {firstAid.overallDue
+                  ? "Monthly overall check is due"
+                  : "Overall check is up to date"}
+                {firstAid.dueKitCount > 0 &&
+                  ` · ${firstAid.dueKitCount} kit${
+                    firstAid.dueKitCount === 1 ? "" : "s"
+                  } due individual checks`}
+                .{" "}
+                <a
+                  href="/first-aid"
+                  class="underline hover:text-amber-900 dark:hover:text-amber-50"
+                >
+                  Open First Aid
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 sm:p-5 mb-8">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-purple-100 mb-3">Quick Actions</h2>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-purple-100 mb-3">
+          Quick Actions
+        </h2>
         <div class="grid grid-cols-2 sm:grid-cols-7 gap-2 sm:gap-2">
           <a
             href="/inventory/add"
@@ -247,20 +399,25 @@ export default function Home({ data }: PageProps<DashboardData>) {
           </a>
         </div>
       </div>
-      
+
       <div class="w-full">
         {/* Overview Stats */}
         {hasComplianceIssues && (
           <div class="mb-6 space-y-3 sm:space-y-4">
             <div class="flex items-center justify-between">
-              <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-purple-100">Alerts &amp; Compliance</h2>
+              <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-purple-100">
+                Alerts &amp; Compliance
+              </h2>
               <span class="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">
                 High-priority checks first
               </span>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
               {hasExpiredFoodIssue && (
-                <a href="/reports/expiring" class="block hover:shadow-lg transition-shadow">
+                <a
+                  href="/reports/expiring"
+                  class="block hover:shadow-lg transition-shadow"
+                >
                   <StatCard
                     title="Expired Food"
                     value={stats.expiringFood.expired}
@@ -271,7 +428,10 @@ export default function Home({ data }: PageProps<DashboardData>) {
                 </a>
               )}
               {hasLowStockIssue && (
-                <a href="/inventory?lowstock=true" class="block hover:shadow-lg transition-shadow">
+                <a
+                  href="/inventory?lowstock=true"
+                  class="block hover:shadow-lg transition-shadow"
+                >
                   <StatCard
                     title="Low Stock"
                     value={stats.lowStockItems}
@@ -282,7 +442,10 @@ export default function Home({ data }: PageProps<DashboardData>) {
                 </a>
               )}
               {hasNeedsRepairIssue && (
-                <a href="/inventory?needsrepair=true" class="block hover:shadow-lg transition-shadow">
+                <a
+                  href="/inventory?needsrepair=true"
+                  class="block hover:shadow-lg transition-shadow"
+                >
                   <StatCard
                     title="Needs Repair"
                     value={stats.needsRepairItems}
@@ -293,13 +456,18 @@ export default function Home({ data }: PageProps<DashboardData>) {
                 </a>
               )}
               {hasInspectionDueIssue && (
-                <a href="/inventory" class="block hover:shadow-lg transition-shadow">
+                <a
+                  href="/inventory"
+                  class="block hover:shadow-lg transition-shadow"
+                >
                   <StatCard
                     title="Inspections"
                     value={inspectionTotal}
                     icon="🛠️"
                     color={stats.inspections.overdue > 0 ? "red" : "yellow"}
-                    subtitle={stats.inspections.overdue > 0 ? `${stats.inspections.overdue} overdue` : `${stats.inspections.dueSoon} due in 30d`}
+                    subtitle={stats.inspections.overdue > 0
+                      ? `${stats.inspections.overdue} overdue`
+                      : `${stats.inspections.dueSoon} due in 30d`}
                   />
                 </a>
               )}
@@ -309,32 +477,47 @@ export default function Home({ data }: PageProps<DashboardData>) {
 
         <div class="mb-6 space-y-3 sm:space-y-4">
           <div class="flex items-center justify-between pt-1">
-            <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-purple-100">Operations</h2>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-purple-100">
+              Operations
+            </h2>
             <span class="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">
               Live stock movement
             </span>
           </div>
           <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-3.5">
-            <a href="/inventory?onloan=true" class="block hover:shadow-lg transition-shadow">
+            <a
+              href="/inventory?onloan=true"
+              class="block hover:shadow-lg transition-shadow"
+            >
               <StatCard
                 title="Active Loans"
                 value={stats.activeLoans}
                 icon="📤"
-                color={stats.overdueLoans > 0 ? "red" : stats.activeLoans > 0 ? "yellow" : "green"}
-                subtitle={stats.overdueLoans > 0 ? `${stats.overdueLoans} overdue` : "Items out on loan"}
+                color={stats.overdueLoans > 0
+                  ? "red"
+                  : stats.activeLoans > 0
+                  ? "yellow"
+                  : "green"}
+                subtitle={stats.overdueLoans > 0
+                  ? `${stats.overdueLoans} overdue`
+                  : "Items out on loan"}
               />
             </a>
             <NeckerCounter
               csrfToken={session?.csrfToken ?? ""}
               canIncrease={session?.role !== "viewer"}
-              canDecrease={session?.role === "admin" || session?.role === "manager"}
+              canDecrease={session?.role === "admin" ||
+                session?.role === "manager"}
             />
           </div>
         </div>
 
-        <SpaceDashboard categoryBreakdown={stats.categoryBreakdown} spaceBreakdown={stats.spaceBreakdown} expiringFood={stats.expiringFood} />
+        <SpaceDashboard
+          categoryBreakdown={stats.categoryBreakdown}
+          spaceBreakdown={stats.spaceBreakdown}
+          expiringFood={stats.expiringFood}
+        />
       </div>
-      
     </Layout>
   );
 }

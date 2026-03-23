@@ -53,3 +53,9 @@ export interface FirstAidKitProfile {
   description: string;
   items: FirstAidKitProfileItem[];
 }
+
+export interface FirstAidCheckState {
+  lastCheckedAt: Date | null;
+  dismissedUntil: Date | null;
+  updatedAt: Date;
+}

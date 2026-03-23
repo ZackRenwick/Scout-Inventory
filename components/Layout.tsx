@@ -10,33 +10,38 @@ interface LayoutProps {
   role?: "admin" | "manager" | "editor" | "viewer";
 }
 
-export default function Layout({ children, title, username, role }: LayoutProps) {
+export default function Layout(
+  { children, title, username, role }: LayoutProps,
+) {
   return (
-    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <nav class="bg-purple-700 dark:bg-gray-950 text-white shadow-lg border-b border-purple-600 dark:border-purple-800 relative">
         <div class="container mx-auto px-4 py-4">
           <div class="flex items-center justify-between">
             <a href="/" class="flex items-center space-x-2 shrink-0">
               <span class="text-2xl">⛺</span>
-              <h1 class="text-lg sm:text-xl font-bold leading-tight">7th Whitburn Scouts</h1>
+              <h1 class="text-lg sm:text-xl font-bold leading-tight">
+                7th Whitburn Scouts
+              </h1>
             </a>
             <MobileNav username={username} role={role} />
           </div>
         </div>
       </nav>
-      
-      <main class="container mx-auto px-4 py-6 sm:py-8">
+
+      <main class="flex-1 container mx-auto px-4 py-6 sm:py-8">
         {title && (
-          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-4 sm:mb-6">{title}</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-4 sm:mb-6">
+            {title}
+          </h2>
         )}
         {children}
       </main>
-      
-      <footer class="bg-purple-800 dark:bg-gray-950 text-purple-200 mt-16 border-t border-purple-700 dark:border-purple-900">
+
+      <footer class="bg-purple-800 dark:bg-gray-950 text-purple-200 border-t border-purple-700 dark:border-purple-900">
         <div class="container mx-auto px-4 py-6 text-center">
           <p class="text-sm flex flex-col items-center gap-1">
-            7th Whitburn Scouts Inventory · Built with Fresh{" "}
-            <EasterEgg />
+            7th Whitburn Scouts Inventory · Built with Fresh <EasterEgg />
           </p>
         </div>
       </footer>

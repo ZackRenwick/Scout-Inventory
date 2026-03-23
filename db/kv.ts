@@ -1,19 +1,20 @@
 /// <reference lib="deno.unstable" />
 // Deno KV database setup and operations
 import type {
-  InventoryItem,
-  CheckOut,
-  FoodItem,
-  ItemCategory,
-  ItemSpace,
   CampPlan,
   CampTemplate,
   CampTemplateItem,
+  CheckOut,
+  FoodItem,
+  InventoryItem,
+  ItemCategory,
+  ItemSpace,
   MaintenanceRecord,
 } from "../types/inventory.ts";
 import type { Meal, MealPayload } from "../types/meals.ts";
 import type { FirstAidKit } from "../types/firstAid.ts";
 import type { FirstAidCatalogItem } from "../types/firstAid.ts";
+import type { FirstAidCheckState } from "../types/firstAid.ts";
 import { DEFAULT_FIRST_AID_CATALOG } from "../lib/firstAidCatalog.ts";
 import { FIRST_AID_SECTIONS } from "../types/firstAid.ts";
 
@@ -53,29 +54,33 @@ export async function initKv(): Promise<Deno.Kv> {
 //   ["inventory", "stats", "computed"]                    → ComputedStats
 
 const KEYS = {
-  items:         ["inventory", "items"] as const,
-  checkouts:     ["inventory", "checkouts"] as const,
-  neckers:       ["inventory", "neckers", "count"] as const,
-  neckersCreated:["inventory", "neckers", "created"] as const,
-  neckersTotalMade:["inventory", "neckers", "total-made"] as const,
-  adultNeckersCreated:["inventory", "neckers", "adult-created"] as const,
-  adultNeckersTotalMade:["inventory", "neckers", "adult-total-made"] as const,
+  items: ["inventory", "items"] as const,
+  checkouts: ["inventory", "checkouts"] as const,
+  neckers: ["inventory", "neckers", "count"] as const,
+  neckersCreated: ["inventory", "neckers", "created"] as const,
+  neckersTotalMade: ["inventory", "neckers", "total-made"] as const,
+  adultNeckersCreated: ["inventory", "neckers", "adult-created"] as const,
+  adultNeckersTotalMade: ["inventory", "neckers", "adult-total-made"] as const,
   computedStats: ["inventory", "stats", "computed"] as const,
-  camps:         ["camps", "plans"] as const,
-  templates:     ["camps", "templates"] as const,
-  meals:         ["meals"] as const,
-  firstAidKits:  ["first-aid", "kits"] as const,
+  camps: ["camps", "plans"] as const,
+  templates: ["camps", "templates"] as const,
+  meals: ["meals"] as const,
+  firstAidKits: ["first-aid", "kits"] as const,
   firstAidCatalog: ["first-aid", "catalog"] as const,
+  firstAidChecks: ["first-aid", "checks"] as const,
 };
 
 // Index key helpers
 const IDX = {
-  category:       ["inventory", "idx", "category"] as const,
-  space:          ["inventory", "idx", "space"] as const,
-  expiry:         ["inventory", "idx", "expiry"] as const,
-  categoryKey:    (cat: string, id: string) => ["inventory", "idx", "category", cat, id] as const,
-  spaceKey:       (sp: string,  id: string) => ["inventory", "idx", "space",    sp,  id] as const,
-  expiryKey:      (iso: string, id: string) => ["inventory", "idx", "expiry",   iso, id] as const,
+  category: ["inventory", "idx", "category"] as const,
+  space: ["inventory", "idx", "space"] as const,
+  expiry: ["inventory", "idx", "expiry"] as const,
+  categoryKey: (cat: string, id: string) =>
+    ["inventory", "idx", "category", cat, id] as const,
+  spaceKey: (sp: string, id: string) =>
+    ["inventory", "idx", "space", sp, id] as const,
+  expiryKey: (iso: string, id: string) =>
+    ["inventory", "idx", "expiry", iso, id] as const,
 };
 
 // ===== PRE-COMPUTED STATS =====
@@ -114,7 +119,9 @@ function emptyStats(): ComputedStats {
   };
 }
 
-function hasCondition(item: InventoryItem): item is InventoryItem & { condition: string } {
+function hasCondition(
+  item: InventoryItem,
+): item is InventoryItem & { condition: string } {
   return "condition" in item;
 }
 
@@ -122,30 +129,42 @@ function hasCondition(item: InventoryItem): item is InventoryItem & { condition:
  * Apply a single item to a stats snapshot (+1 to add it, -1 to remove it).
  * Uses sign to avoid duplicating logic for add vs remove.
  */
-function applyItemToStats(stats: ComputedStats, item: InventoryItem, sign: 1 | -1): ComputedStats {
+function applyItemToStats(
+  stats: ComputedStats,
+  item: InventoryItem,
+  sign: 1 | -1,
+): ComputedStats {
   const next: ComputedStats = {
-    totalItems:    stats.totalItems    + sign,
+    totalItems: stats.totalItems + sign,
     totalQuantity: stats.totalQuantity + sign * item.quantity,
-    categoryBreakdown: { ...stats.categoryBreakdown } as ComputedStats["categoryBreakdown"],
-    spaceBreakdown:    { ...stats.spaceBreakdown }    as ComputedStats["spaceBreakdown"],
-    lowStockItems:     stats.lowStockItems,
-    needsRepairItems:  stats.needsRepairItems,
-    activeLoansCount:  stats.activeLoansCount ?? 0,
+    categoryBreakdown: {
+      ...stats.categoryBreakdown,
+    } as ComputedStats["categoryBreakdown"],
+    spaceBreakdown: {
+      ...stats.spaceBreakdown,
+    } as ComputedStats["spaceBreakdown"],
+    lowStockItems: stats.lowStockItems,
+    needsRepairItems: stats.needsRepairItems,
+    activeLoansCount: stats.activeLoansCount ?? 0,
   };
 
   // Deep-copy the two buckets we'll touch
-  const cat  = item.category as ItemCategory;
-  const sp   = (item.space ?? "camp-store") as ItemSpace;
+  const cat = item.category as ItemCategory;
+  const sp = (item.space ?? "camp-store") as ItemSpace;
   next.categoryBreakdown[cat] = { ...next.categoryBreakdown[cat] };
-  next.spaceBreakdown[sp]     = { ...next.spaceBreakdown[sp] };
+  next.spaceBreakdown[sp] = { ...next.spaceBreakdown[sp] };
 
-  next.categoryBreakdown[cat].count    += sign;
+  next.categoryBreakdown[cat].count += sign;
   next.categoryBreakdown[cat].quantity += sign * item.quantity;
-  next.spaceBreakdown[sp].count        += sign;
-  next.spaceBreakdown[sp].quantity     += sign * item.quantity;
+  next.spaceBreakdown[sp].count += sign;
+  next.spaceBreakdown[sp].quantity += sign * item.quantity;
 
   if (item.quantity <= item.minThreshold) next.lowStockItems += sign;
-  if (hasCondition(item) && (item.condition === "needs-repair" || ((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0)) next.needsRepairItems += sign;
+  if (
+    hasCondition(item) &&
+    (item.condition === "needs-repair" ||
+      ((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0)
+  ) next.needsRepairItems += sign;
 
   return next;
 }
@@ -193,7 +212,8 @@ let checkoutsInFlight: Promise<CheckOut[]> | null = null;
 let campPlansCache: { plans: CampPlan[]; expiresAt: number } | null = null;
 let campPlansInFlight: Promise<CampPlan[]> | null = null;
 
-let templatesCache: { templates: CampTemplate[]; expiresAt: number } | null = null;
+let templatesCache: { templates: CampTemplate[]; expiresAt: number } | null =
+  null;
 let templatesInFlight: Promise<CampTemplate[]> | null = null;
 
 let mealsCache: { meals: Meal[]; expiresAt: number } | null = null;
@@ -201,8 +221,24 @@ let mealsInFlight: Promise<Meal[]> | null = null;
 
 let firstAidKitsCache: { kits: FirstAidKit[]; expiresAt: number } | null = null;
 let firstAidKitsInFlight: Promise<FirstAidKit[]> | null = null;
-let firstAidCatalogCache: { items: FirstAidCatalogItem[]; expiresAt: number } | null = null;
+let firstAidKitIdsCache: { ids: string[]; expiresAt: number } | null = null;
+let firstAidKitIdsInFlight: Promise<string[]> | null = null;
+let firstAidCatalogCache:
+  | { items: FirstAidCatalogItem[]; expiresAt: number }
+  | null = null;
 let firstAidCatalogInFlight: Promise<FirstAidCatalogItem[]> | null = null;
+let firstAidOverallCheckStateCache:
+  | { state: FirstAidCheckState | null; expiresAt: number }
+  | null = null;
+let firstAidOverallCheckStateInFlight:
+  | Promise<FirstAidCheckState | null>
+  | null = null;
+let firstAidKitCheckStatesCache:
+  | { states: Record<string, FirstAidCheckState>; expiresAt: number }
+  | null = null;
+let firstAidKitCheckStatesInFlight:
+  | Promise<Record<string, FirstAidCheckState>>
+  | null = null;
 
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
@@ -256,11 +292,20 @@ function invalidateTemplatesCache(): void {
 function invalidateFirstAidKitsCache(): void {
   firstAidKitsCache = null;
   firstAidKitsInFlight = null;
+  firstAidKitIdsCache = null;
+  firstAidKitIdsInFlight = null;
 }
 
 function invalidateFirstAidCatalogCache(): void {
   firstAidCatalogCache = null;
   firstAidCatalogInFlight = null;
+}
+
+function invalidateFirstAidCheckStateCaches(): void {
+  firstAidOverallCheckStateCache = null;
+  firstAidOverallCheckStateInFlight = null;
+  firstAidKitCheckStatesCache = null;
+  firstAidKitCheckStatesInFlight = null;
 }
 
 /**
@@ -287,7 +332,10 @@ function addToIndex(op: Deno.AtomicOperation, item: InventoryItem): void {
   op.set(IDX.categoryKey(item.category, item.id), item.id);
   op.set(IDX.spaceKey(item.space ?? "camp-store", item.id), item.id);
   if (item.category === "food") {
-    op.set(IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id), item.id);
+    op.set(
+      IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id),
+      item.id,
+    );
   }
 }
 
@@ -296,7 +344,9 @@ function removeFromIndex(op: Deno.AtomicOperation, item: InventoryItem): void {
   op.delete(IDX.categoryKey(item.category, item.id));
   op.delete(IDX.spaceKey(item.space ?? "camp-store", item.id));
   if (item.category === "food") {
-    op.delete(IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id));
+    op.delete(
+      IDX.expiryKey((item as FoodItem).expiryDate.toISOString(), item.id),
+    );
   }
 }
 
@@ -313,7 +363,9 @@ export async function getItemById(id: string): Promise<InventoryItem | null> {
  * Uses the in-memory cache when warm; falls back to a full KV scan.
  * Avoids N individual KV reads that the index-then-lookup approach requires.
  */
-export async function getItemsByCategory(category: ItemCategory): Promise<InventoryItem[]> {
+export async function getItemsByCategory(
+  category: ItemCategory,
+): Promise<InventoryItem[]> {
   const all = await getAllItems();
   return all.filter((item) => item.category === category);
 }
@@ -322,7 +374,9 @@ export async function getItemsByCategory(category: ItemCategory): Promise<Invent
  * Fetch all items for a specific space.
  * Uses the in-memory cache when warm; falls back to a full KV scan.
  */
-export async function getItemsBySpace(space: ItemSpace): Promise<InventoryItem[]> {
+export async function getItemsBySpace(
+  space: ItemSpace,
+): Promise<InventoryItem[]> {
   const all = await getAllItems();
   return all.filter((item) => (item.space ?? "camp-store") === space);
 }
@@ -336,8 +390,12 @@ export async function getFoodItemsSortedByExpiry(): Promise<FoodItem[]> {
   const all = await getAllItems();
   return (all.filter((item): item is FoodItem => item.category === "food"))
     .sort((a, b) => {
-      const aTime = a.expiryDate instanceof Date ? a.expiryDate.getTime() : new Date(a.expiryDate as string).getTime();
-      const bTime = b.expiryDate instanceof Date ? b.expiryDate.getTime() : new Date(b.expiryDate as string).getTime();
+      const aTime = a.expiryDate instanceof Date
+        ? a.expiryDate.getTime()
+        : new Date(a.expiryDate as string).getTime();
+      const bTime = b.expiryDate instanceof Date
+        ? b.expiryDate.getTime()
+        : new Date(b.expiryDate as string).getTime();
       return aTime - bTime;
     });
 }
@@ -357,7 +415,10 @@ export async function createItem(item: InventoryItem): Promise<InventoryItem> {
   return item;
 }
 
-export async function updateItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
+export async function updateItem(
+  id: string,
+  updates: Partial<InventoryItem>,
+): Promise<InventoryItem | null> {
   const existing = await getItemById(id);
   if (!existing) {
     return null;
@@ -371,7 +432,11 @@ export async function updateItem(id: string, updates: Partial<InventoryItem>): P
   } as InventoryItem;
 
   const currentStats = await getComputedStats();
-  const newStats = applyItemToStats(applyItemToStats(currentStats, existing, -1), updated, 1);
+  const newStats = applyItemToStats(
+    applyItemToStats(currentStats, existing, -1),
+    updated,
+    1,
+  );
 
   const db = await initKv();
   const op = db.atomic();
@@ -408,7 +473,7 @@ export async function deleteItem(id: string): Promise<boolean> {
 export async function searchItems(query: string): Promise<InventoryItem[]> {
   const allItems = await getAllItems();
   const lowerQuery = query.toLowerCase();
-  
+
   return allItems.filter((item) =>
     item.name.toLowerCase().includes(lowerQuery) ||
     item.category.toLowerCase().includes(lowerQuery) ||
@@ -485,13 +550,20 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
 
 export async function getActiveCheckOuts(): Promise<CheckOut[]> {
   const allCheckOuts = await getAllCheckOuts();
-  return allCheckOuts.filter((co) => co.status === "checked-out" || co.status === "overdue");
+  return allCheckOuts.filter((co) =>
+    co.status === "checked-out" || co.status === "overdue"
+  );
 }
 
-export async function getActiveCheckOutsByItemId(itemId: string): Promise<CheckOut[]> {
+export async function getActiveCheckOutsByItemId(
+  itemId: string,
+): Promise<CheckOut[]> {
   const active = await getActiveCheckOuts();
   return active.filter((co) => co.itemId === itemId)
-    .sort((a, b) => new Date(a.expectedReturnDate).getTime() - new Date(b.expectedReturnDate).getTime());
+    .sort((a, b) =>
+      new Date(a.expectedReturnDate).getTime() -
+      new Date(b.expectedReturnDate).getTime()
+    );
 }
 
 export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
@@ -500,7 +572,10 @@ export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
 
   // Atomically write the checkout record and increment active loans count
   const currentStats = await getComputedStats();
-  const newStats: ComputedStats = { ...currentStats, activeLoansCount: (currentStats.activeLoansCount ?? 0) + 1 };
+  const newStats: ComputedStats = {
+    ...currentStats,
+    activeLoansCount: (currentStats.activeLoansCount ?? 0) + 1,
+  };
   await db.atomic()
     .set([...KEYS.checkouts, checkout.id], serializedCheckOut)
     .set(KEYS.computedStats, newStats)
@@ -511,7 +586,9 @@ export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
   // Deduct quantity from item stock
   const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, { quantity: item.quantity - checkout.quantity });
+    await updateItem(checkout.itemId, {
+      quantity: item.quantity - checkout.quantity,
+    });
   }
 
   return checkout;
@@ -520,21 +597,24 @@ export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
 export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   const db = await initKv();
   const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
-  
+
   if (!result.value) {
     return null;
   }
-  
+
   const checkout = deserializeCheckOut(result.value);
   const updated: CheckOut = {
     ...checkout,
     actualReturnDate: new Date(),
     status: "returned",
   };
-  
+
   // Atomically write the return and decrement active loans count
   const currentStats = await getComputedStats();
-  const newStats: ComputedStats = { ...currentStats, activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1) };
+  const newStats: ComputedStats = {
+    ...currentStats,
+    activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
+  };
   await db.atomic()
     .set([...KEYS.checkouts, id], serializeCheckOut(updated))
     .set(KEYS.computedStats, newStats)
@@ -545,7 +625,9 @@ export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   // Restore item quantity
   const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, { quantity: item.quantity + checkout.quantity });
+    await updateItem(checkout.itemId, {
+      quantity: item.quantity + checkout.quantity,
+    });
   }
 
   return updated;
@@ -573,10 +655,15 @@ export async function deleteCheckOut(id: string): Promise<boolean> {
   if (isActive) {
     const item = await getItemById(checkout.itemId);
     if (item) {
-      await updateItem(checkout.itemId, { quantity: item.quantity + checkout.quantity });
+      await updateItem(checkout.itemId, {
+        quantity: item.quantity + checkout.quantity,
+      });
     }
     const currentStats = await getComputedStats();
-    const newStats: ComputedStats = { ...currentStats, activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1) };
+    const newStats: ComputedStats = {
+      ...currentStats,
+      activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
+    };
     await db.atomic()
       .delete([...KEYS.checkouts, id])
       .set(KEYS.computedStats, newStats)
@@ -627,7 +714,8 @@ export async function addMaintenanceRecord(
   };
 
   if (input.conditionAfter && "condition" in existing) {
-    (updates as Partial<InventoryItem> & { condition?: string }).condition = input.conditionAfter;
+    (updates as Partial<InventoryItem> & { condition?: string }).condition =
+      input.conditionAfter;
   }
 
   return await updateItem(itemId, updates);
@@ -643,7 +731,8 @@ export async function updateInspectionSchedule(
 
   return await updateItem(itemId, {
     lastInspectedDate: updates.lastInspectedDate ?? existing.lastInspectedDate,
-    nextInspectionDate: updates.nextInspectionDate ?? existing.nextInspectionDate,
+    nextInspectionDate: updates.nextInspectionDate ??
+      existing.nextInspectionDate,
   });
 }
 
@@ -686,13 +775,14 @@ export async function getNeckerCountOrNull(): Promise<number | null> {
 /** Returns all persisted necker metrics, defaulting missing values to zero. */
 export async function getNeckerMetrics(): Promise<NeckerMetrics> {
   const db = await initKv();
-  const [inStock, created, totalMade, adultCreated, adultTotalMade] = await Promise.all([
-    db.get<number>(KEYS.neckers),
-    db.get<number>(KEYS.neckersCreated),
-    db.get<number>(KEYS.neckersTotalMade),
-    db.get<number>(KEYS.adultNeckersCreated),
-    db.get<number>(KEYS.adultNeckersTotalMade),
-  ]);
+  const [inStock, created, totalMade, adultCreated, adultTotalMade] =
+    await Promise.all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersCreated),
+      db.get<number>(KEYS.neckersTotalMade),
+      db.get<number>(KEYS.adultNeckersCreated),
+      db.get<number>(KEYS.adultNeckersTotalMade),
+    ]);
 
   return {
     inStock: inStock.value ?? 0,
@@ -775,13 +865,14 @@ export async function recordNeckersMade(
     return await getNeckerMetrics();
   }
 
-  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
-    db.get<number>(KEYS.neckers),
-    db.get<number>(KEYS.neckersCreated),
-    db.get<number>(KEYS.neckersTotalMade),
-    db.get<number>(KEYS.adultNeckersCreated),
-    db.get<number>(KEYS.adultNeckersTotalMade),
-  ]);
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] =
+    await Promise.all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersCreated),
+      db.get<number>(KEYS.neckersTotalMade),
+      db.get<number>(KEYS.adultNeckersCreated),
+      db.get<number>(KEYS.adultNeckersTotalMade),
+    ]);
 
   const next = {
     inStock: stockRes.value ?? 0,
@@ -815,20 +906,23 @@ export async function recordNeckersMade(
  * Moves neckers from "created" into "in stock".
  * Returns the actual moved quantity (clamped to available created count).
  */
-export async function moveCreatedToStock(quantity: number): Promise<MoveCreatedToStockResult> {
+export async function moveCreatedToStock(
+  quantity: number,
+): Promise<MoveCreatedToStockResult> {
   const db = await initKv();
   const requested = Math.max(0, Math.floor(quantity));
   if (requested <= 0) {
     return { metrics: await getNeckerMetrics(), moved: 0 };
   }
 
-  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
-    db.get<number>(KEYS.neckers),
-    db.get<number>(KEYS.neckersCreated),
-    db.get<number>(KEYS.neckersTotalMade),
-    db.get<number>(KEYS.adultNeckersCreated),
-    db.get<number>(KEYS.adultNeckersTotalMade),
-  ]);
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] =
+    await Promise.all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersCreated),
+      db.get<number>(KEYS.neckersTotalMade),
+      db.get<number>(KEYS.adultNeckersCreated),
+      db.get<number>(KEYS.adultNeckersTotalMade),
+    ]);
 
   const created = createdRes.value ?? 0;
   const moved = Math.min(created, requested);
@@ -864,20 +958,23 @@ export async function moveCreatedToStock(quantity: number): Promise<MoveCreatedT
 }
 
 /** Records newly made adult neckers (affects adult counters only). */
-export async function recordAdultNeckersMade(quantity: number): Promise<NeckerMetrics> {
+export async function recordAdultNeckersMade(
+  quantity: number,
+): Promise<NeckerMetrics> {
   const db = await initKv();
   const made = Math.max(0, Math.floor(quantity));
   if (made <= 0) {
     return await getNeckerMetrics();
   }
 
-  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
-    db.get<number>(KEYS.neckers),
-    db.get<number>(KEYS.neckersCreated),
-    db.get<number>(KEYS.neckersTotalMade),
-    db.get<number>(KEYS.adultNeckersCreated),
-    db.get<number>(KEYS.adultNeckersTotalMade),
-  ]);
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] =
+    await Promise.all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersCreated),
+      db.get<number>(KEYS.neckersTotalMade),
+      db.get<number>(KEYS.adultNeckersCreated),
+      db.get<number>(KEYS.adultNeckersTotalMade),
+    ]);
 
   const nextAdultCreated = (adultCreatedRes.value ?? 0) + made;
   const nextAdultTotal = (adultTotalRes.value ?? 0) + made;
@@ -903,20 +1000,23 @@ export async function recordAdultNeckersMade(quantity: number): Promise<NeckerMe
 }
 
 /** Marks adult neckers as delivered (decrements adult created, does not add extra counters). */
-export async function deliverAdultNeckers(quantity: number): Promise<DeliverAdultNeckersResult> {
+export async function deliverAdultNeckers(
+  quantity: number,
+): Promise<DeliverAdultNeckersResult> {
   const db = await initKv();
   const requested = Math.max(0, Math.floor(quantity));
   if (requested <= 0) {
     return { metrics: await getNeckerMetrics(), delivered: 0 };
   }
 
-  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
-    db.get<number>(KEYS.neckers),
-    db.get<number>(KEYS.neckersCreated),
-    db.get<number>(KEYS.neckersTotalMade),
-    db.get<number>(KEYS.adultNeckersCreated),
-    db.get<number>(KEYS.adultNeckersTotalMade),
-  ]);
+  const [stockRes, createdRes, totalRes, adultCreatedRes, adultTotalRes] =
+    await Promise.all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersCreated),
+      db.get<number>(KEYS.neckersTotalMade),
+      db.get<number>(KEYS.adultNeckersCreated),
+      db.get<number>(KEYS.adultNeckersTotalMade),
+    ]);
   const current = adultCreatedRes.value ?? 0;
   const delivered = Math.min(current, requested);
   const next = current - delivered;
@@ -943,15 +1043,18 @@ export async function deliverAdultNeckers(quantity: number): Promise<DeliverAdul
 }
 
 /** Sets all-time total made, useful for importing a legacy baseline. */
-export async function setNeckersTotalMade(value: number): Promise<NeckerMetrics> {
+export async function setNeckersTotalMade(
+  value: number,
+): Promise<NeckerMetrics> {
   const db = await initKv();
   const next = Math.max(0, Math.floor(value));
-  const [stockRes, createdRes, adultCreatedRes, adultTotalRes] = await Promise.all([
-    db.get<number>(KEYS.neckers),
-    db.get<number>(KEYS.neckersCreated),
-    db.get<number>(KEYS.adultNeckersCreated),
-    db.get<number>(KEYS.adultNeckersTotalMade),
-  ]);
+  const [stockRes, createdRes, adultCreatedRes, adultTotalRes] = await Promise
+    .all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersCreated),
+      db.get<number>(KEYS.adultNeckersCreated),
+      db.get<number>(KEYS.adultNeckersTotalMade),
+    ]);
   await db.set(KEYS.neckersTotalMade, next);
   return {
     inStock: stockRes.value ?? 0,
@@ -963,7 +1066,9 @@ export async function setNeckersTotalMade(value: number): Promise<NeckerMetrics>
 }
 
 /** Sets all-time adult total made, useful for importing a legacy adult baseline. */
-export async function setAdultNeckersTotalMade(value: number): Promise<NeckerMetrics> {
+export async function setAdultNeckersTotalMade(
+  value: number,
+): Promise<NeckerMetrics> {
   const db = await initKv();
   const next = Math.max(0, Math.floor(value));
   const [stockRes, createdRes, totalRes, adultCreatedRes] = await Promise.all([
@@ -985,12 +1090,13 @@ export async function setAdultNeckersTotalMade(value: number): Promise<NeckerMet
 /** Resets only the current created counter; all-time total remains unchanged. */
 export async function resetNeckersCreated(): Promise<NeckerMetrics> {
   const db = await initKv();
-  const [stockRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise.all([
-    db.get<number>(KEYS.neckers),
-    db.get<number>(KEYS.neckersTotalMade),
-    db.get<number>(KEYS.adultNeckersCreated),
-    db.get<number>(KEYS.adultNeckersTotalMade),
-  ]);
+  const [stockRes, totalRes, adultCreatedRes, adultTotalRes] = await Promise
+    .all([
+      db.get<number>(KEYS.neckers),
+      db.get<number>(KEYS.neckersTotalMade),
+      db.get<number>(KEYS.adultNeckersCreated),
+      db.get<number>(KEYS.adultNeckersTotalMade),
+    ]);
   await db.set(KEYS.neckersCreated, 0);
   return {
     inStock: stockRes.value ?? 0,
@@ -1042,11 +1148,11 @@ function serializeItem(item: InventoryItem): any {
       date: entry.date.toISOString(),
     }));
   }
-  
+
   if (item.category === "food") {
     serialized.expiryDate = item.expiryDate.toISOString();
   }
-  
+
   return serialized;
 }
 
@@ -1069,11 +1175,11 @@ function deserializeItem(data: any): InventoryItem {
       date: new Date(entry.date),
     }));
   }
-  
+
   if (data.category === "food") {
     item.expiryDate = new Date(data.expiryDate);
   }
-  
+
   return item as InventoryItem;
 }
 
@@ -1093,7 +1199,9 @@ function deserializeCheckOut(data: any): CheckOut {
     ...data,
     checkOutDate: new Date(data.checkOutDate),
     expectedReturnDate: new Date(data.expectedReturnDate),
-    actualReturnDate: data.actualReturnDate ? new Date(data.actualReturnDate) : undefined,
+    actualReturnDate: data.actualReturnDate
+      ? new Date(data.actualReturnDate)
+      : undefined,
   };
 }
 
@@ -1196,12 +1304,20 @@ export async function deleteCampPlan(id: string): Promise<boolean> {
 
 // deno-lint-ignore no-explicit-any
 function serializeCampTemplate(t: CampTemplate): any {
-  return { ...t, createdAt: t.createdAt.toISOString(), lastUpdated: t.lastUpdated.toISOString() };
+  return {
+    ...t,
+    createdAt: t.createdAt.toISOString(),
+    lastUpdated: t.lastUpdated.toISOString(),
+  };
 }
 
 // deno-lint-ignore no-explicit-any
 function deserializeCampTemplate(data: any): CampTemplate {
-  return { ...data, createdAt: new Date(data.createdAt), lastUpdated: new Date(data.lastUpdated) };
+  return {
+    ...data,
+    createdAt: new Date(data.createdAt),
+    lastUpdated: new Date(data.lastUpdated),
+  };
 }
 
 export async function getAllCampTemplates(): Promise<CampTemplate[]> {
@@ -1212,10 +1328,14 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
     templatesInFlight = (async () => {
       const db = await initKv();
       const templates: CampTemplate[] = [];
-      for await (const entry of db.list<CampTemplate>({ prefix: KEYS.templates })) {
+      for await (
+        const entry of db.list<CampTemplate>({ prefix: KEYS.templates })
+      ) {
         templates.push(deserializeCampTemplate(entry.value));
       }
-      templates.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      templates.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+      );
       templatesCache = { templates, expiresAt: Date.now() + CACHE_TTL_MS };
       templatesInFlight = null;
       return templates;
@@ -1225,7 +1345,9 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
   return await templatesInFlight!;
 }
 
-export async function getCampTemplateById(id: string): Promise<CampTemplate | null> {
+export async function getCampTemplateById(
+  id: string,
+): Promise<CampTemplate | null> {
   const db = await initKv();
   const result = await db.get<CampTemplate>([...KEYS.templates, id]);
   return result.value ? deserializeCampTemplate(result.value) : null;
@@ -1248,7 +1370,10 @@ export async function createCampTemplate(
     createdAt: now,
     lastUpdated: now,
   };
-  await db.set([...KEYS.templates, template.id], serializeCampTemplate(template));
+  await db.set(
+    [...KEYS.templates, template.id],
+    serializeCampTemplate(template),
+  );
   invalidateTemplatesCache();
   return template;
 }
@@ -1303,6 +1428,35 @@ function deserializeFirstAidKit(data: any): FirstAidKit {
   };
 }
 
+interface FirstAidCheckStateStored {
+  lastCheckedAt: string | null;
+  dismissedUntil: string | null;
+  updatedAt: string;
+}
+
+// deno-lint-ignore no-explicit-any
+function deserializeFirstAidCheckState(data: any): FirstAidCheckState {
+  return {
+    lastCheckedAt: data.lastCheckedAt ? new Date(data.lastCheckedAt) : null,
+    dismissedUntil: data.dismissedUntil ? new Date(data.dismissedUntil) : null,
+    updatedAt: new Date(data.updatedAt),
+  };
+}
+
+function serializeFirstAidCheckState(
+  state: FirstAidCheckState,
+): FirstAidCheckStateStored {
+  return {
+    lastCheckedAt: state.lastCheckedAt
+      ? state.lastCheckedAt.toISOString()
+      : null,
+    dismissedUntil: state.dismissedUntil
+      ? state.dismissedUntil.toISOString()
+      : null,
+    updatedAt: state.updatedAt.toISOString(),
+  };
+}
+
 export async function getAllFirstAidKits(): Promise<FirstAidKit[]> {
   if (firstAidKitsCache && Date.now() < firstAidKitsCache.expiresAt) {
     return firstAidKitsCache.kits;
@@ -1311,10 +1465,14 @@ export async function getAllFirstAidKits(): Promise<FirstAidKit[]> {
     firstAidKitsInFlight = (async () => {
       const db = await initKv();
       const kits: FirstAidKit[] = [];
-      for await (const entry of db.list<FirstAidKit>({ prefix: KEYS.firstAidKits })) {
+      for await (
+        const entry of db.list<FirstAidKit>({ prefix: KEYS.firstAidKits })
+      ) {
         kits.push(deserializeFirstAidKit(entry.value));
       }
-      kits.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      kits.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+      );
       firstAidKitsCache = { kits, expiresAt: Date.now() + CACHE_TTL_MS };
       firstAidKitsInFlight = null;
       return kits;
@@ -1324,7 +1482,32 @@ export async function getAllFirstAidKits(): Promise<FirstAidKit[]> {
   return await firstAidKitsInFlight!;
 }
 
-export async function getFirstAidKitById(id: string): Promise<FirstAidKit | null> {
+export async function getAllFirstAidKitIds(): Promise<string[]> {
+  if (firstAidKitIdsCache && Date.now() < firstAidKitIdsCache.expiresAt) {
+    return firstAidKitIdsCache.ids;
+  }
+  if (!firstAidKitIdsInFlight) {
+    firstAidKitIdsInFlight = (async () => {
+      const db = await initKv();
+      const ids: string[] = [];
+      for await (
+        const entry of db.list<FirstAidKit>({ prefix: KEYS.firstAidKits })
+      ) {
+        ids.push(String(entry.key[entry.key.length - 1]));
+      }
+      ids.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      firstAidKitIdsCache = { ids, expiresAt: Date.now() + CACHE_TTL_MS };
+      firstAidKitIdsInFlight = null;
+      return ids;
+    })();
+  }
+  if (firstAidKitIdsCache) return firstAidKitIdsCache.ids;
+  return await firstAidKitIdsInFlight!;
+}
+
+export async function getFirstAidKitById(
+  id: string,
+): Promise<FirstAidKit | null> {
   const db = await initKv();
   const result = await db.get<FirstAidKit>([...KEYS.firstAidKits, id]);
   return result.value ? deserializeFirstAidKit(result.value) : null;
@@ -1382,7 +1565,231 @@ export async function deleteFirstAidKit(id: string): Promise<boolean> {
   return true;
 }
 
-export async function getAllFirstAidCatalogItems(): Promise<FirstAidCatalogItem[]> {
+export async function getFirstAidOverallCheckState(): Promise<
+  FirstAidCheckState | null
+> {
+  if (
+    firstAidOverallCheckStateCache &&
+    Date.now() < firstAidOverallCheckStateCache.expiresAt
+  ) {
+    return firstAidOverallCheckStateCache.state;
+  }
+  if (!firstAidOverallCheckStateInFlight) {
+    firstAidOverallCheckStateInFlight = (async () => {
+      const db = await initKv();
+      const result = await db.get<FirstAidCheckStateStored>([
+        ...KEYS.firstAidChecks,
+        "overall",
+      ]);
+      const state = result.value
+        ? deserializeFirstAidCheckState(result.value)
+        : null;
+      firstAidOverallCheckStateCache = {
+        state,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      };
+      firstAidOverallCheckStateInFlight = null;
+      return state;
+    })();
+  }
+  if (firstAidOverallCheckStateCache) {
+    return firstAidOverallCheckStateCache.state;
+  }
+  return await firstAidOverallCheckStateInFlight!;
+}
+
+export async function getFirstAidKitCheckStates(): Promise<
+  Record<string, FirstAidCheckState>
+> {
+  if (
+    firstAidKitCheckStatesCache &&
+    Date.now() < firstAidKitCheckStatesCache.expiresAt
+  ) {
+    return firstAidKitCheckStatesCache.states;
+  }
+  if (!firstAidKitCheckStatesInFlight) {
+    firstAidKitCheckStatesInFlight = (async () => {
+      const db = await initKv();
+      const states: Record<string, FirstAidCheckState> = {};
+      for await (
+        const entry of db.list<FirstAidCheckStateStored>({
+          prefix: [...KEYS.firstAidChecks, "kits"],
+        })
+      ) {
+        const kitId = String(entry.key[entry.key.length - 1]);
+        states[kitId] = deserializeFirstAidCheckState(entry.value);
+      }
+      firstAidKitCheckStatesCache = {
+        states,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      };
+      firstAidKitCheckStatesInFlight = null;
+      return states;
+    })();
+  }
+  if (firstAidKitCheckStatesCache) return firstAidKitCheckStatesCache.states;
+  return await firstAidKitCheckStatesInFlight!;
+}
+
+export async function recordFirstAidCheckCompletion(
+  kitIds: string[],
+  markOverall: boolean,
+): Promise<void> {
+  const db = await initKv();
+  const now = new Date();
+
+  const uniqueKitIds = [
+    ...new Set(kitIds.filter((kitId) => kitId.trim().length > 0)),
+  ];
+  const ops: Promise<unknown>[] = uniqueKitIds.map((kitId) =>
+    db.set(
+      [...KEYS.firstAidChecks, "kits", kitId],
+      serializeFirstAidCheckState({
+        lastCheckedAt: now,
+        dismissedUntil: null,
+        updatedAt: now,
+      }),
+    )
+  );
+
+  if (markOverall) {
+    ops.push(
+      db.set(
+        [...KEYS.firstAidChecks, "overall"],
+        serializeFirstAidCheckState({
+          lastCheckedAt: now,
+          dismissedUntil: null,
+          updatedAt: now,
+        }),
+      ),
+    );
+  }
+
+  await Promise.all(ops);
+  invalidateFirstAidCheckStateCaches();
+}
+
+export async function dismissFirstAidOverallCheckReminder(): Promise<void> {
+  const db = await initKv();
+  const current = await getFirstAidOverallCheckState();
+  const now = new Date();
+  const dismissedUntil = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    1,
+  );
+
+  const kitStates = await getFirstAidKitCheckStates();
+  const kitIds = await getAllFirstAidKitIds();
+
+  const ops: Promise<unknown>[] = [
+    db.set(
+      [...KEYS.firstAidChecks, "overall"],
+      serializeFirstAidCheckState({
+        lastCheckedAt: current?.lastCheckedAt ?? null,
+        dismissedUntil,
+        updatedAt: now,
+      }),
+    ),
+  ];
+
+  for (const kitId of kitIds) {
+    const state = kitStates[kitId] ?? null;
+    ops.push(
+      db.set(
+        [...KEYS.firstAidChecks, "kits", kitId],
+        serializeFirstAidCheckState({
+          lastCheckedAt: state?.lastCheckedAt ?? null,
+          dismissedUntil,
+          updatedAt: now,
+        }),
+      ),
+    );
+  }
+
+  await Promise.all(ops);
+  invalidateFirstAidCheckStateCaches();
+}
+
+export async function dismissFirstAidKitCheckReminder(
+  kitId: string,
+): Promise<void> {
+  const db = await initKv();
+  const key = [...KEYS.firstAidChecks, "kits", kitId] as const;
+  const existing = await db.get<FirstAidCheckStateStored>(key);
+  const current = existing.value
+    ? deserializeFirstAidCheckState(existing.value)
+    : null;
+  const now = new Date();
+  const dismissedUntil = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    1,
+  );
+
+  await db.set(
+    key,
+    serializeFirstAidCheckState({
+      lastCheckedAt: current?.lastCheckedAt ?? null,
+      dismissedUntil,
+      updatedAt: now,
+    }),
+  );
+
+  // If every kit reminder is now dismissed, keep overall reminder in sync.
+  const [kitIds, kitStates, overallState] = await Promise.all([
+    getAllFirstAidKitIds(),
+    getFirstAidKitCheckStates(),
+    getFirstAidOverallCheckState(),
+  ]);
+
+  const allKitsDismissed = kitIds.length > 0 && kitIds.every((id) => {
+    const state = id === kitId
+      ? {
+        lastCheckedAt: current?.lastCheckedAt ?? null,
+        dismissedUntil,
+        updatedAt: now,
+      }
+      : kitStates[id];
+    return !!state?.dismissedUntil &&
+      state.dismissedUntil.getTime() >= dismissedUntil.getTime();
+  });
+
+  if (allKitsDismissed) {
+    await db.set(
+      [...KEYS.firstAidChecks, "overall"],
+      serializeFirstAidCheckState({
+        lastCheckedAt: overallState?.lastCheckedAt ?? null,
+        dismissedUntil,
+        updatedAt: now,
+      }),
+    );
+  }
+
+  invalidateFirstAidCheckStateCaches();
+}
+
+export async function resetFirstAidCheckStates(): Promise<void> {
+  const db = await initKv();
+  const ops: Promise<unknown>[] = [
+    db.delete([...KEYS.firstAidChecks, "overall"]),
+  ];
+
+  for await (
+    const entry of db.list({
+      prefix: [...KEYS.firstAidChecks, "kits"],
+    })
+  ) {
+    ops.push(db.delete(entry.key));
+  }
+
+  await Promise.all(ops);
+  invalidateFirstAidCheckStateCaches();
+}
+
+export async function getAllFirstAidCatalogItems(): Promise<
+  FirstAidCatalogItem[]
+> {
   if (firstAidCatalogCache && Date.now() < firstAidCatalogCache.expiresAt) {
     return firstAidCatalogCache.items;
   }
@@ -1390,27 +1797,43 @@ export async function getAllFirstAidCatalogItems(): Promise<FirstAidCatalogItem[
     firstAidCatalogInFlight = (async () => {
       const db = await initKv();
       const items: FirstAidCatalogItem[] = [];
-      for await (const entry of db.list<FirstAidCatalogItem>({ prefix: KEYS.firstAidCatalog })) {
-        const section = (FIRST_AID_SECTIONS as readonly string[]).includes(entry.value.section)
+      for await (
+        const entry of db.list<FirstAidCatalogItem>({
+          prefix: KEYS.firstAidCatalog,
+        })
+      ) {
+        const section = (FIRST_AID_SECTIONS as readonly string[]).includes(
+            entry.value.section,
+          )
           ? entry.value.section
           : "General";
         items.push({ ...entry.value, section });
       }
 
       if (items.length === 0) {
-        const seedOps = DEFAULT_FIRST_AID_CATALOG.map((item) => db.set([...KEYS.firstAidCatalog, item.id], item));
+        const seedOps = DEFAULT_FIRST_AID_CATALOG.map((item) =>
+          db.set([...KEYS.firstAidCatalog, item.id], item)
+        );
         await Promise.all(seedOps);
         items.push(...DEFAULT_FIRST_AID_CATALOG);
       } else {
         const existingIds = new Set(items.map((item) => item.id));
-        const missingDefaults = DEFAULT_FIRST_AID_CATALOG.filter((item) => !existingIds.has(item.id));
+        const missingDefaults = DEFAULT_FIRST_AID_CATALOG.filter((item) =>
+          !existingIds.has(item.id)
+        );
         if (missingDefaults.length > 0) {
-          await Promise.all(missingDefaults.map((item) => db.set([...KEYS.firstAidCatalog, item.id], item)));
+          await Promise.all(
+            missingDefaults.map((item) =>
+              db.set([...KEYS.firstAidCatalog, item.id], item)
+            ),
+          );
           items.push(...missingDefaults);
         }
       }
 
-      items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      items.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+      );
       firstAidCatalogCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
       firstAidCatalogInFlight = null;
       return items;
@@ -1420,19 +1843,28 @@ export async function getAllFirstAidCatalogItems(): Promise<FirstAidCatalogItem[
   return await firstAidCatalogInFlight!;
 }
 
-export async function createFirstAidCatalogItem(item: FirstAidCatalogItem): Promise<FirstAidCatalogItem> {
+export async function createFirstAidCatalogItem(
+  item: FirstAidCatalogItem,
+): Promise<FirstAidCatalogItem> {
   const db = await initKv();
-  const section = (FIRST_AID_SECTIONS as readonly string[]).includes(item.section)
-    ? item.section
-    : "General";
+  const section =
+    (FIRST_AID_SECTIONS as readonly string[]).includes(item.section)
+      ? item.section
+      : "General";
   await db.set([...KEYS.firstAidCatalog, item.id], { ...item, section });
   invalidateFirstAidCatalogCache();
   return { ...item, section };
 }
 
-export async function updateFirstAidCatalogItem(id: string, updates: Partial<FirstAidCatalogItem>): Promise<FirstAidCatalogItem | null> {
+export async function updateFirstAidCatalogItem(
+  id: string,
+  updates: Partial<FirstAidCatalogItem>,
+): Promise<FirstAidCatalogItem | null> {
   const db = await initKv();
-  const existing = await db.get<FirstAidCatalogItem>([...KEYS.firstAidCatalog, id]);
+  const existing = await db.get<FirstAidCatalogItem>([
+    ...KEYS.firstAidCatalog,
+    id,
+  ]);
   if (!existing.value) return null;
 
   const updated: FirstAidCatalogItem = {
@@ -1440,9 +1872,10 @@ export async function updateFirstAidCatalogItem(id: string, updates: Partial<Fir
     ...updates,
     id,
   };
-  const section = (FIRST_AID_SECTIONS as readonly string[]).includes(updated.section)
-    ? updated.section
-    : "General";
+  const section =
+    (FIRST_AID_SECTIONS as readonly string[]).includes(updated.section)
+      ? updated.section
+      : "General";
   await db.set([...KEYS.firstAidCatalog, id], { ...updated, section });
   invalidateFirstAidCatalogCache();
   return { ...updated, section };
@@ -1450,7 +1883,10 @@ export async function updateFirstAidCatalogItem(id: string, updates: Partial<Fir
 
 export async function deleteFirstAidCatalogItem(id: string): Promise<boolean> {
   const db = await initKv();
-  const existing = await db.get<FirstAidCatalogItem>([...KEYS.firstAidCatalog, id]);
+  const existing = await db.get<FirstAidCatalogItem>([
+    ...KEYS.firstAidCatalog,
+    id,
+  ]);
   if (!existing.value) return false;
   await db.delete([...KEYS.firstAidCatalog, id]);
   invalidateFirstAidCatalogCache();
@@ -1470,7 +1906,9 @@ export async function getAllMeals(): Promise<Meal[]> {
       for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
         if (entry.value) meals.push(entry.value);
       }
-      const sorted = meals.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      const sorted = meals.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+      );
       mealsCache = { meals: sorted, expiresAt: Date.now() + CACHE_TTL_MS };
       mealsInFlight = null;
       return sorted;
@@ -1496,11 +1934,19 @@ export async function createMeal(payload: MealPayload): Promise<Meal> {
   return meal;
 }
 
-export async function updateMeal(id: string, payload: MealPayload): Promise<Meal | null> {
+export async function updateMeal(
+  id: string,
+  payload: MealPayload,
+): Promise<Meal | null> {
   const db = await initKv();
   const existing = await getMealById(id);
   if (!existing) return null;
-  const updated: Meal = { ...existing, ...payload, id, updatedAt: new Date().toISOString() };
+  const updated: Meal = {
+    ...existing,
+    ...payload,
+    id,
+    updatedAt: new Date().toISOString(),
+  };
   await db.set([...KEYS.meals, id], updated);
   invalidateMealsCache();
   return updated;

@@ -27,6 +27,8 @@ export type ActivityAction =
   | "camp_templates.imported"
   | "first_aid.kit_created"
   | "first_aid.kit_deleted"
+  | "first_aid.check_completed"
+  | "first_aid.check_reset"
   | "meal.created"
   | "meal.updated"
   | "meal.deleted"
@@ -117,7 +119,9 @@ export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
   const entries: ActivityEntry[] = [];
   const effectiveLimit = Math.min(limit, 500);
   for await (
-    const entry of kv.list<ActivityEntry>({ prefix: LOG_PREFIX }, { limit: effectiveLimit })
+    const entry of kv.list<ActivityEntry>({ prefix: LOG_PREFIX }, {
+      limit: effectiveLimit,
+    })
   ) {
     entries.push(entry.value);
   }

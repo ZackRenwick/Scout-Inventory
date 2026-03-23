@@ -23,6 +23,7 @@ import * as $api_camp_templates_id_ from "./routes/api/camp-templates/[id].ts";
 import * as $api_camp_templates_index from "./routes/api/camp-templates/index.ts";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
+import * as $api_first_aid_check from "./routes/api/first-aid-check.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
@@ -42,6 +43,7 @@ import * as $camps_index from "./routes/camps/index.tsx";
 import * as $camps_new from "./routes/camps/new.tsx";
 import * as $camps_templates from "./routes/camps/templates.tsx";
 import * as $first_aid_catalog from "./routes/first-aid/catalog.tsx";
+import * as $first_aid_check from "./routes/first-aid/check.tsx";
 import * as $first_aid_index from "./routes/first-aid/index.tsx";
 import * as $first_aid_print from "./routes/first-aid/print.tsx";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
@@ -71,6 +73,7 @@ import * as $Counter from "./islands/Counter.tsx";
 import * as $DbCleanup from "./islands/DbCleanup.tsx";
 import * as $DbClear from "./islands/DbClear.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
+import * as $FirstAidCheckWizard from "./islands/FirstAidCheckWizard.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $LoanForm from "./islands/LoanForm.tsx";
@@ -116,6 +119,7 @@ const manifest = {
     "./routes/api/camp-templates/index.ts": $api_camp_templates_index,
     "./routes/api/camps/[id].ts": $api_camps_id_,
     "./routes/api/camps/index.ts": $api_camps_index,
+    "./routes/api/first-aid-check.ts": $api_first_aid_check,
     "./routes/api/items/[id].ts": $api_items_id_,
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
@@ -135,6 +139,7 @@ const manifest = {
     "./routes/camps/new.tsx": $camps_new,
     "./routes/camps/templates.tsx": $camps_templates,
     "./routes/first-aid/catalog.tsx": $first_aid_catalog,
+    "./routes/first-aid/check.tsx": $first_aid_check,
     "./routes/first-aid/index.tsx": $first_aid_index,
     "./routes/first-aid/print.tsx": $first_aid_print,
     "./routes/greet/[name].tsx": $greet_name_,
@@ -166,6 +171,7 @@ const manifest = {
     "./islands/DbCleanup.tsx": $DbCleanup,
     "./islands/DbClear.tsx": $DbClear,
     "./islands/EasterEgg.tsx": $EasterEgg,
+    "./islands/FirstAidCheckWizard.tsx": $FirstAidCheckWizard,
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
     "./islands/LoanForm.tsx": $LoanForm,
