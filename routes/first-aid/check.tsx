@@ -76,17 +76,23 @@ export default function FirstAidCheckPage(
             Work through each configured kit item and confirm whether the kit is
             up to spec.
           </p>
-          <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">
-            {data.selectedKitName
-              ? `${data.selectedKitName} check`
-              : "All kits check"} with
-            <strong class="text-gray-600 dark:text-gray-400">
-              {data.items.length} item{data.items.length === 1 ? "" : "s"}
-            </strong>
-            <span>across</span>
-            <strong class="text-gray-600 dark:text-gray-400">
-              {data.kitCount} kit{data.kitCount === 1 ? "" : "s"}
-            </strong>.
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
+            <span class="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              <span>
+                {data.selectedKitName
+                  ? `${data.selectedKitName} check`
+                  : "All kits check"}
+              </span>
+              <span>with</span>
+              <strong class="text-gray-700 dark:text-gray-200">
+                {data.items.length} item{data.items.length === 1 ? "" : "s"}
+              </strong>
+              <span>across</span>
+              <strong class="text-gray-700 dark:text-gray-200">
+                {data.kitCount} kit{data.kitCount === 1 ? "" : "s"}
+              </strong>
+              <span>.</span>
+            </span>
           </p>
         </div>
 

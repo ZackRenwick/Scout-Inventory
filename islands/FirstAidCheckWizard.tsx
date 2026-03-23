@@ -39,6 +39,8 @@ export default function FirstAidCheckWizard(
   const currentIdx = useSignal(0);
   const phase = useSignal<Phase>("wizard");
   const submitError = useSignal<string | null>(null);
+  const printReport = useSignal<"shortage" | "variance" | null>(null);
+  const printGeneratedAt = useSignal("");
 
   const total = entries.value.length;
   const current = useComputed(() => entries.value[currentIdx.value]);
@@ -56,6 +58,12 @@ export default function FirstAidCheckWizard(
   const surplus = useComputed(() =>
     checkedEntries.value.filter((entry) =>
       entry.countedQty > entry.quantityTarget
+    )
+  );
+
+  const variances = useComputed(() =>
+    checkedEntries.value.filter((entry) =>
+      entry.countedQty !== entry.quantityTarget
     )
   );
 
@@ -148,176 +156,21 @@ export default function FirstAidCheckWizard(
     }
   }
 
-  function escapeCsv(value: string | number): string {
-    const text = String(value);
-    if (text.includes(",") || text.includes("\n") || text.includes('"')) {
-      return `"${text.replaceAll('"', '""')}"`;
-    }
-    return text;
-  }
-
-  function escapeHtml(value: string | number): string {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
-  }
-
-  function downloadShortageCsv() {
-    if (shortages.value.length === 0) return;
-
-    const header = [
-      "Kit",
-      "Section",
-      "Item",
-      "Target",
-      "Counted",
-      "Missing",
-    ];
-
-    const rows = shortages.value.map((entry) => [
-      entry.kitName,
-      entry.section,
-      entry.itemName,
-      entry.quantityTarget,
-      entry.countedQty,
-      entry.quantityTarget - entry.countedQty,
-    ]);
-
-    const csv = [header, ...rows].map((row) =>
-      row.map((cell) => escapeCsv(cell)).join(",")
-    ).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const stamp = new Date().toISOString().slice(0, 10);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `first-aid-shortages-${stamp}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  function downloadVarianceCsv() {
-    const variances = checkedEntries.value.filter((entry) =>
-      entry.countedQty !== entry.quantityTarget
-    );
-    if (variances.length === 0) return;
-
-    const header = [
-      "Kit",
-      "Section",
-      "Item",
-      "Target",
-      "Counted",
-      "Difference",
-      "Variance Type",
-    ];
-
-    const rows = variances.map((entry) => {
-      const difference = entry.countedQty - entry.quantityTarget;
-      const varianceType = difference < 0 ? "shortage" : "overage";
-      return [
-        entry.kitName,
-        entry.section,
-        entry.itemName,
-        entry.quantityTarget,
-        entry.countedQty,
-        difference,
-        varianceType,
-      ];
-    });
-
-    const csv = [header, ...rows].map((row) =>
-      row.map((cell) => escapeCsv(cell)).join(",")
-    ).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const stamp = new Date().toISOString().slice(0, 10);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `first-aid-variances-${stamp}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+  function printInPage(report: "shortage" | "variance") {
+    printReport.value = report;
+    printGeneratedAt.value = new Date().toLocaleString();
+    // Let the DOM update with the print layout before triggering the dialog.
+    requestAnimationFrame(() => window.print());
   }
 
   function printShortageReport() {
     if (shortages.value.length === 0) return;
+    printInPage("shortage");
+  }
 
-    const generatedAt = new Date().toLocaleString();
-    const rowHtml = shortages.value.map((entry) => {
-      const missing = entry.quantityTarget - entry.countedQty;
-      return `
-        <tr>
-          <td>${escapeHtml(entry.kitName)}</td>
-          <td>${escapeHtml(entry.section)}</td>
-          <td>${escapeHtml(entry.itemName)}</td>
-          <td class="num">${escapeHtml(entry.quantityTarget)}</td>
-          <td class="num">${escapeHtml(entry.countedQty)}</td>
-          <td class="num">${escapeHtml(missing)}</td>
-        </tr>
-      `;
-    }).join("");
-
-    const html = `
-      <!doctype html>
-      <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>First Aid Shortage Report</title>
-        <style>
-          body { font-family: Arial, Helvetica, sans-serif; color: #111827; margin: 24px; }
-          h1 { font-size: 22px; margin: 0 0 4px; }
-          p { margin: 0 0 14px; color: #4b5563; font-size: 13px; }
-          table { width: 100%; border-collapse: collapse; font-size: 13px; }
-          th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
-          th { background: #f3f4f6; }
-          .num { text-align: center; }
-          @page { size: A4; margin: 10mm; }
-        </style>
-      </head>
-      <body>
-        <h1>First Aid Shortage Report</h1>
-        <p>Generated ${escapeHtml(generatedAt)}. ${
-      escapeHtml(shortages.value.length)
-    } shortage${shortages.value.length === 1 ? "" : "s"}.</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Kit</th>
-              <th>Section</th>
-              <th>Item</th>
-              <th class="num">Target</th>
-              <th class="num">Counted</th>
-              <th class="num">Missing</th>
-            </tr>
-          </thead>
-          <tbody>${rowHtml}</tbody>
-        </table>
-      </body>
-      </html>
-    `;
-
-    const reportWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (!reportWindow) {
-      submitError.value =
-        "Pop-up blocked. Allow pop-ups to print the shortage report.";
-      return;
-    }
-
-    reportWindow.document.open();
-    reportWindow.document.write(html);
-    reportWindow.document.close();
-    reportWindow.focus();
-    reportWindow.print();
+  function printVarianceReport() {
+    if (variances.value.length === 0) return;
+    printInPage("variance");
   }
 
   if (phase.value === "done") {
@@ -358,164 +211,250 @@ export default function FirstAidCheckWizard(
     const submitting = phase.value === "submitting";
 
     return (
-      <div class="max-w-4xl mx-auto">
-        <div class="mb-6 flex items-center justify-between">
-          <div>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-purple-100">
-              Review First Aid Check
-            </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {checkedEntries.value.length} checked
-              {skippedCount.value > 0 ? `, ${skippedCount.value} skipped` : ""}
-              {shortages.value.length > 0
-                ? `, ${shortages.value.length} shortages`
-                : ", all items meet target"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              currentIdx.value = 0;
-              phase.value = "wizard";
-            }}
-            class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
-          >
-            &larr; Back to wizard
-          </button>
-        </div>
+      <div id="fa-check-review" class="max-w-4xl mx-auto">
+        <style>
+          {`@media print {
+            #fa-check-review .screen-only { display: none !important; }
+            #fa-check-review .print-only { display: block !important; }
+            #fa-check-review { max-width: none !important; margin: 0 !important; }
+            #fa-check-review table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            #fa-check-review th, #fa-check-review td { border: 1px solid #d1d5db; padding: 6px; text-align: left; }
+            #fa-check-review th { background: #f3f4f6; }
+            #fa-check-review .num { text-align: center; }
+          }`}
+        </style>
 
-        {submitError.value && (
-          <div class="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md text-sm">
-            {submitError.value}
-          </div>
-        )}
+        <div class="print-only" style="display:none;">
+          <h1 class="text-2xl font-bold text-gray-900 mb-1">
+            {printReport.value === "variance"
+              ? "First Aid Variance Report"
+              : "First Aid Shortage Report"}
+          </h1>
+          <p class="text-sm text-gray-600 mb-4">
+            Generated {printGeneratedAt.value || new Date().toLocaleString()}.
+            {" "}
+            {printReport.value === "variance"
+              ? `${variances.value.length} variance${
+                variances.value.length === 1 ? "" : "s"
+              }.`
+              : `${shortages.value.length} shortage${
+                shortages.value.length === 1 ? "" : "s"
+              }.`}
+          </p>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          <div class="p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Checked Items
-            </p>
-            <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {checkedEntries.value.length}
-            </p>
-          </div>
-          <div class="p-3 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-            <p class="text-xs text-red-600 dark:text-red-300">Below Target</p>
-            <p class="text-xl font-semibold text-red-700 dark:text-red-300">
-              {shortages.value.length}
-            </p>
-          </div>
-          <div class="p-3 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
-            <p class="text-xs text-amber-600 dark:text-amber-300">
-              Above Target
-            </p>
-            <p class="text-xl font-semibold text-amber-700 dark:text-amber-300">
-              {surplus.value.length}
-            </p>
-          </div>
-        </div>
-
-        <div class="mb-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={downloadVarianceCsv}
-            disabled={checkedEntries.value.every((entry) =>
-              entry.countedQty === entry.quantityTarget
-            )}
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Export All Variances CSV
-          </button>
-          <button
-            type="button"
-            onClick={downloadShortageCsv}
-            disabled={shortages.value.length === 0}
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Export Shortages CSV
-          </button>
-          <button
-            type="button"
-            onClick={printShortageReport}
-            disabled={shortages.value.length === 0}
-            class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Print Shortage Report
-          </button>
-        </div>
-
-        {shortages.value.length === 0
-          ? (
-            <div class="text-center py-10 border-2 border-dashed border-green-200 dark:border-green-700 rounded-lg mb-6 bg-green-50/50 dark:bg-green-900/10">
-              <p class="text-green-700 dark:text-green-300 font-medium">
-                All checked items are up to spec.
-              </p>
-            </div>
-          )
-          : (
-            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 overflow-hidden">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+          {printReport.value === "variance"
+            ? (
+              <table>
+                <thead>
                   <tr>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">
-                      Kit
-                    </th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">
-                      Item
-                    </th>
-                    <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
-                      Target
-                    </th>
-                    <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
-                      Counted
-                    </th>
-                    <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
-                      Missing
-                    </th>
+                    <th>Kit</th>
+                    <th>Section</th>
+                    <th>Item</th>
+                    <th class="num">Target</th>
+                    <th class="num">Counted</th>
+                    <th class="num">Difference</th>
+                    <th>Type</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <tbody>
+                  {variances.value.map((entry) => {
+                    const difference = entry.countedQty - entry.quantityTarget;
+                    return (
+                      <tr key={`print-var-${entry.kitId}-${entry.itemId}`}>
+                        <td>{entry.kitName}</td>
+                        <td>{entry.section}</td>
+                        <td>{entry.itemName}</td>
+                        <td class="num">{entry.quantityTarget}</td>
+                        <td class="num">{entry.countedQty}</td>
+                        <td class="num">{difference}</td>
+                        <td>{difference < 0 ? "Shortage" : "Overage"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )
+            : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Kit</th>
+                    <th>Section</th>
+                    <th>Item</th>
+                    <th class="num">Target</th>
+                    <th class="num">Counted</th>
+                    <th class="num">Missing</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {shortages.value.map((entry) => (
-                    <tr
-                      key={`${entry.kitId}-${entry.itemId}`}
-                      class="hover:bg-gray-50 dark:hover:bg-gray-700/30"
-                    >
-                      <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {entry.kitName}
-                      </td>
-                      <td class="px-4 py-3">
-                        <div class="font-medium text-gray-800 dark:text-gray-100">
-                          {entry.itemName}
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                          {entry.section}
-                        </div>
-                      </td>
-                      <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-400">
-                        {entry.quantityTarget}
-                      </td>
-                      <td class="px-4 py-3 text-center text-gray-900 dark:text-gray-100 font-semibold">
-                        {entry.countedQty}
-                      </td>
-                      <td class="px-4 py-3 text-center text-red-700 dark:text-red-300 font-semibold">
+                    <tr key={`print-short-${entry.kitId}-${entry.itemId}`}>
+                      <td>{entry.kitName}</td>
+                      <td>{entry.section}</td>
+                      <td>{entry.itemName}</td>
+                      <td class="num">{entry.quantityTarget}</td>
+                      <td class="num">{entry.countedQty}</td>
+                      <td class="num">
                         {entry.quantityTarget - entry.countedQty}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            )}
+        </div>
+
+        <div class="screen-only">
+          <div class="mb-6 flex items-center justify-between">
+            <div>
+              <h3 class="text-xl font-bold text-gray-800 dark:text-purple-100">
+                Review First Aid Check
+              </h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {checkedEntries.value.length} checked
+                {skippedCount.value > 0
+                  ? `, ${skippedCount.value} skipped`
+                  : ""}
+                {shortages.value.length > 0
+                  ? `, ${shortages.value.length} shortages`
+                  : ", all items meet target"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                currentIdx.value = 0;
+                phase.value = "wizard";
+              }}
+              class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              &larr; Back to wizard
+            </button>
+          </div>
+
+          {submitError.value && (
+            <div class="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md text-sm">
+              {submitError.value}
             </div>
           )}
 
-        <div class="flex gap-3">
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={completeCheck}
-            class="flex-1 py-3 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {submitting ? "Saving..." : "Complete Check"}
-          </button>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            <div class="p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Checked Items
+              </p>
+              <p class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {checkedEntries.value.length}
+              </p>
+            </div>
+            <div class="p-3 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+              <p class="text-xs text-red-600 dark:text-red-300">Below Target</p>
+              <p class="text-xl font-semibold text-red-700 dark:text-red-300">
+                {shortages.value.length}
+              </p>
+            </div>
+            <div class="p-3 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+              <p class="text-xs text-amber-600 dark:text-amber-300">
+                Above Target
+              </p>
+              <p class="text-xl font-semibold text-amber-700 dark:text-amber-300">
+                {surplus.value.length}
+              </p>
+            </div>
+          </div>
+
+          <div class="mb-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={printVarianceReport}
+              disabled={variances.value.length === 0}
+              class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Print Variance Report (PDF)
+            </button>
+            <button
+              type="button"
+              onClick={printShortageReport}
+              disabled={shortages.value.length === 0}
+              class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Print Shortage Report (PDF)
+            </button>
+          </div>
+
+          {shortages.value.length === 0
+            ? (
+              <div class="text-center py-10 border-2 border-dashed border-green-200 dark:border-green-700 rounded-lg mb-6 bg-green-50/50 dark:bg-green-900/10">
+                <p class="text-green-700 dark:text-green-300 font-medium">
+                  All checked items are up to spec.
+                </p>
+              </div>
+            )
+            : (
+              <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 overflow-hidden">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">
+                        Kit
+                      </th>
+                      <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">
+                        Item
+                      </th>
+                      <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                        Target
+                      </th>
+                      <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                        Counted
+                      </th>
+                      <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                        Missing
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {shortages.value.map((entry) => (
+                      <tr
+                        key={`${entry.kitId}-${entry.itemId}`}
+                        class="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                      >
+                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          {entry.kitName}
+                        </td>
+                        <td class="px-4 py-3">
+                          <div class="font-medium text-gray-800 dark:text-gray-100">
+                            {entry.itemName}
+                          </div>
+                          <div class="text-xs text-gray-500 dark:text-gray-400">
+                            {entry.section}
+                          </div>
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-400">
+                          {entry.quantityTarget}
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-900 dark:text-gray-100 font-semibold">
+                          {entry.countedQty}
+                        </td>
+                        <td class="px-4 py-3 text-center text-red-700 dark:text-red-300 font-semibold">
+                          {entry.quantityTarget - entry.countedQty}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+          <div class="flex gap-3">
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={completeCheck}
+              class="flex-1 py-3 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {submitting ? "Saving..." : "Complete Check"}
+            </button>
+          </div>
         </div>
       </div>
     );
