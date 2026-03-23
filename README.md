@@ -84,6 +84,7 @@ Sessions expire after 15 minutes of inactivity. Passwords are hashed with bcrypt
 - Assign roles (viewer / editor / admin)
 - JSON export of full inventory
 - Bulk JSON import with per-item success/failure reporting
+- Dedicated first-aid kit list management and printable bag inserts
 - Rebuild KV secondary indexes
 - Trigger email notifications manually (low stock, expiry, or both)
 - View activity log

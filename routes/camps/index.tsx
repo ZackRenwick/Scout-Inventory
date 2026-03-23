@@ -2,6 +2,7 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import type { CampPlan } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
+import BetaBanner from "../../components/BetaBanner.tsx";
 import CampPlanList from "../../islands/CampPlanList.tsx";
 import CampCalendar from "../../islands/CampCalendar.tsx";
 import type { Session } from "../../lib/auth.ts";
@@ -45,9 +46,7 @@ export default function CampsPage({ data }: PageProps<CampsPageData>) {
 
   return (
     <Layout title="Camp Planning" username={data.session?.username} role={data.session?.role}>
-      <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-amber-800 dark:text-amber-300 text-sm">
-        🚧 <strong>Beta feature</strong> — Camp Planning is still in development. Please report any issues.
-      </div>
+      <BetaBanner featureName="Camp Planning" />
 
       <div class="mb-6">
         <div class="flex justify-between items-center gap-4 flex-wrap">

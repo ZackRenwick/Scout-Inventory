@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>First Aid Kit Bag Inserts</title>
+  <style>
+    :root {
+      --text: #111827;
+      --muted: #4b5563;
+      --line: #d1d5db;
+      --header: #f3f4f6;
+      --accent: #991b1b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: #ffffff;
+      line-height: 1.35;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .btn {
+      border: 1px solid #9ca3af;
+      background: #ffffff;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn.primary {
+      background: #b91c1c;
+      color: #ffffff;
+      border-color: #991b1b;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .sheet {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 18px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 22px;
+      color: var(--accent);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    .meta {
+      margin: 8px 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .fill {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .line {
+      border-bottom: 1px solid #9ca3af;
+      min-height: 18px;
+      display: inline-block;
+      width: 100%;
+      vertical-align: bottom;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--header);
+      text-align: left;
+      font-weight: 700;
+    }
+
+    td.qty,
+    td.check {
+      width: 90px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .footer {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 4px 0 0;
+    }
+
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+
+    @media print {
+      .toolbar {
+        display: none;
+      }
+
+      .page {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .sheet {
+        border: none;
+        border-radius: 0;
+        margin: 0 0 8mm;
+        padding: 0;
+      }
+
+      .sheet + .sheet {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="toolbar">
+      <button class="btn primary" onclick="window.print()">Print Bag Inserts</button>
+      <p class="note">Tip: print double-sided or single sheets and laminate before placing in each bag.</p>
+    </div>
+
+    <h1>First Aid Kit Restock Inserts</h1>
+    <p class="subtle">Use these as restock-to checklists. Update stock in the app after each refill.</p>
+
+    <section class="sheet">
+      <h2>Mid Size First Aid Kit (Camp Full Profile)</h2>
+      <p class="meta">Bag location: Red Box | Use: multiday camps, higher-demand scenarios</p>
+      <div class="fill">
+        <div>Checked by: <span class="line"></span></div>
+        <div>Date: <span class="line"></span></div>
+        <div>Event/Camp: <span class="line"></span></div>
+        <div>Reorder needed: <span class="line"></span></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="qty">Restock To</th>
+            <th class="check">In Bag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Nitrile gloves (pairs)</td><td class="qty">20</td><td class="check"></td></tr>
+          <tr><td>CPR face shield</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Hand sanitizer (travel bottles)</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Sterile gauze pads 5x5cm</td><td class="qty">30</td><td class="check"></td></tr>
+          <tr><td>Sterile gauze pads 10x10cm</td><td class="qty">20</td><td class="check"></td></tr>
+          <tr><td>Non-adherent dressings</td><td class="qty">12</td><td class="check"></td></tr>
+          <tr><td>Triangular bandages</td><td class="qty">8</td><td class="check"></td></tr>
+          <tr><td>Conforming roller bandages</td><td class="qty">10</td><td class="check"></td></tr>
+          <tr><td>Crepe/elastic bandages</td><td class="qty">6</td><td class="check"></td></tr>
+          <tr><td>Microporous tape rolls</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>Adhesive plasters (assorted)</td><td class="qty">100</td><td class="check"></td></tr>
+          <tr><td>Blister plasters</td><td class="qty">20</td><td class="check"></td></tr>
+          <tr><td>Butterfly wound closures</td><td class="qty">20</td><td class="check"></td></tr>
+          <tr><td>Eye wash sterile pods</td><td class="qty">12</td><td class="check"></td></tr>
+          <tr><td>Saline wound wash 100ml</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>Burn gel dressings</td><td class="qty">6</td><td class="check"></td></tr>
+          <tr><td>Instant cold packs</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>SAM splint</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Finger splints</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>Emergency foil blankets</td><td class="qty">6</td><td class="check"></td></tr>
+          <tr><td>Trauma shears</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Tweezers</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Digital thermometer</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Tick removal tool</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Safety pins</td><td class="qty">20</td><td class="check"></td></tr>
+          <tr><td>Torch/headlamp for treatment</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Resealable clinical waste bags</td><td class="qty">10</td><td class="check"></td></tr>
+          <tr><td>Notepad incident log</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Waterproof marker pen</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>First aid guidance card</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Emergency contact sheet</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Oral rehydration salts sachets</td><td class="qty">20</td><td class="check"></td></tr>
+          <tr><td>Glucose gel or tablets</td><td class="qty">6</td><td class="check"></td></tr>
+        </tbody>
+      </table>
+
+      <p class="footer">Review before and after every camp. Replace expired consumables immediately.</p>
+    </section>
+
+    <section class="sheet">
+      <h2>Small Events First Aid Kit (Light Profile)</h2>
+      <p class="meta">Bag location: Green Box | Use: meetings, local/day events</p>
+      <div class="fill">
+        <div>Checked by: <span class="line"></span></div>
+        <div>Date: <span class="line"></span></div>
+        <div>Event: <span class="line"></span></div>
+        <div>Reorder needed: <span class="line"></span></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="qty">Restock To</th>
+            <th class="check">In Bag</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Nitrile gloves (pairs)</td><td class="qty">12</td><td class="check"></td></tr>
+          <tr><td>CPR face shield</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Hand sanitizer (travel bottles)</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Sterile gauze pads 5x5cm</td><td class="qty">15</td><td class="check"></td></tr>
+          <tr><td>Sterile gauze pads 10x10cm</td><td class="qty">10</td><td class="check"></td></tr>
+          <tr><td>Non-adherent dressings</td><td class="qty">8</td><td class="check"></td></tr>
+          <tr><td>Triangular bandages</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>Conforming roller bandages</td><td class="qty">6</td><td class="check"></td></tr>
+          <tr><td>Crepe/elastic bandages</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>Microporous tape rolls</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Adhesive plasters (assorted)</td><td class="qty">60</td><td class="check"></td></tr>
+          <tr><td>Blister plasters</td><td class="qty">12</td><td class="check"></td></tr>
+          <tr><td>Butterfly wound closures</td><td class="qty">10</td><td class="check"></td></tr>
+          <tr><td>Eye wash sterile pods</td><td class="qty">6</td><td class="check"></td></tr>
+          <tr><td>Saline wound wash 100ml</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Burn gel dressings</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>Instant cold packs</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>SAM splint</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Finger splints</td><td class="qty">2</td><td class="check"></td></tr>
+          <tr><td>Emergency foil blankets</td><td class="qty">4</td><td class="check"></td></tr>
+          <tr><td>Trauma shears</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Tweezers</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Digital thermometer</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Tick removal tool</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Safety pins</td><td class="qty">10</td><td class="check"></td></tr>
+          <tr><td>Torch/headlamp for treatment</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Resealable clinical waste bags</td><td class="qty">6</td><td class="check"></td></tr>
+          <tr><td>Notepad incident log</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Waterproof marker pen</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>First aid guidance card</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Emergency contact sheet</td><td class="qty">1</td><td class="check"></td></tr>
+          <tr><td>Oral rehydration salts sachets</td><td class="qty">10</td><td class="check"></td></tr>
+          <tr><td>Glucose gel or tablets</td><td class="qty">4</td><td class="check"></td></tr>
+        </tbody>
+      </table>
+
+      <p class="footer">Keep core layout consistent with the camp kit so users can find items quickly under pressure.</p>
+    </section>
+  </div>
+</body>
+</html>

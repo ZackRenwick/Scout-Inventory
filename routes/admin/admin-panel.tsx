@@ -227,6 +227,20 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         >
           📄 Download JSON Template
         </a>
+        <a
+          href="/first-aid"
+          class="ml-2 inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-200 text-sm font-medium rounded-lg transition-colors mb-4"
+        >
+          🩹 Manage First Aid Kits
+        </a>
+        <a
+          href="/first-aid/print"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ml-2 inline-flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg transition-colors mb-4"
+        >
+          Print First Aid Bag Inserts
+        </a>
 
         <BulkImport csrfToken={csrfToken} />
 

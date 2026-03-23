@@ -41,6 +41,9 @@ import * as $camps_id_print from "./routes/camps/[id]/print.tsx";
 import * as $camps_index from "./routes/camps/index.tsx";
 import * as $camps_new from "./routes/camps/new.tsx";
 import * as $camps_templates from "./routes/camps/templates.tsx";
+import * as $first_aid_catalog from "./routes/first-aid/catalog.tsx";
+import * as $first_aid_index from "./routes/first-aid/index.tsx";
+import * as $first_aid_print from "./routes/first-aid/print.tsx";
 import * as $greet_name_ from "./routes/greet/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $inventory_id_ from "./routes/inventory/[id].tsx";
@@ -131,6 +134,9 @@ const manifest = {
     "./routes/camps/index.tsx": $camps_index,
     "./routes/camps/new.tsx": $camps_new,
     "./routes/camps/templates.tsx": $camps_templates,
+    "./routes/first-aid/catalog.tsx": $first_aid_catalog,
+    "./routes/first-aid/index.tsx": $first_aid_index,
+    "./routes/first-aid/print.tsx": $first_aid_print,
     "./routes/greet/[name].tsx": $greet_name_,
     "./routes/index.tsx": $index,
     "./routes/inventory/[id].tsx": $inventory_id_,

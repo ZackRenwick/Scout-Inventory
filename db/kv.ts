@@ -12,6 +12,10 @@ import type {
   MaintenanceRecord,
 } from "../types/inventory.ts";
 import type { Meal, MealPayload } from "../types/meals.ts";
+import type { FirstAidKit } from "../types/firstAid.ts";
+import type { FirstAidCatalogItem } from "../types/firstAid.ts";
+import { DEFAULT_FIRST_AID_CATALOG } from "../lib/firstAidCatalog.ts";
+import { FIRST_AID_SECTIONS } from "../types/firstAid.ts";
 
 // Initialize Deno KV
 let kv: Deno.Kv | null = null;
@@ -60,6 +64,8 @@ const KEYS = {
   camps:         ["camps", "plans"] as const,
   templates:     ["camps", "templates"] as const,
   meals:         ["meals"] as const,
+  firstAidKits:  ["first-aid", "kits"] as const,
+  firstAidCatalog: ["first-aid", "catalog"] as const,
 };
 
 // Index key helpers
@@ -193,6 +199,11 @@ let templatesInFlight: Promise<CampTemplate[]> | null = null;
 let mealsCache: { meals: Meal[]; expiresAt: number } | null = null;
 let mealsInFlight: Promise<Meal[]> | null = null;
 
+let firstAidKitsCache: { kits: FirstAidKit[]; expiresAt: number } | null = null;
+let firstAidKitsInFlight: Promise<FirstAidKit[]> | null = null;
+let firstAidCatalogCache: { items: FirstAidCatalogItem[]; expiresAt: number } | null = null;
+let firstAidCatalogInFlight: Promise<FirstAidCatalogItem[]> | null = null;
+
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
@@ -242,6 +253,16 @@ function invalidateTemplatesCache(): void {
   templatesInFlight = null;
 }
 
+function invalidateFirstAidKitsCache(): void {
+  firstAidKitsCache = null;
+  firstAidKitsInFlight = null;
+}
+
+function invalidateFirstAidCatalogCache(): void {
+  firstAidCatalogCache = null;
+  firstAidCatalogInFlight = null;
+}
+
 /**
  * Warm all KV caches concurrently. Returns a promise that resolves once every
  * cache has been populated. Awaiting this at startup ensures no request is
@@ -254,6 +275,8 @@ export function preloadCaches(): Promise<void> {
     getAllCampPlans().catch(() => {}),
     getAllCampTemplates().catch(() => {}),
     getAllMeals().catch(() => {}),
+    getAllFirstAidKits().catch(() => {}),
+    getAllFirstAidCatalogItems().catch(() => {}),
   ]).then(() => {});
 }
 
@@ -1257,6 +1280,180 @@ export async function deleteCampTemplate(id: string): Promise<boolean> {
   const db = await initKv();
   await db.delete([...KEYS.templates, id]);
   invalidateTemplatesCache();
+  return true;
+}
+
+// ===== FIRST AID KITS =====
+
+// deno-lint-ignore no-explicit-any
+function serializeFirstAidKit(kit: FirstAidKit): any {
+  return {
+    ...kit,
+    createdAt: kit.createdAt.toISOString(),
+    lastUpdated: kit.lastUpdated.toISOString(),
+  };
+}
+
+// deno-lint-ignore no-explicit-any
+function deserializeFirstAidKit(data: any): FirstAidKit {
+  return {
+    ...data,
+    createdAt: new Date(data.createdAt),
+    lastUpdated: new Date(data.lastUpdated),
+  };
+}
+
+export async function getAllFirstAidKits(): Promise<FirstAidKit[]> {
+  if (firstAidKitsCache && Date.now() < firstAidKitsCache.expiresAt) {
+    return firstAidKitsCache.kits;
+  }
+  if (!firstAidKitsInFlight) {
+    firstAidKitsInFlight = (async () => {
+      const db = await initKv();
+      const kits: FirstAidKit[] = [];
+      for await (const entry of db.list<FirstAidKit>({ prefix: KEYS.firstAidKits })) {
+        kits.push(deserializeFirstAidKit(entry.value));
+      }
+      kits.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      firstAidKitsCache = { kits, expiresAt: Date.now() + CACHE_TTL_MS };
+      firstAidKitsInFlight = null;
+      return kits;
+    })();
+  }
+  if (firstAidKitsCache) return firstAidKitsCache.kits;
+  return await firstAidKitsInFlight!;
+}
+
+export async function getFirstAidKitById(id: string): Promise<FirstAidKit | null> {
+  const db = await initKv();
+  const result = await db.get<FirstAidKit>([...KEYS.firstAidKits, id]);
+  return result.value ? deserializeFirstAidKit(result.value) : null;
+}
+
+export async function createFirstAidKit(
+  name: string,
+  entries: FirstAidKit["entries"],
+  createdBy: string,
+  profileId?: string,
+): Promise<FirstAidKit> {
+  const db = await initKv();
+  const now = new Date();
+  const kit: FirstAidKit = {
+    id: crypto.randomUUID(),
+    name,
+    profileId,
+    entries,
+    createdBy,
+    createdAt: now,
+    lastUpdated: now,
+  };
+  await db.set([...KEYS.firstAidKits, kit.id], serializeFirstAidKit(kit));
+  invalidateFirstAidKitsCache();
+  return kit;
+}
+
+export async function updateFirstAidKit(
+  id: string,
+  updates: Partial<FirstAidKit>,
+  existing?: FirstAidKit,
+): Promise<FirstAidKit | null> {
+  const kit = existing ?? await getFirstAidKitById(id);
+  if (!kit) return null;
+
+  const updated: FirstAidKit = {
+    ...kit,
+    ...updates,
+    id,
+    lastUpdated: new Date(),
+  };
+
+  const db = await initKv();
+  await db.set([...KEYS.firstAidKits, id], serializeFirstAidKit(updated));
+  invalidateFirstAidKitsCache();
+  return updated;
+}
+
+export async function deleteFirstAidKit(id: string): Promise<boolean> {
+  const existing = await getFirstAidKitById(id);
+  if (!existing) return false;
+  const db = await initKv();
+  await db.delete([...KEYS.firstAidKits, id]);
+  invalidateFirstAidKitsCache();
+  return true;
+}
+
+export async function getAllFirstAidCatalogItems(): Promise<FirstAidCatalogItem[]> {
+  if (firstAidCatalogCache && Date.now() < firstAidCatalogCache.expiresAt) {
+    return firstAidCatalogCache.items;
+  }
+  if (!firstAidCatalogInFlight) {
+    firstAidCatalogInFlight = (async () => {
+      const db = await initKv();
+      const items: FirstAidCatalogItem[] = [];
+      for await (const entry of db.list<FirstAidCatalogItem>({ prefix: KEYS.firstAidCatalog })) {
+        const section = (FIRST_AID_SECTIONS as readonly string[]).includes(entry.value.section)
+          ? entry.value.section
+          : "General";
+        items.push({ ...entry.value, section });
+      }
+
+      if (items.length === 0) {
+        const seedOps = DEFAULT_FIRST_AID_CATALOG.map((item) => db.set([...KEYS.firstAidCatalog, item.id], item));
+        await Promise.all(seedOps);
+        items.push(...DEFAULT_FIRST_AID_CATALOG);
+      } else {
+        const existingIds = new Set(items.map((item) => item.id));
+        const missingDefaults = DEFAULT_FIRST_AID_CATALOG.filter((item) => !existingIds.has(item.id));
+        if (missingDefaults.length > 0) {
+          await Promise.all(missingDefaults.map((item) => db.set([...KEYS.firstAidCatalog, item.id], item)));
+          items.push(...missingDefaults);
+        }
+      }
+
+      items.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      firstAidCatalogCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
+      firstAidCatalogInFlight = null;
+      return items;
+    })();
+  }
+  if (firstAidCatalogCache) return firstAidCatalogCache.items;
+  return await firstAidCatalogInFlight!;
+}
+
+export async function createFirstAidCatalogItem(item: FirstAidCatalogItem): Promise<FirstAidCatalogItem> {
+  const db = await initKv();
+  const section = (FIRST_AID_SECTIONS as readonly string[]).includes(item.section)
+    ? item.section
+    : "General";
+  await db.set([...KEYS.firstAidCatalog, item.id], { ...item, section });
+  invalidateFirstAidCatalogCache();
+  return { ...item, section };
+}
+
+export async function updateFirstAidCatalogItem(id: string, updates: Partial<FirstAidCatalogItem>): Promise<FirstAidCatalogItem | null> {
+  const db = await initKv();
+  const existing = await db.get<FirstAidCatalogItem>([...KEYS.firstAidCatalog, id]);
+  if (!existing.value) return null;
+
+  const updated: FirstAidCatalogItem = {
+    ...existing.value,
+    ...updates,
+    id,
+  };
+  const section = (FIRST_AID_SECTIONS as readonly string[]).includes(updated.section)
+    ? updated.section
+    : "General";
+  await db.set([...KEYS.firstAidCatalog, id], { ...updated, section });
+  invalidateFirstAidCatalogCache();
+  return { ...updated, section };
+}
+
+export async function deleteFirstAidCatalogItem(id: string): Promise<boolean> {
+  const db = await initKv();
+  const existing = await db.get<FirstAidCatalogItem>([...KEYS.firstAidCatalog, id]);
+  if (!existing.value) return false;
+  await db.delete([...KEYS.firstAidCatalog, id]);
+  invalidateFirstAidCatalogCache();
   return true;
 }
 

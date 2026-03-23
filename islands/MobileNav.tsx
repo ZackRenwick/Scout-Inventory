@@ -30,6 +30,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         {role === "admin" && (
           <a href="/meals" class="hover:text-purple-200 transition-colors">Meal Planner</a>
         )}
+        <a href="/first-aid" class="hover:text-purple-200 transition-colors">First Aid</a>
         <a href="/neckers" class="hover:text-purple-200 transition-colors">Neckers</a>
         <a href="/loans" class="hover:text-purple-200 transition-colors">Loans</a>
         {(role === "admin" || role === "manager") && (
@@ -57,6 +58,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           {role === "admin" && (
             <a href="/meals" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🍽️ Meal Planner</a>
           )}
+          <a href="/first-aid" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🩹 First Aid</a>
           <a href="/neckers" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🧣 Neckers</a>
           <a href="/loans" class="block px-6 py-3 hover:bg-purple-800 transition-colors">📤 Loans</a>
           {(role === "admin" || role === "manager") && (

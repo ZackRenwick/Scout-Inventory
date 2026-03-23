@@ -193,50 +193,57 @@ export default function Home({ data }: PageProps<DashboardData>) {
       <NeckerAlert minThreshold={neckerThreshold} />
 
       {/* Quick Actions */}
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-4">Quick Actions</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 sm:p-5 mb-8">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-purple-100 mb-3">Quick Actions</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-7 gap-2 sm:gap-2">
           <a
             href="/inventory/add"
-            class="flex items-center justify-center p-4 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
           >
-            <span class="text-xl mr-2">➕</span>
-            <span class="font-medium">Add Item</span>
+            <span class="sm:hidden lg:inline">➕</span>
+            <span>Add Item</span>
           </a>
           <a
             href="/inventory"
-            class="flex items-center justify-center p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
           >
-            <span class="text-xl mr-2">📋</span>
-            <span class="font-medium">View All</span>
+            <span class="sm:hidden lg:inline">📋</span>
+            <span>View All</span>
           </a>
           <a
             href="/reports/expiring"
-            class="flex items-center justify-center p-4 bg-orange-700 text-white rounded-lg hover:bg-orange-800 transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-orange-700 text-white rounded-md hover:bg-orange-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
           >
-            <span class="text-xl mr-2">⏰</span>
-            <span class="font-medium">Expiring Food</span>
+            <span class="sm:hidden lg:inline">⏰</span>
+            <span>Expiring Food</span>
           </a>
           <a
             href="/inventory?lowstock=true"
-            class="flex items-center justify-center p-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
           >
-            <span class="text-xl mr-2">⚠️</span>
-            <span class="font-medium">Low Stock</span>
+            <span class="sm:hidden lg:inline">⚠️</span>
+            <span>Low Stock</span>
           </a>
           <a
             href="/inventory?needsrepair=true"
-            class="flex items-center justify-center p-4 bg-yellow-500 text-gray-900 rounded-lg hover:bg-yellow-600 transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-yellow-500 text-gray-900 rounded-md hover:bg-yellow-600 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
           >
-            <span class="text-xl mr-2">🔧</span>
-            <span class="font-medium">Needs Repair</span>
+            <span class="sm:hidden lg:inline">🔧</span>
+            <span>Needs Repair</span>
           </a>
           <a
             href="/neckers"
-            class="flex items-center justify-center p-4 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
           >
-            <span class="text-xl mr-2">🧣</span>
-            <span class="font-medium">Neckers</span>
+            <span class="sm:hidden lg:inline">🧣</span>
+            <span>Neckers</span>
+          </a>
+          <a
+            href="/first-aid"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+          >
+            <span class="sm:hidden lg:inline">🩹</span>
+            <span>First Aid</span>
           </a>
         </div>
       </div>

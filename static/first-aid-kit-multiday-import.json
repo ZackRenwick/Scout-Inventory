@@ -1,0 +1,110 @@
+[
+  {
+    "_comment": "Bag 1 of 2 (same-size set). Baseline aligns with common outdoor/scouting first aid guidance and should be adapted to your risk assessment and local policy.",
+    "name": "Mid Size First Aid Kit",
+    "category": "kit",
+    "space": "camp-store",
+    "quantity": 1,
+    "minThreshold": 1,
+    "location": "Red Box",
+    "kitType": "first-aid",
+    "condition": "good",
+    "yearPurchased": 2026,
+    "notes": "Primary bag for camps. Keep this in sync with the Small Events First Aid Kit because both bags are the same size.",
+    "contents": [
+      { "name": "Nitrile gloves (pairs)", "quantity": 20 },
+      { "name": "CPR face shield", "quantity": 2 },
+      { "name": "Hand sanitizer (travel bottles)", "quantity": 2 },
+
+      { "name": "Sterile gauze pads 5x5cm", "quantity": 30 },
+      { "name": "Sterile gauze pads 10x10cm", "quantity": 20 },
+      { "name": "Non-adherent dressings", "quantity": 12 },
+      { "name": "Triangular bandages", "quantity": 8 },
+      { "name": "Conforming roller bandages", "quantity": 10 },
+      { "name": "Crepe/elastic bandages", "quantity": 6 },
+      { "name": "Microporous tape rolls", "quantity": 4 },
+      { "name": "Adhesive plasters (assorted)", "quantity": 100 },
+      { "name": "Blister plasters", "quantity": 20 },
+      { "name": "Butterfly wound closures", "quantity": 20 },
+
+      { "name": "Eye wash sterile pods", "quantity": 12 },
+      { "name": "Saline wound wash 100ml", "quantity": 4 },
+      { "name": "Burn gel dressings", "quantity": 6 },
+
+      { "name": "Instant cold packs", "quantity": 4 },
+      { "name": "SAM splint", "quantity": 2 },
+      { "name": "Finger splints", "quantity": 4 },
+
+      { "name": "Emergency foil blankets", "quantity": 6 },
+      { "name": "Trauma shears", "quantity": 2 },
+      { "name": "Tweezers", "quantity": 2 },
+      { "name": "Digital thermometer", "quantity": 1 },
+      { "name": "Tick removal tool", "quantity": 2 },
+      { "name": "Safety pins", "quantity": 20 },
+      { "name": "Torch/headlamp for treatment", "quantity": 1 },
+
+      { "name": "Resealable clinical waste bags", "quantity": 10 },
+      { "name": "Notepad incident log", "quantity": 1 },
+      { "name": "Waterproof marker pen", "quantity": 2 },
+      { "name": "First aid guidance card", "quantity": 1 },
+      { "name": "Emergency contact sheet", "quantity": 1 },
+
+      { "name": "Oral rehydration salts sachets", "quantity": 20 },
+      { "name": "Glucose gel or tablets", "quantity": 6 }
+    ]
+  },
+  {
+    "_comment": "Bag 2 of 2 (same-size set). Light events profile for meetings/day events; same bag footprint, lower stock depth.",
+    "name": "Small Events First Aid Kit",
+    "category": "kit",
+    "space": "camp-store",
+    "quantity": 1,
+    "minThreshold": 1,
+    "location": "Green Box",
+    "kitType": "first-aid",
+    "condition": "good",
+    "yearPurchased": 2026,
+    "notes": "Secondary bag for meetings and local events. Same bag size as the Mid Size kit, but with lighter stock levels for lower-risk use.",
+    "contents": [
+      { "name": "Nitrile gloves (pairs)", "quantity": 12 },
+      { "name": "CPR face shield", "quantity": 1 },
+      { "name": "Hand sanitizer (travel bottles)", "quantity": 1 },
+
+      { "name": "Sterile gauze pads 5x5cm", "quantity": 15 },
+      { "name": "Sterile gauze pads 10x10cm", "quantity": 10 },
+      { "name": "Non-adherent dressings", "quantity": 8 },
+      { "name": "Triangular bandages", "quantity": 4 },
+      { "name": "Conforming roller bandages", "quantity": 6 },
+      { "name": "Crepe/elastic bandages", "quantity": 4 },
+      { "name": "Microporous tape rolls", "quantity": 2 },
+      { "name": "Adhesive plasters (assorted)", "quantity": 60 },
+      { "name": "Blister plasters", "quantity": 12 },
+      { "name": "Butterfly wound closures", "quantity": 10 },
+
+      { "name": "Eye wash sterile pods", "quantity": 6 },
+      { "name": "Saline wound wash 100ml", "quantity": 2 },
+      { "name": "Burn gel dressings", "quantity": 4 },
+
+      { "name": "Instant cold packs", "quantity": 2 },
+      { "name": "SAM splint", "quantity": 1 },
+      { "name": "Finger splints", "quantity": 2 },
+
+      { "name": "Emergency foil blankets", "quantity": 4 },
+      { "name": "Trauma shears", "quantity": 1 },
+      { "name": "Tweezers", "quantity": 1 },
+      { "name": "Digital thermometer", "quantity": 1 },
+      { "name": "Tick removal tool", "quantity": 1 },
+      { "name": "Safety pins", "quantity": 10 },
+      { "name": "Torch/headlamp for treatment", "quantity": 1 },
+
+      { "name": "Resealable clinical waste bags", "quantity": 6 },
+      { "name": "Notepad incident log", "quantity": 1 },
+      { "name": "Waterproof marker pen", "quantity": 1 },
+      { "name": "First aid guidance card", "quantity": 1 },
+      { "name": "Emergency contact sheet", "quantity": 1 },
+
+      { "name": "Oral rehydration salts sachets", "quantity": 10 },
+      { "name": "Glucose gel or tablets", "quantity": 4 }
+    ]
+  }
+]
