@@ -45,6 +45,10 @@ Adult neckers are tracked separately: mark them made, then mark them delivered t
 - One-tap **Check Out This Item** jump to pre-filled loan form
 - View active loans for the scanned item and mark returns directly from the scan page
 
+### 🚧 Future Enhancements
+- Planned roadmap items are tracked in `FUTURE_ENHANCEMENTS.md`
+- Current focus: **Camp Scan Mode** for scan-assisted camp plan building
+
 ### 🛠️ Maintenance Lifecycle Tracking
 - Dedicated maintenance page per item (`/inventory/[id]/maintenance`)
 - Log inspections, repairs, cleaning, and replacement-part events with notes and performer
