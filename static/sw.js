@@ -4,7 +4,7 @@
 //   - Navigation/HTML pages: network-first, cached opportunistically
 //   - API / admin routes: network-only (never cache sensitive data)
 
-const CACHE_VERSION = "v11";
+const CACHE_VERSION = "v12";
 const STATIC_CACHE  = `scouts-static-${CACHE_VERSION}`;
 const PAGE_CACHE    = `scouts-pages-${CACHE_VERSION}`;
 
@@ -42,6 +42,12 @@ self.addEventListener("fetch", (event) => {
   // Skip cross-origin, API and admin routes entirely.
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin/")) return;
+
+  // Always prefer network for the main stylesheet so UI updates appear quickly.
+  if (url.pathname === "/styles.css") {
+    event.respondWith(networkFirstStatic(request));
+    return;
+  }
 
   if (isStaticAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));

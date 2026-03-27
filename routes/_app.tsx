@@ -18,32 +18,8 @@ export default function App({ Component }: PageProps) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="preload" href="/styles.css" as="style" />
         <link rel="stylesheet" href="/styles.css" />
-        <script dangerouslySetInnerHTML={{ __html: `(function(){
-  var s = localStorage.getItem("theme");
-  if (s === "dark" || (!s && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
-    document.documentElement.classList.add("dark");
-  }
-})();` }} />
-        <script dangerouslySetInnerHTML={{ __html: `if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    var host = window.location.hostname;
-    var isLocal = host === "localhost" || host === "127.0.0.1";
-
-    if (isLocal) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        registrations.forEach(function(reg) { reg.unregister(); });
-      });
-      if ("caches" in window) {
-        caches.keys().then(function(keys) {
-          keys.forEach(function(key) { caches.delete(key); });
-        });
-      }
-      return;
-    }
-
-    navigator.serviceWorker.register("/sw.js");
-  });
-}` }} />
+        <script src="/theme-init.js" />
+        <script src="/pwa-register.js" />
       </head>
       <body>
         <Component />

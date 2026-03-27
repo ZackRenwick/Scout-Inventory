@@ -10,6 +10,8 @@ const PUBLIC_PATHS = [
   "/robots.txt",
   "/manifest.json",
   "/sw.js",
+  "/theme-init.js",
+  "/pwa-register.js",
   "/icon-192.png",
   "/icon-512.png",
   "/apple-touch-icon.png",
@@ -78,8 +80,11 @@ export async function handler(req: Request, ctx: FreshContext) {
     if (path.startsWith("/_frsh/") || path.startsWith("/_fresh/")) {
       // Versioned chunks — immutable for 1 year
       res.headers.set("Cache-Control", "public, max-age=31536000, immutable");
-    } else if (path === "/styles.css" || path.startsWith("/static/")) {
-      // Static assets — cache for 1 day, revalidate
+    } else if (path === "/styles.css") {
+      // Main stylesheet should revalidate every request so styling tweaks ship quickly.
+      res.headers.set("Cache-Control", "public, max-age=0, must-revalidate");
+    } else if (path.startsWith("/static/")) {
+      // Other static assets — cache for 1 day, revalidate.
       res.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     }
     applySecurityHeaders(res.headers);
