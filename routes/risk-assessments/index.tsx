@@ -718,6 +718,47 @@ export default function RiskAssessmentsPage(
                           Annual reminder due for this assessment.
                         </p>
                       )}
+
+                      {canEdit && (
+                        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap">
+                          <a
+                            href={`/risk-assessments/${assessment.id}/edit`}
+                            class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            Edit
+                          </a>
+                          <form method="post">
+                            <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
+                            <input type="hidden" name="action" value="duplicate_assessment" />
+                            <input type="hidden" name="assessmentId" value={assessment.id} />
+                            <button
+                              type="submit"
+                              class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                              Duplicate
+                            </button>
+                          </form>
+                          <form method="post">
+                            <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
+                            <input type="hidden" name="action" value="delete_assessment" />
+                            <input type="hidden" name="assessmentId" value={assessment.id} />
+                            <button
+                              type="submit"
+                              class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30"
+                            >
+                              Delete
+                            </button>
+                          </form>
+                          <a
+                            href={`/risk-assessments/print?assessment=${assessment.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            Export PDF
+                          </a>
+                        </div>
+                      )}
                     </div>
 
                     <div class="md:hidden p-4 space-y-3">
@@ -783,47 +824,6 @@ export default function RiskAssessmentsPage(
                         </tbody>
                       </table>
                     </div>
-
-                    {canEdit && (
-                      <div class="p-4 sm:p-5 flex gap-2 flex-wrap border-t border-gray-200 dark:border-gray-700">
-                        <a
-                          href={`/risk-assessments/${assessment.id}/edit`}
-                          class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Edit
-                        </a>
-                        <form method="post">
-                          <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
-                          <input type="hidden" name="action" value="duplicate_assessment" />
-                          <input type="hidden" name="assessmentId" value={assessment.id} />
-                          <button
-                            type="submit"
-                            class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          >
-                            Duplicate
-                          </button>
-                        </form>
-                        <form method="post">
-                          <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
-                          <input type="hidden" name="action" value="delete_assessment" />
-                          <input type="hidden" name="assessmentId" value={assessment.id} />
-                          <button
-                            type="submit"
-                            class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30"
-                          >
-                            Delete
-                          </button>
-                        </form>
-                        <a
-                          href={`/risk-assessments/print?assessment=${assessment.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Export PDF
-                        </a>
-                      </div>
-                    )}
                   </div>
                 </details>
               );
