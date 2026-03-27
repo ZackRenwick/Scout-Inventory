@@ -24,5 +24,12 @@ export default {
     "border-t-blue-500", "border-t-green-500", "border-t-yellow-500",
     "border-t-red-500",  "border-t-purple-500", "border-t-indigo-500",
     "border-t-orange-500",
+    // Guardrail: keep common color utility families available even when
+    // class scanning misses a change during dev/PWA iterations.
+    {
+      pattern:
+        /(bg|text|border)-(red|rose|amber|orange|yellow|green|blue|purple|indigo|gray)-(50|100|200|300|400|500|600|700|800|900)/,
+      variants: ["hover", "dark", "dark:hover"],
+    },
   ],
 } satisfies Config;

@@ -379,22 +379,22 @@ export default function Home({ data }: PageProps<DashboardData>) {
       )}
 
       {hasRiskAssessmentDue && (
-        <div class="bg-rose-100 dark:bg-rose-900/60 border-l-4 border-rose-500 dark:border-rose-400 p-4 mb-8">
+        <div class="bg-red-100 dark:bg-red-900/60 border-l-4 border-red-500 dark:border-red-400 p-4 mb-8">
           <div class="flex">
             <div class="flex-shrink-0">
               <span class="text-2xl">📝</span>
             </div>
             <div class="ml-3">
-              <h3 class="text-base font-medium text-rose-900 dark:text-rose-100">
+              <h3 class="text-base font-medium text-red-900 dark:text-red-100">
                 Risk Assessment Annual Checks Due
               </h3>
-              <p class="mt-1 text-sm text-rose-800 dark:text-rose-200">
+              <p class="mt-1 text-sm text-red-800 dark:text-red-200">
                 {riskAssessments.annualDueCount} assessment
                 {riskAssessments.annualDueCount === 1 ? "" : "s"} due annual
                 review.{" "}
                 <a
                   href="/risk-assessments"
-                  class="underline hover:text-rose-900 dark:hover:text-rose-50"
+                  class="underline hover:text-red-900 dark:hover:text-red-50"
                 >
                   Open Risk Assessments
                 </a>
@@ -461,10 +461,10 @@ export default function Home({ data }: PageProps<DashboardData>) {
           </a>
           <a
             href="/risk-assessments"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-rose-700 text-white rounded-md hover:bg-rose-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
           >
             <span class="sm:hidden lg:inline">📝</span>
-            <span>Risk Assessments</span>
+            <span class="text-center leading-tight">Risk Assessments</span>
           </a>
         </div>
       </div>
