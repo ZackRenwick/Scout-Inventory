@@ -63,6 +63,9 @@ import * as $meals_index from "./routes/meals/index.tsx";
 import * as $meals_new from "./routes/meals/new.tsx";
 import * as $neckers from "./routes/neckers.tsx";
 import * as $reports_expiring from "./routes/reports/expiring.tsx";
+import * as $risk_assessments_id_edit from "./routes/risk-assessments/[id]/edit.tsx";
+import * as $risk_assessments_index from "./routes/risk-assessments/index.tsx";
+import * as $risk_assessments_print from "./routes/risk-assessments/print.tsx";
 import * as $BulkImport from "./islands/BulkImport.tsx";
 import * as $CampCalendar from "./islands/CampCalendar.tsx";
 import * as $CampChecklist from "./islands/CampChecklist.tsx";
@@ -88,6 +91,7 @@ import * as $NotificationButtons from "./islands/NotificationButtons.tsx";
 import * as $PasswordInput from "./islands/PasswordInput.tsx";
 import * as $PrintButton from "./islands/PrintButton.tsx";
 import * as $RebuildIndexes from "./islands/RebuildIndexes.tsx";
+import * as $RiskAssessmentForm from "./islands/RiskAssessmentForm.tsx";
 import * as $SpaceDashboard from "./islands/SpaceDashboard.tsx";
 import * as $StocktakeWizard from "./islands/StocktakeWizard.tsx";
 import * as $TemplateAppendForm from "./islands/TemplateAppendForm.tsx";
@@ -159,6 +163,9 @@ const manifest = {
     "./routes/meals/new.tsx": $meals_new,
     "./routes/neckers.tsx": $neckers,
     "./routes/reports/expiring.tsx": $reports_expiring,
+    "./routes/risk-assessments/[id]/edit.tsx": $risk_assessments_id_edit,
+    "./routes/risk-assessments/index.tsx": $risk_assessments_index,
+    "./routes/risk-assessments/print.tsx": $risk_assessments_print,
   },
   islands: {
     "./islands/BulkImport.tsx": $BulkImport,
@@ -186,6 +193,7 @@ const manifest = {
     "./islands/PasswordInput.tsx": $PasswordInput,
     "./islands/PrintButton.tsx": $PrintButton,
     "./islands/RebuildIndexes.tsx": $RebuildIndexes,
+    "./islands/RiskAssessmentForm.tsx": $RiskAssessmentForm,
     "./islands/SpaceDashboard.tsx": $SpaceDashboard,
     "./islands/StocktakeWizard.tsx": $StocktakeWizard,
     "./islands/TemplateAppendForm.tsx": $TemplateAppendForm,

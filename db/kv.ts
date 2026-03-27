@@ -15,6 +15,7 @@ import type { Meal, MealPayload } from "../types/meals.ts";
 import type { FirstAidKit } from "../types/firstAid.ts";
 import type { FirstAidCatalogItem } from "../types/firstAid.ts";
 import type { FirstAidCheckState } from "../types/firstAid.ts";
+import type { RiskAssessment } from "../types/risk.ts";
 import { DEFAULT_FIRST_AID_CATALOG } from "../lib/firstAidCatalog.ts";
 import { FIRST_AID_SECTIONS } from "../types/firstAid.ts";
 
@@ -68,6 +69,7 @@ const KEYS = {
   firstAidKits: ["first-aid", "kits"] as const,
   firstAidCatalog: ["first-aid", "catalog"] as const,
   firstAidChecks: ["first-aid", "checks"] as const,
+  riskAssessments: ["risk-assessments", "records"] as const,
 };
 
 // Index key helpers
@@ -240,6 +242,11 @@ let firstAidKitCheckStatesInFlight:
   | Promise<Record<string, FirstAidCheckState>>
   | null = null;
 
+let riskAssessmentsCache:
+  | { assessments: RiskAssessment[]; expiresAt: number }
+  | null = null;
+let riskAssessmentsInFlight: Promise<RiskAssessment[]> | null = null;
+
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
@@ -308,6 +315,11 @@ function invalidateFirstAidCheckStateCaches(): void {
   firstAidKitCheckStatesInFlight = null;
 }
 
+function invalidateRiskAssessmentsCache(): void {
+  riskAssessmentsCache = null;
+  riskAssessmentsInFlight = null;
+}
+
 /**
  * Warm all KV caches concurrently. Returns a promise that resolves once every
  * cache has been populated. Awaiting this at startup ensures no request is
@@ -322,6 +334,7 @@ export function preloadCaches(): Promise<void> {
     getAllMeals().catch(() => {}),
     getAllFirstAidKits().catch(() => {}),
     getAllFirstAidCatalogItems().catch(() => {}),
+    getAllRiskAssessments().catch(() => {}),
   ]).then(() => {});
 }
 
@@ -1457,6 +1470,20 @@ function serializeFirstAidCheckState(
   };
 }
 
+function addOneCalendarMonth(from: Date): Date {
+  const next = new Date(from);
+  const day = next.getDate();
+  next.setDate(1);
+  next.setMonth(next.getMonth() + 1);
+  const daysInTargetMonth = new Date(
+    next.getFullYear(),
+    next.getMonth() + 1,
+    0,
+  ).getDate();
+  next.setDate(Math.min(day, daysInTargetMonth));
+  return next;
+}
+
 export async function getAllFirstAidKits(): Promise<FirstAidKit[]> {
   if (firstAidKitsCache && Date.now() < firstAidKitsCache.expiresAt) {
     return firstAidKitsCache.kits;
@@ -1673,11 +1700,7 @@ export async function dismissFirstAidOverallCheckReminder(): Promise<void> {
   const db = await initKv();
   const current = await getFirstAidOverallCheckState();
   const now = new Date();
-  const dismissedUntil = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    1,
-  );
+  const dismissedUntil = addOneCalendarMonth(now);
 
   const kitStates = await getFirstAidKitCheckStates();
   const kitIds = await getAllFirstAidKitIds();
@@ -1721,11 +1744,7 @@ export async function dismissFirstAidKitCheckReminder(
     ? deserializeFirstAidCheckState(existing.value)
     : null;
   const now = new Date();
-  const dismissedUntil = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    1,
-  );
+  const dismissedUntil = addOneCalendarMonth(now);
 
   await db.set(
     key,
@@ -1891,6 +1910,229 @@ export async function deleteFirstAidCatalogItem(id: string): Promise<boolean> {
   await db.delete([...KEYS.firstAidCatalog, id]);
   invalidateFirstAidCatalogCache();
   return true;
+}
+
+// ===== RISK ASSESSMENTS =====
+
+// deno-lint-ignore no-explicit-any
+function serializeRiskAssessment(assessment: RiskAssessment): any {
+  return {
+    ...assessment,
+    createdAt: assessment.createdAt.toISOString(),
+    lastUpdated: assessment.lastUpdated.toISOString(),
+    lastReviewedAt: assessment.lastReviewedAt
+      ? assessment.lastReviewedAt.toISOString()
+      : null,
+    lastAnnualCheckAt: assessment.lastAnnualCheckAt
+      ? assessment.lastAnnualCheckAt.toISOString()
+      : null,
+    annualReminderDismissedUntil: assessment.annualReminderDismissedUntil
+      ? assessment.annualReminderDismissedUntil.toISOString()
+      : null,
+  };
+}
+
+// deno-lint-ignore no-explicit-any
+function deserializeRiskAssessment(data: any): RiskAssessment {
+  return {
+    ...data,
+    createdAt: new Date(data.createdAt),
+    lastUpdated: new Date(data.lastUpdated),
+    lastReviewedAt: data.lastReviewedAt ? new Date(data.lastReviewedAt) : null,
+    lastAnnualCheckAt: data.lastAnnualCheckAt
+      ? new Date(data.lastAnnualCheckAt)
+      : null,
+    lastAnnualCheckedBy: data.lastAnnualCheckedBy ?? null,
+    annualReminderDismissedUntil: data.annualReminderDismissedUntil
+      ? new Date(data.annualReminderDismissedUntil)
+      : null,
+  };
+}
+
+export async function getAllRiskAssessments(): Promise<RiskAssessment[]> {
+  if (riskAssessmentsCache && Date.now() < riskAssessmentsCache.expiresAt) {
+    return riskAssessmentsCache.assessments;
+  }
+  if (!riskAssessmentsInFlight) {
+    riskAssessmentsInFlight = (async () => {
+      const db = await initKv();
+      const assessments: RiskAssessment[] = [];
+      for await (
+        const entry of db.list<RiskAssessment>({ prefix: KEYS.riskAssessments })
+      ) {
+        assessments.push(deserializeRiskAssessment(entry.value));
+      }
+      assessments.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+      );
+      riskAssessmentsCache = {
+        assessments,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      };
+      riskAssessmentsInFlight = null;
+      return assessments;
+    })();
+  }
+  if (riskAssessmentsCache) return riskAssessmentsCache.assessments;
+  return await riskAssessmentsInFlight!;
+}
+
+export async function getRiskAssessmentById(
+  id: string,
+): Promise<RiskAssessment | null> {
+  const db = await initKv();
+  const result = await db.get<RiskAssessment>([...KEYS.riskAssessments, id]);
+  return result.value ? deserializeRiskAssessment(result.value) : null;
+}
+
+export async function createRiskAssessment(
+  name: string,
+  risks: RiskAssessment["risks"],
+  createdBy: string,
+): Promise<RiskAssessment> {
+  const db = await initKv();
+  const now = new Date();
+  const assessment: RiskAssessment = {
+    id: crypto.randomUUID(),
+    name,
+    risks,
+    lastReviewedAt: null,
+    lastAnnualCheckAt: null,
+    lastAnnualCheckedBy: null,
+    annualReminderDismissedUntil: null,
+    createdBy,
+    createdAt: now,
+    lastUpdated: now,
+  };
+  await db.set(
+    [...KEYS.riskAssessments, assessment.id],
+    serializeRiskAssessment(assessment),
+  );
+  invalidateRiskAssessmentsCache();
+  return assessment;
+}
+
+export async function updateRiskAssessment(
+  id: string,
+  updates: Partial<RiskAssessment>,
+  existing?: RiskAssessment,
+): Promise<RiskAssessment | null> {
+  const assessment = existing ?? await getRiskAssessmentById(id);
+  if (!assessment) return null;
+
+  const updated: RiskAssessment = {
+    ...assessment,
+    ...updates,
+    id,
+    lastUpdated: new Date(),
+  };
+
+  const db = await initKv();
+  await db.set([...KEYS.riskAssessments, id], serializeRiskAssessment(updated));
+  invalidateRiskAssessmentsCache();
+  return updated;
+}
+
+export async function deleteRiskAssessment(id: string): Promise<boolean> {
+  const existing = await getRiskAssessmentById(id);
+  if (!existing) return false;
+  const db = await initKv();
+  await db.delete([...KEYS.riskAssessments, id]);
+  invalidateRiskAssessmentsCache();
+  return true;
+}
+
+export async function markRiskAssessmentReviewed(id: string): Promise<void> {
+  const assessment = await getRiskAssessmentById(id);
+  if (!assessment) return;
+  await updateRiskAssessment(id, { lastReviewedAt: new Date() }, assessment);
+}
+
+export async function recordRiskAssessmentAnnualCheck(
+  id: string,
+  checkedBy: string,
+): Promise<void> {
+  const assessment = await getRiskAssessmentById(id);
+  if (!assessment) return;
+  await updateRiskAssessment(
+    id,
+    {
+      lastAnnualCheckAt: new Date(),
+      lastAnnualCheckedBy: checkedBy,
+      annualReminderDismissedUntil: null,
+    },
+    assessment,
+  );
+}
+
+export async function dismissRiskAssessmentAnnualReminder(
+  id: string,
+): Promise<void> {
+  const assessment = await getRiskAssessmentById(id);
+  if (!assessment) return;
+  const now = new Date();
+  const dismissedUntil = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  await updateRiskAssessment(
+    id,
+    {
+      annualReminderDismissedUntil: dismissedUntil,
+    },
+    assessment,
+  );
+}
+
+export async function replaceAllRiskAssessmentsFromBackup(
+  assessments: RiskAssessment[],
+): Promise<number> {
+  const db = await initKv();
+
+  for await (const entry of db.list({ prefix: KEYS.riskAssessments })) {
+    await db.delete(entry.key);
+  }
+
+  for (const assessment of assessments) {
+    await db.set(
+      [...KEYS.riskAssessments, assessment.id],
+      serializeRiskAssessment(assessment),
+    );
+  }
+
+  invalidateRiskAssessmentsCache();
+  return assessments.length;
+}
+
+export async function mergeRiskAssessmentsFromBackup(
+  assessments: RiskAssessment[],
+): Promise<{ created: number; updated: number; total: number }> {
+  const db = await initKv();
+  const existingIds = new Set<string>();
+
+  for await (const entry of db.list({ prefix: KEYS.riskAssessments })) {
+    const keyPart = entry.key[entry.key.length - 1];
+    if (typeof keyPart === "string") {
+      existingIds.add(keyPart);
+    }
+  }
+
+  let created = 0;
+  let updated = 0;
+
+  for (const assessment of assessments) {
+    if (existingIds.has(assessment.id)) {
+      updated++;
+    } else {
+      created++;
+      existingIds.add(assessment.id);
+    }
+
+    await db.set(
+      [...KEYS.riskAssessments, assessment.id],
+      serializeRiskAssessment(assessment),
+    );
+  }
+
+  invalidateRiskAssessmentsCache();
+  return { created, updated, total: assessments.length };
 }
 
 // ===== MEAL PLANNER =====

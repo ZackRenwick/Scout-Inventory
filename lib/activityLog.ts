@@ -29,6 +29,13 @@ export type ActivityAction =
   | "first_aid.kit_deleted"
   | "first_aid.check_completed"
   | "first_aid.check_reset"
+  | "risk_assessment.created"
+  | "risk_assessment.updated"
+  | "risk_assessment.deleted"
+  | "risk_assessment.reviewed"
+  | "risk_assessment.annual_check_completed"
+  | "risk_assessment.backup_exported"
+  | "risk_assessment.backup_restored"
   | "meal.created"
   | "meal.updated"
   | "meal.deleted"
@@ -59,8 +66,8 @@ const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
 
 let _kv: Deno.Kv | null = null;
 let _kvInFlight: Promise<Deno.Kv> | null = null;
-async function getKv(): Promise<Deno.Kv> {
-  if (_kv) return _kv;
+function getKv(): Promise<Deno.Kv> {
+  if (_kv) return Promise.resolve(_kv);
   if (!_kvInFlight) {
     _kvInFlight = Deno.openKv().then((instance) => {
       _kv = instance;

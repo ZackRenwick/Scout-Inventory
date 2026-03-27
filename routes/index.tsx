@@ -10,6 +10,7 @@ import {
   getActiveCheckOuts,
   getAllFirstAidKitIds,
   getAllItems,
+  getAllRiskAssessments,
   getComputedStats,
   getFirstAidKitCheckStates,
   getFirstAidOverallCheckState,
@@ -17,16 +18,35 @@ import {
 } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
 
-const MONTHLY_CHECK_DAYS = 30;
+const YEARLY_CHECK_DAYS = 365;
 
 function isDismissed(dismissedUntil: Date | null | undefined): boolean {
   return !!dismissedUntil && dismissedUntil.getTime() > Date.now();
 }
 
+function addOneCalendarMonth(from: Date): Date {
+  const next = new Date(from);
+  const day = next.getDate();
+  next.setDate(1);
+  next.setMonth(next.getMonth() + 1);
+  const daysInTargetMonth = new Date(
+    next.getFullYear(),
+    next.getMonth() + 1,
+    0,
+  ).getDate();
+  next.setDate(Math.min(day, daysInTargetMonth));
+  return next;
+}
+
 function isMonthlyDue(lastCheckedAt: Date | null | undefined): boolean {
   if (!lastCheckedAt) return true;
+  return Date.now() >= addOneCalendarMonth(lastCheckedAt).getTime();
+}
+
+function isYearlyDue(lastCheckedAt: Date | null | undefined): boolean {
+  if (!lastCheckedAt) return true;
   const ageMs = Date.now() - lastCheckedAt.getTime();
-  return ageMs >= MONTHLY_CHECK_DAYS * 24 * 60 * 60 * 1000;
+  return ageMs >= YEARLY_CHECK_DAYS * 24 * 60 * 60 * 1000;
 }
 
 interface DashboardData {
@@ -66,6 +86,9 @@ interface DashboardData {
     overallDue: boolean;
     dueKitCount: number;
   };
+  riskAssessments: {
+    annualDueCount: number;
+  };
   session?: Session;
 }
 
@@ -87,6 +110,7 @@ export const handler: Handlers<DashboardData> = {
         firstAidKitIds,
         overallFirstAidCheck,
         firstAidKitStates,
+        riskAssessments,
       ] = await Promise.all([
         getComputedStats(),
         getFoodItemsSortedByExpiry(),
@@ -95,6 +119,7 @@ export const handler: Handlers<DashboardData> = {
         getAllFirstAidKitIds(),
         getFirstAidOverallCheckState(),
         getFirstAidKitCheckStates(),
+        getAllRiskAssessments(),
       ]);
       const overallFirstAidDue =
         isMonthlyDue(overallFirstAidCheck?.lastCheckedAt) &&
@@ -104,6 +129,10 @@ export const handler: Handlers<DashboardData> = {
         return isMonthlyDue(kitState?.lastCheckedAt) &&
           !isDismissed(kitState?.dismissedUntil);
       }).length;
+      const annualRiskDueCount = riskAssessments.filter((assessment) =>
+        isYearlyDue(assessment.lastAnnualCheckAt) &&
+        !isDismissed(assessment.annualReminderDismissedUntil)
+      ).length;
 
       const expiringFood = { expired: 0, expiringSoon: 0, expiringWarning: 0 };
       for (const item of foodItems) {
@@ -155,6 +184,9 @@ export const handler: Handlers<DashboardData> = {
           overallDue: overallFirstAidDue,
           dueKitCount,
         },
+        riskAssessments: {
+          annualDueCount: annualRiskDueCount,
+        },
       });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
@@ -193,13 +225,16 @@ export const handler: Handlers<DashboardData> = {
           overallDue: false,
           dueKitCount: 0,
         },
+        riskAssessments: {
+          annualDueCount: 0,
+        },
       });
     }
   },
 };
 
 export default function Home({ data }: PageProps<DashboardData>) {
-  const { stats, session, neckerThreshold, firstAid } = data;
+  const { stats, session, neckerThreshold, firstAid, riskAssessments } = data;
   const canViewInspections = session?.role === "manager" ||
     session?.role === "admin";
   const inspectionTotal = stats.inspections.overdue + stats.inspections.dueSoon;
@@ -213,6 +248,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
     stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning +
     stats.needsRepairItems;
   const hasFirstAidDue = firstAid.overallDue || firstAid.dueKitCount > 0;
+  const hasRiskAssessmentDue = riskAssessments.annualDueCount > 0;
 
   return (
     <Layout username={session?.username} role={session?.role}>
@@ -342,12 +378,38 @@ export default function Home({ data }: PageProps<DashboardData>) {
         </div>
       )}
 
+      {hasRiskAssessmentDue && (
+        <div class="bg-rose-100 dark:bg-rose-900/60 border-l-4 border-rose-500 dark:border-rose-400 p-4 mb-8">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <span class="text-2xl">📝</span>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-base font-medium text-rose-900 dark:text-rose-100">
+                Risk Assessment Annual Checks Due
+              </h3>
+              <p class="mt-1 text-sm text-rose-800 dark:text-rose-200">
+                {riskAssessments.annualDueCount} assessment
+                {riskAssessments.annualDueCount === 1 ? "" : "s"} due annual
+                review.{" "}
+                <a
+                  href="/risk-assessments"
+                  class="underline hover:text-rose-900 dark:hover:text-rose-50"
+                >
+                  Open Risk Assessments
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 sm:p-5 mb-8">
         <h2 class="text-xl font-bold text-gray-800 dark:text-purple-100 mb-3">
           Quick Actions
         </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-7 gap-2 sm:gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-8 gap-2 sm:gap-2">
           <a
             href="/inventory/add"
             class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
@@ -396,6 +458,13 @@ export default function Home({ data }: PageProps<DashboardData>) {
           >
             <span class="sm:hidden lg:inline">🩹</span>
             <span>First Aid</span>
+          </a>
+          <a
+            href="/risk-assessments"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-rose-700 text-white rounded-md hover:bg-rose-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+          >
+            <span class="sm:hidden lg:inline">📝</span>
+            <span>Risk Assessments</span>
           </a>
         </div>
       </div>

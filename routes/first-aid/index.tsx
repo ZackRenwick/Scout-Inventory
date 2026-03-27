@@ -41,16 +41,27 @@ interface FirstAidPageData {
   flash?: string;
 }
 
-const MONTHLY_CHECK_DAYS = 30;
-
 function isDismissed(dismissedUntil: Date | null | undefined): boolean {
   return !!dismissedUntil && dismissedUntil.getTime() > Date.now();
 }
 
+function addOneCalendarMonth(from: Date): Date {
+  const next = new Date(from);
+  const day = next.getDate();
+  next.setDate(1);
+  next.setMonth(next.getMonth() + 1);
+  const daysInTargetMonth = new Date(
+    next.getFullYear(),
+    next.getMonth() + 1,
+    0,
+  ).getDate();
+  next.setDate(Math.min(day, daysInTargetMonth));
+  return next;
+}
+
 function isMonthlyDue(lastCheckedAt: Date | null | undefined): boolean {
   if (!lastCheckedAt) return true;
-  const ageMs = Date.now() - lastCheckedAt.getTime();
-  return ageMs >= MONTHLY_CHECK_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() >= addOneCalendarMonth(lastCheckedAt).getTime();
 }
 
 function formatLastChecked(lastCheckedAt: Date | null): string {
@@ -66,11 +77,7 @@ function getNextCheckDueDate(
   lastCheckedAt: Date | null | undefined,
   dismissedUntil?: Date | null,
 ): Date | null {
-  const checkDueDate = lastCheckedAt
-    ? new Date(
-      lastCheckedAt.getTime() + MONTHLY_CHECK_DAYS * 24 * 60 * 60 * 1000,
-    )
-    : null;
+  const checkDueDate = lastCheckedAt ? addOneCalendarMonth(lastCheckedAt) : null;
 
   if (checkDueDate && dismissedUntil) {
     return checkDueDate.getTime() > dismissedUntil.getTime()
