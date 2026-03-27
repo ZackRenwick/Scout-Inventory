@@ -215,7 +215,7 @@ export default function RiskAssessmentForm(props: Props) {
 
             <div>
               <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                What are the hazards to health and safety?
+                What are the Hazards?
               </label>
               <textarea
                 value={risk.hazards}
