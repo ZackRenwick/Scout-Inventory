@@ -798,21 +798,21 @@ export default function RiskAssessmentsPage(
                       ))}
                     </div>
 
-                    <div class="hidden md:block overflow-x-auto">
-                      <table class="min-w-full text-sm">
+                    <div class="hidden md:block overflow-x-auto bg-white dark:bg-gray-800">
+                      <table class="min-w-full text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
                           <tr>
-                            <th class="px-3 py-2 text-left">Hazards to Health and Safety</th>
-                            <th class="px-3 py-2 text-left">What risks do they pose?</th>
-                            <th class="px-3 py-2 text-left">Who is affected?</th>
-                            <th class="px-3 py-2 text-center">Risk Level (Low/Medium/High)</th>
-                            <th class="px-3 py-2 text-left">Precautions Taken</th>
-                            <th class="px-3 py-2 text-left">What has changed that needs to be thought about and controlled?</th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">Hazards to Health and Safety</th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">What risks do they pose?</th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">Who is affected?</th>
+                            <th class="px-3 py-2 text-center border-b border-gray-200 dark:border-gray-600">Risk Level (Low/Medium/High)</th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">Precautions Taken</th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">What has changed that needs to be thought about and controlled?</th>
                           </tr>
                         </thead>
-                        <tbody class="text-gray-900 dark:text-gray-100">
+                        <tbody class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                           {assessment.risks.map((risk) => (
-                            <tr key={risk.id} class="border-t border-gray-200 dark:border-gray-700 align-top">
+                            <tr key={risk.id} class="align-top bg-white even:bg-gray-50 dark:bg-gray-800 dark:even:bg-gray-900/40 border-t border-gray-200 dark:border-gray-700">
                               <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.hazards}</td>
                               <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.posedRisks}</td>
                               <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.affectedWho}</td>

@@ -22,6 +22,33 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js", { updateViaCache: "none" })
       .then(function (reg) {
+        function activateWaitingWorker() {
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+        }
+
+        if (reg.waiting) {
+          activateWaitingWorker();
+        }
+
+        reg.addEventListener("updatefound", function () {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener("statechange", function () {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              activateWaitingWorker();
+            }
+          });
+        });
+
+        let reloading = false;
+        navigator.serviceWorker.addEventListener("controllerchange", function () {
+          if (reloading) return;
+          reloading = true;
+          globalThis.location.reload();
+        });
+
         reg.update();
       });
   });

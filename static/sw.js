@@ -4,7 +4,7 @@
 //   - Navigation/HTML pages: network-first, cached opportunistically
 //   - API / admin routes: network-only (never cache sensitive data)
 
-const CACHE_VERSION = "v12";
+const CACHE_VERSION = "v13";
 const STATIC_CACHE  = `scouts-static-${CACHE_VERSION}`;
 const PAGE_CACHE    = `scouts-pages-${CACHE_VERSION}`;
 
@@ -33,6 +33,12 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", (event) => {
