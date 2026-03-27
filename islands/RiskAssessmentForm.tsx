@@ -42,6 +42,17 @@ const inputClass =
 const areaClass =
   "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-20";
 
+function resizeTextarea(el: HTMLTextAreaElement) {
+  // Reset first so scrollHeight reflects current content after deletions.
+  el.style.height = "auto";
+  el.style.height = `${Math.max(el.scrollHeight, 80)}px`;
+}
+
+function autosizeTextarea(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  resizeTextarea(el);
+}
+
 function createBlankRisk(): FormRisk {
   return {
     ...DEFAULT_RISK,
@@ -153,6 +164,13 @@ export default function RiskAssessmentForm(props: Props) {
             key={risk.id}
             class="rounded-lg border border-gray-200 dark:border-gray-700"
             open={!collapseRowsByDefault}
+            onToggle={(event) => {
+              const details = event.currentTarget as HTMLDetailsElement;
+              if (!details.open) return;
+              details
+                .querySelectorAll("textarea[data-autosize='1']")
+                .forEach((textarea) => resizeTextarea(textarea as HTMLTextAreaElement));
+            }}
           >
             <summary class="px-4 py-3 cursor-pointer select-none font-semibold text-gray-900 dark:text-gray-100">
               {`Risk ${index + 1}`}
@@ -202,9 +220,15 @@ export default function RiskAssessmentForm(props: Props) {
               <textarea
                 value={risk.hazards}
                 onInput={(event) =>
-                  updateRisk(risk.id, {
-                    hazards: (event.currentTarget as HTMLTextAreaElement).value,
-                  })}
+                  {
+                    const textarea = event.currentTarget as HTMLTextAreaElement;
+                    resizeTextarea(textarea);
+                    updateRisk(risk.id, {
+                      hazards: textarea.value,
+                    });
+                  }}
+                ref={autosizeTextarea}
+                data-autosize="1"
                 class={areaClass}
                 maxLength={1000}
               />
@@ -217,9 +241,15 @@ export default function RiskAssessmentForm(props: Props) {
               <textarea
                 value={risk.posedRisks}
                 onInput={(event) =>
-                  updateRisk(risk.id, {
-                    posedRisks: (event.currentTarget as HTMLTextAreaElement).value,
-                  })}
+                  {
+                    const textarea = event.currentTarget as HTMLTextAreaElement;
+                    resizeTextarea(textarea);
+                    updateRisk(risk.id, {
+                      posedRisks: textarea.value,
+                    });
+                  }}
+                ref={autosizeTextarea}
+                data-autosize="1"
                 class={areaClass}
                 maxLength={1000}
               />
@@ -232,9 +262,15 @@ export default function RiskAssessmentForm(props: Props) {
               <textarea
                 value={risk.affectedWho}
                 onInput={(event) =>
-                  updateRisk(risk.id, {
-                    affectedWho: (event.currentTarget as HTMLTextAreaElement).value,
-                  })}
+                  {
+                    const textarea = event.currentTarget as HTMLTextAreaElement;
+                    resizeTextarea(textarea);
+                    updateRisk(risk.id, {
+                      affectedWho: textarea.value,
+                    });
+                  }}
+                ref={autosizeTextarea}
+                data-autosize="1"
                 class={areaClass}
                 maxLength={1000}
               />
@@ -247,10 +283,15 @@ export default function RiskAssessmentForm(props: Props) {
               <textarea
                 value={risk.precautionsTaken}
                 onInput={(event) =>
-                  updateRisk(risk.id, {
-                    precautionsTaken: (event.currentTarget as HTMLTextAreaElement)
-                      .value,
-                  })}
+                  {
+                    const textarea = event.currentTarget as HTMLTextAreaElement;
+                    resizeTextarea(textarea);
+                    updateRisk(risk.id, {
+                      precautionsTaken: textarea.value,
+                    });
+                  }}
+                ref={autosizeTextarea}
+                data-autosize="1"
                 class={areaClass}
                 maxLength={1000}
               />
@@ -263,10 +304,15 @@ export default function RiskAssessmentForm(props: Props) {
               <textarea
                 value={risk.furtherActionNeeded}
                 onInput={(event) =>
-                  updateRisk(risk.id, {
-                    furtherActionNeeded:
-                      (event.currentTarget as HTMLTextAreaElement).value,
-                  })}
+                  {
+                    const textarea = event.currentTarget as HTMLTextAreaElement;
+                    resizeTextarea(textarea);
+                    updateRisk(risk.id, {
+                      furtherActionNeeded: textarea.value,
+                    });
+                  }}
+                ref={autosizeTextarea}
+                data-autosize="1"
                 class={areaClass}
                 maxLength={1000}
               />
