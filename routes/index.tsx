@@ -409,61 +409,61 @@ export default function Home({ data }: PageProps<DashboardData>) {
         <h2 class="text-xl font-bold text-gray-800 dark:text-purple-100 mb-3">
           Quick Actions
         </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-8 gap-2 sm:gap-2">
+        <div class="grid grid-cols-2 md:grid-cols-8 gap-2 md:gap-2">
           <a
             href="/inventory/add"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">➕</span>
+            <span class="md:hidden lg:inline">➕</span>
             <span>Add Item</span>
           </a>
           <a
             href="/inventory"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">📋</span>
+            <span class="md:hidden lg:inline">📋</span>
             <span>View All</span>
           </a>
           <a
             href="/reports/expiring"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-orange-700 text-white rounded-md hover:bg-orange-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-orange-700 text-white rounded-md hover:bg-orange-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">⏰</span>
+            <span class="md:hidden lg:inline">⏰</span>
             <span>Expiring Food</span>
           </a>
           <a
             href="/inventory?lowstock=true"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">⚠️</span>
+            <span class="md:hidden lg:inline">⚠️</span>
             <span>Low Stock</span>
           </a>
           <a
             href="/inventory?needsrepair=true"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-yellow-500 text-gray-900 rounded-md hover:bg-yellow-600 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-yellow-500 text-gray-900 rounded-md hover:bg-yellow-600 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">🔧</span>
+            <span class="md:hidden lg:inline">🔧</span>
             <span>Needs Repair</span>
           </a>
           <a
             href="/neckers"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">🧣</span>
+            <span class="md:hidden lg:inline">🧣</span>
             <span>Neckers</span>
           </a>
           <a
             href="/first-aid"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">🩹</span>
+            <span class="md:hidden lg:inline">🩹</span>
             <span>First Aid</span>
           </a>
           <a
             href="/risk-assessments"
-            class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-3 sm:px-2 lg:px-3 py-2.5 min-h-11 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors text-sm sm:text-xs lg:text-sm font-medium"
+            class="col-span-1 inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
           >
-            <span class="sm:hidden lg:inline">📝</span>
+            <span class="md:hidden lg:inline">📝</span>
             <span class="text-center leading-tight">Risk Assessments</span>
           </a>
         </div>
