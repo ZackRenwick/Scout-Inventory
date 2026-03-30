@@ -237,6 +237,8 @@ export default function Home({ data }: PageProps<DashboardData>) {
   const { stats, session, neckerThreshold, firstAid, riskAssessments } = data;
   const canViewInspections = session?.role === "manager" ||
     session?.role === "admin";
+  const canViewNeckers = session?.role === "manager" ||
+    session?.role === "admin";
   const inspectionTotal = stats.inspections.overdue + stats.inspections.dueSoon;
   const hasExpiredFoodIssue = stats.expiringFood.expired > 0;
   const hasLowStockIssue = stats.lowStockItems > 0;
@@ -445,13 +447,15 @@ export default function Home({ data }: PageProps<DashboardData>) {
             <span class="md:hidden lg:inline">🔧</span>
             <span>Needs Repair</span>
           </a>
-          <a
-            href="/neckers"
-            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
-          >
-            <span class="md:hidden lg:inline">🧣</span>
-            <span>Neckers</span>
-          </a>
+          {canViewNeckers && (
+            <a
+              href="/neckers"
+              class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            >
+              <span class="md:hidden lg:inline">🧣</span>
+              <span>Neckers</span>
+            </a>
+          )}
           <a
             href="/first-aid"
             class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm md:text-xs lg:text-sm font-medium"
