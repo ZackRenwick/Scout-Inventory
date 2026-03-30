@@ -319,7 +319,9 @@ export const handler: Handlers<FirstAidPageData> = {
       }
       return new Response(null, {
         status: 303,
-        headers: { Location: "/first-aid" },
+        headers: {
+          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+        },
       });
     }
 
@@ -333,7 +335,9 @@ export const handler: Handlers<FirstAidPageData> = {
       }
       return new Response(null, {
         status: 303,
-        headers: { Location: "/first-aid" },
+        headers: {
+          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+        },
       });
     }
 
@@ -363,7 +367,9 @@ export const handler: Handlers<FirstAidPageData> = {
       }
       return new Response(null, {
         status: 303,
-        headers: { Location: "/first-aid" },
+        headers: {
+          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+        },
       });
     }
 
@@ -384,7 +390,9 @@ export const handler: Handlers<FirstAidPageData> = {
       }
       return new Response(null, {
         status: 303,
-        headers: { Location: "/first-aid" },
+        headers: {
+          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+        },
       });
     }
 
@@ -401,7 +409,9 @@ export const handler: Handlers<FirstAidPageData> = {
       }
       return new Response(null, {
         status: 303,
-        headers: { Location: "/first-aid" },
+        headers: {
+          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+        },
       });
     }
 
