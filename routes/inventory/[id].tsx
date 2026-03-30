@@ -252,6 +252,14 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Size</h3>
                 <p class="mt-1 text-gray-900 dark:text-gray-100">{item.size}</p>
               </div>
+              {item.setupInstructions && (
+                <div class="sm:col-span-2">
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Setup Instructions</h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                    {item.setupInstructions}
+                  </p>
+                </div>
+              )}
               <div>
                 <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
                 <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>

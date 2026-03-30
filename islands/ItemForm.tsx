@@ -1,10 +1,53 @@
 // Form for adding/editing inventory items
-import { Signal, useSignal } from "@preact/signals";
-import { CAMP_STORE_CATEGORIES, GAS_STORAGE_CATEGORIES, GAS_STORAGE_LOCATIONS, getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS, LOFT_CATEGORIES, LOFT_LOCATIONS } from "../types/inventory.ts";
+import { useSignal } from "@preact/signals";
+import {
+  CAMP_STORE_CATEGORIES,
+  GAS_STORAGE_CATEGORIES,
+  GAS_STORAGE_LOCATIONS,
+  getCategoryEmoji,
+  getCategoryLabel,
+  ITEM_LOCATIONS,
+  LOFT_CATEGORIES,
+  LOFT_LOCATIONS,
+  type ItemCategory,
+} from "../types/inventory.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
+interface ItemFormData {
+  id?: string;
+  name?: string;
+  category?: ItemCategory;
+  space?: "camp-store" | "scout-post-loft" | "gas-storage-box";
+  quantity?: number;
+  minThreshold?: number;
+  location?: string;
+  notes?: string;
+  tentType?: string;
+  capacity?: number | string;
+  size?: string;
+  setupInstructions?: string;
+  condition?: string;
+  quantityNeedsRepair?: number;
+  brand?: string;
+  yearPurchased?: number;
+  equipmentType?: string;
+  material?: string;
+  fuelType?: string;
+  toolType?: string;
+  gameType?: string;
+  playerCount?: string;
+  kitType?: string;
+  foodType?: string;
+  expiryDate?: string | Date;
+  storageRequirements?: string;
+  weight?: string;
+  servings?: number;
+  allergens?: string[];
+  contents?: Array<{ name: string; quantity: number }>;
+}
+
 interface ItemFormProps {
-  initialData?: any;
+  initialData?: ItemFormData;
   isEdit?: boolean;
   csrfToken?: string;
 }
@@ -12,11 +55,14 @@ interface ItemFormProps {
 export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
   const initialSpace = initialData?.space ?? (initialData?.category === "games" ? "scout-post-loft" : initialData?.category === "fuel" ? "gas-storage-box" : "camp-store");
   const space = useSignal<"camp-store" | "scout-post-loft" | "gas-storage-box">(initialSpace);
-  const category = useSignal<"tent" | "cooking" | "food" | "camping-tools" | "games" | "kit" | "fuel">(initialData?.category || "tent");
+  const category = useSignal<ItemCategory>(initialData?.category ?? "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
   const success = useSignal("");
-  const boxContents = useSignal<{ name: string; quantity: number }[]>(initialData?.contents ?? []);
+  const initialContents = Array.isArray(initialData?.contents)
+    ? initialData.contents
+    : [];
+  const boxContents = useSignal<{ name: string; quantity: number }[]>(initialContents);
   const equipmentType = useSignal<string>(initialData?.equipmentType ?? "stove");
   const gameType = useSignal<string>(initialData?.gameType ?? "board-game");
 
@@ -28,12 +74,17 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
 
   // Find the group that contains the initial location value (for edit mode)
   const initialLocationList = getLocationsForSpace(initialSpace);
-  const initialGroup = initialData?.location
-    ? (initialLocationList.find((g) => g.options.includes(initialData.location))?.group ?? initialLocationList[0].group)
+  const initialLocation = typeof initialData?.location === "string"
+    ? initialData.location
+    : undefined;
+  const initialGroup = initialLocation
+    ? (initialLocationList.find((g) =>
+      g.options.some((opt) => opt === initialLocation)
+    )?.group ?? initialLocationList[0].group)
     : initialLocationList[0].group;
   const locationGroup = useSignal<string>(initialGroup);
   const locationValue = useSignal<string>(
-    initialData?.location ?? initialLocationList[0].options[0]
+    initialLocation ?? initialLocationList[0].options[0]
   );
 
   const handleSubmit = async (e: Event) => {
@@ -44,7 +95,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
     
-    const data: any = {
+    const data: Record<string, unknown> = {
       name: formData.get("name"),
       category: category.value,
       space: space.value,
@@ -59,6 +110,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.tentType = formData.get("tentType");
       data.capacity = parseInt(formData.get("capacity") as string);
       data.size = formData.get("size");
+      data.setupInstructions = formData.get("setupInstructions") || undefined;
       data.condition = formData.get("condition");
       data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.brand = formData.get("brand") || undefined;
@@ -112,7 +164,9 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
     }
     
     try {
-      const url = isEdit ? `/api/items/${initialData.id}` : "/api/items";
+      const url = isEdit && initialData?.id
+        ? `/api/items/${initialData.id}`
+        : "/api/items";
       const method = isEdit ? "PUT" : "POST";
       
       const response = await fetch(url, {
@@ -123,12 +177,14 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       
       if (response.ok) {
         success.value = isEdit ? "Item updated successfully!" : "Item added successfully!";
-        setTimeout(() => { window.location.href = "/inventory"; }, 1200);
+        setTimeout(() => {
+          globalThis.location.href = "/inventory";
+        }, 1200);
       } else {
         const result = await response.json();
         error.value = result.error || "Failed to save item";
       }
-    } catch (err) {
+    } catch (_err) {
       error.value = "Network error occurred";
     } finally {
       submitting.value = false;
@@ -198,7 +254,9 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
         </label>
         <select
           value={category.value}
-          onChange={(e) => category.value = (e.target as HTMLSelectElement).value as any}
+          onChange={(e) => {
+            category.value = (e.target as HTMLSelectElement).value as ItemCategory;
+          }}
           disabled={isEdit}
           class={inputClass}
           required
@@ -272,14 +330,14 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           <label class={labelClass}>
             Quantity *
           </label>
-          <input type="number" name="quantity" defaultValue={initialData?.quantity ?? 1} min="0" inputMode="numeric" required class={inputClass} />
+          <input type="number" name="quantity" defaultValue={String(initialData?.quantity ?? 1)} min="0" inputMode="numeric" required class={inputClass} />
         </div>
         
         <div>
           <label class={labelClass}>
             Minimum Threshold *
           </label>
-          <input type="number" name="minThreshold" defaultValue={initialData?.minThreshold ?? 0} min="0" required class={inputClass} />
+          <input type="number" name="minThreshold" defaultValue={String(initialData?.minThreshold ?? 0)} min="0" required class={inputClass} />
         </div>
       </div>
       
@@ -301,11 +359,21 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Capacity (people) *</label>
-              <input type="number" name="capacity" defaultValue={initialData?.capacity} required min="1" class={inputClass} />
+              <input type="number" name="capacity" defaultValue={String(initialData?.capacity ?? "")} required min="1" class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Size Description *</label>
               <input type="text" name="size" defaultValue={initialData?.size} required placeholder="e.g., 4-person" class={inputClass} />
+            </div>
+            <div class="sm:col-span-2">
+              <label class={labelClass}>Setup Instructions</label>
+              <textarea
+                name="setupInstructions"
+                defaultValue={initialData?.setupInstructions}
+                placeholder="Optional setup notes, peg order, pole sequence, or team tips"
+                rows={4}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
@@ -318,7 +386,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
@@ -326,7 +394,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
                 <option value="">— select year —</option>
                 {yearOptions.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -366,7 +434,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Material</label>
@@ -378,7 +446,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Capacity</label>
-              <input type="text" name="capacityField" defaultValue={initialData?.capacity} placeholder="e.g., 5L, 48 quart" class={inputClass} />
+              <input type="text" name="capacityField" defaultValue={initialData?.capacity === undefined ? "" : String(initialData.capacity)} placeholder="e.g., 5L, 48 quart" class={inputClass} />
             </div>
           </div>
 
@@ -463,7 +531,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
@@ -471,7 +539,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
                 <option value="">— select year —</option>
                 {yearOptions.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -511,7 +579,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Material</label>
@@ -523,7 +591,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
                 <option value="">— select year —</option>
                 {yearOptions.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -570,7 +638,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Servings</label>
-              <input type="number" name="servings" defaultValue={initialData?.servings} min="1" class={inputClass} />
+              <input type="number" name="servings" defaultValue={initialData?.servings === undefined ? "" : String(initialData.servings)} min="1" class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Allergens</label>
@@ -608,7 +676,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Player Count</label>
@@ -616,7 +684,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
                 <option value="">— select year —</option>
                 {yearOptions.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -711,7 +779,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={initialData?.quantityNeedsRepair ?? 0} min={0} class={inputClass} />
+              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
@@ -719,7 +787,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={initialData?.yearPurchased ?? ""} class={inputClass}>
+              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
                 <option value="">— select year —</option>
                 {yearOptions.map((y) => (
                   <option key={y} value={y}>{y}</option>

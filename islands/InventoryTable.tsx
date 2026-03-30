@@ -919,12 +919,12 @@ export default function InventoryTable(
                       {(() => {
                         const contentsSummary = getContentsSummary(item);
                         return (
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-medium text-gray-900 dark:text-gray-100">
+                          <td class="px-6 py-4 align-top">
+                            <div class="font-medium text-gray-900 dark:text-gray-100 max-w-[18rem] break-words">
                               {item.name}
                             </div>
                             {item.notes && (
-                              <div class="text-sm text-gray-500 dark:text-gray-400">
+                              <div class="text-sm text-gray-500 dark:text-gray-400 max-w-[20rem] whitespace-normal break-words leading-snug">
                                 {item.notes}
                               </div>
                             )}

@@ -85,7 +85,7 @@ export default function RiskAssessmentPrintPage(
                 <table>
                   <thead>
                     <tr>
-                      <th>Hazards to Health and Safety</th>
+                      <th>Hazards</th>
                       <th>What risks do they pose?</th>
                       <th>Who is affected?</th>
                       <th class="risk-level">Risk Level</th>

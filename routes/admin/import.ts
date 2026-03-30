@@ -124,7 +124,20 @@ function validateItem(
   };
 
   if (category === "tent") {
-    return { ok: true, item: { ...base, category: "tent", tentType: raw.tentType, capacity: raw.capacity, size: raw.size, condition: raw.condition, brand: raw.brand, yearPurchased: raw.yearPurchased } };
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "tent",
+        tentType: raw.tentType,
+        capacity: raw.capacity,
+        size: raw.size,
+        setupInstructions: raw.setupInstructions,
+        condition: raw.condition,
+        brand: raw.brand,
+        yearPurchased: raw.yearPurchased,
+      },
+    };
   }
   if (category === "cooking") {
     const contents = parseContents(raw.contents);

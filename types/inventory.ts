@@ -141,6 +141,7 @@ export interface TentItem extends BaseInventoryItem {
   tentType: "dome" | "tunnel" | "patrol" | "ridge" | "bell" | "other";
   capacity: number; // Number of people
   size: string; // e.g., "4-person", "8-person"
+  setupInstructions?: string;
   condition: "excellent" | "good" | "fair" | "needs-repair";
   brand?: string;
   yearPurchased?: number;
