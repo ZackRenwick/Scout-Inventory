@@ -1,6 +1,7 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import BetaBanner from "../../components/BetaBanner.tsx";
 import Layout from "../../components/Layout.tsx";
+import FirstAidKitEditor from "../../islands/FirstAidKitEditor.tsx";
 import type { Session } from "../../lib/auth.ts";
 import {
   createFirstAidKit,
@@ -670,9 +671,6 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
           : (
             <div class="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {data.kits.map((kit) => {
-                const sorted = [...kit.entries].sort((a, b) =>
-                  a.name.localeCompare(b.name, undefined, { numeric: true })
-                );
                 const lastCheckedAt = kitLastCheckedById[kit.id] ?? null;
                 const isEditingKit = data.editingKitId === kit.id;
                 return (
@@ -711,259 +709,46 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
                     </div>
 
                     {isEditingKit && (
-                      <div class="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
-                        {canEdit && (
-                          <div class="mt-4 grid grid-cols-1 gap-3">
-                            <form method="POST" class="flex gap-2 items-end">
-                              <input
-                                type="hidden"
-                                name="_csrf"
-                                value={data.session?.csrfToken ?? ""}
-                              />
-                              <input
-                                type="hidden"
-                                name="action"
-                                value="rename_kit"
-                              />
-                              <input
-                                type="hidden"
-                                name="kitId"
-                                value={kit.id}
-                              />
-                              <div class="flex-1">
-                                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Rename Kit
-                                </label>
-                                <input
-                                  name="name"
-                                  defaultValue={kit.name}
-                                  maxLength={80}
-                                  class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
-                                />
-                              </div>
-                              <button
-                                type="submit"
-                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-                              >
-                                Save
-                              </button>
-                            </form>
-
-                            <form method="POST" class="flex gap-2 items-end">
-                              <input
-                                type="hidden"
-                                name="_csrf"
-                                value={data.session?.csrfToken ?? ""}
-                              />
-                              <input
-                                type="hidden"
-                                name="action"
-                                value="apply_profile"
-                              />
-                              <input
-                                type="hidden"
-                                name="kitId"
-                                value={kit.id}
-                              />
-                              <div class="flex-1">
-                                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                  Autofill / Replace From Profile
-                                </label>
-                                <select
-                                  name="profileId"
-                                  class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
-                                >
-                                  {FIRST_AID_PROFILES.map((p) => (
-                                    <option
-                                      key={`${kit.id}-${p.id}`}
-                                      value={p.id}
-                                      selected={kit.profileId === p.id}
-                                    >
-                                      {p.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <button
-                                type="submit"
-                                class="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700"
-                              >
-                                Apply
-                              </button>
-                            </form>
+                      canEdit
+                        ? (
+                          <FirstAidKitEditor
+                            kitId={kit.id}
+                            initialName={kit.name}
+                            initialProfileId={kit.profileId}
+                            initialEntries={kit.entries}
+                            catalog={data.catalog}
+                            csrfToken={data.session?.csrfToken ?? ""}
+                          />
+                        )
+                        : (
+                          <div class="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+                            <div class="mt-4 overflow-x-auto">
+                              <table class="min-w-full text-sm">
+                                <thead>
+                                  <tr class="text-left border-b border-gray-200 dark:border-gray-700">
+                                    <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">Item</th>
+                                    <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">Target Qty</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {[...kit.entries]
+                                    .sort((a, b) =>
+                                      a.name.localeCompare(b.name, undefined, { numeric: true })
+                                    )
+                                    .map((entry) => (
+                                      <tr
+                                        key={`${kit.id}-readonly-${entry.itemId}`}
+                                        class="border-b border-gray-100 dark:border-gray-800"
+                                      >
+                                        <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">{entry.name}</td>
+                                        <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">{entry.quantityTarget}</td>
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
-                        )}
-
-                        <div class="mt-4 overflow-x-auto">
-                          <table class="min-w-full text-sm">
-                            <thead>
-                              <tr class="text-left border-b border-gray-200 dark:border-gray-700">
-                                <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">
-                                  Item
-                                </th>
-                                <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">
-                                  Target Qty
-                                </th>
-                                {canEdit && (
-                                  <th class="py-2 text-gray-500 dark:text-gray-400">
-                                    Actions
-                                  </th>
-                                )}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {sorted.map((entry) => (
-                                <tr
-                                  key={`${kit.id}-${entry.itemId}`}
-                                  class="border-b border-gray-100 dark:border-gray-800"
-                                >
-                                  <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">
-                                    {entry.name}
-                                  </td>
-                                  <td class="py-2 pr-2">
-                                    {canEdit
-                                      ? (
-                                        <form
-                                          method="POST"
-                                          class="flex items-center gap-2"
-                                        >
-                                          <input
-                                            type="hidden"
-                                            name="_csrf"
-                                            value={data.session?.csrfToken ??
-                                              ""}
-                                          />
-                                          <input
-                                            type="hidden"
-                                            name="action"
-                                            value="update_qty"
-                                          />
-                                          <input
-                                            type="hidden"
-                                            name="kitId"
-                                            value={kit.id}
-                                          />
-                                          <input
-                                            type="hidden"
-                                            name="itemId"
-                                            value={entry.itemId}
-                                          />
-                                          <input
-                                            type="number"
-                                            name="quantity"
-                                            min={0}
-                                            max={999}
-                                            value={entry.quantityTarget}
-                                            class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                          />
-                                          <button
-                                            type="submit"
-                                            class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
-                                          >
-                                            Save
-                                          </button>
-                                        </form>
-                                      )
-                                      : (
-                                        <span class="text-gray-900 dark:text-gray-100">
-                                          {entry.quantityTarget}
-                                        </span>
-                                      )}
-                                  </td>
-                                  {canEdit && (
-                                    <td class="py-2">
-                                      <form method="POST">
-                                        <input
-                                          type="hidden"
-                                          name="_csrf"
-                                          value={data.session?.csrfToken ?? ""}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="action"
-                                          value="remove_item"
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="kitId"
-                                          value={kit.id}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="itemId"
-                                          value={entry.itemId}
-                                        />
-                                        <button
-                                          type="submit"
-                                          class="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/50"
-                                        >
-                                          Remove
-                                        </button>
-                                      </form>
-                                    </td>
-                                  )}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {canEdit && (
-                          <form
-                            method="POST"
-                            class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-2 items-end"
-                          >
-                            <input
-                              type="hidden"
-                              name="_csrf"
-                              value={data.session?.csrfToken ?? ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="action"
-                              value="add_item"
-                            />
-                            <input type="hidden" name="kitId" value={kit.id} />
-                            <div class="md:col-span-2">
-                              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                Add Catalog Item
-                              </label>
-                              <select
-                                name="itemId"
-                                class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
-                              >
-                                {data.catalog.map((c) => (
-                                  <option
-                                    key={`${kit.id}-add-${c.id}`}
-                                    value={c.id}
-                                  >
-                                    {c.section} - {c.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div>
-                              <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                Qty
-                              </label>
-                              <input
-                                type="number"
-                                name="quantity"
-                                min={1}
-                                max={999}
-                                value={1}
-                                class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm"
-                              />
-                            </div>
-                            <button
-                              type="submit"
-                              class="px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
-                            >
-                              Add / Update
-                            </button>
-                          </form>
-                        )}
-                      </div>
+                        )
                     )}
 
                     <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex flex-wrap gap-2">

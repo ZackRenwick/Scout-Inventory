@@ -77,6 +77,7 @@ import * as $DbCleanup from "./islands/DbCleanup.tsx";
 import * as $DbClear from "./islands/DbClear.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $FirstAidCheckWizard from "./islands/FirstAidCheckWizard.tsx";
+import * as $FirstAidKitEditor from "./islands/FirstAidKitEditor.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $LoanForm from "./islands/LoanForm.tsx";
@@ -179,6 +180,7 @@ const manifest = {
     "./islands/DbClear.tsx": $DbClear,
     "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/FirstAidCheckWizard.tsx": $FirstAidCheckWizard,
+    "./islands/FirstAidKitEditor.tsx": $FirstAidKitEditor,
     "./islands/InventoryTable.tsx": $InventoryTable,
     "./islands/ItemForm.tsx": $ItemForm,
     "./islands/LoanForm.tsx": $LoanForm,
