@@ -29,13 +29,16 @@ function normalizeSection(value: string | null): FirstAidSection {
 export const handler: Handlers<FirstAidCatalogPageData> = {
   async GET(_req, ctx) {
     const session = ctx.state.session as Session;
+    if (session.role === "explorer") {
+      return new Response("Forbidden", { status: 403 });
+    }
     const [catalog, kits] = await Promise.all([getAllFirstAidCatalogItems(), getAllFirstAidKits()]);
     return ctx.render({ catalog, kits, session });
   },
 
   async POST(req, ctx) {
     const session = ctx.state.session as Session;
-    if (!session || session.role === "viewer") {
+    if (!session || session.role === "viewer" || session.role === "explorer") {
       return new Response("Forbidden", { status: 403 });
     }
 
@@ -80,7 +83,7 @@ export const handler: Handlers<FirstAidCatalogPageData> = {
 };
 
 export default function FirstAidCatalogPage({ data }: PageProps<FirstAidCatalogPageData>) {
-  const canEdit = data.session?.role !== "viewer";
+  const canEdit = data.session?.role !== "viewer" && data.session?.role !== "explorer";
   const usage = new Map<string, number>();
   for (const kit of data.kits) {
     for (const entry of kit.entries) {

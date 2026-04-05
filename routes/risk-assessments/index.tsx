@@ -286,6 +286,9 @@ function flashFromCode(
 export const handler: Handlers<RiskAssessmentsPageData> = {
   async GET(req, ctx) {
     const session = ctx.state.session as Session;
+    if (session.role === "explorer") {
+      return new Response("Forbidden", { status: 403 });
+    }
     const url = new URL(req.url);
     const flash = flashFromCode(url.searchParams.get("flash"));
 
@@ -332,7 +335,7 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
       });
     }
 
-    if (session.role === "viewer") {
+    if (session.role === "viewer" || session.role === "explorer") {
       return new Response("Forbidden", { status: 403 });
     }
 
@@ -490,7 +493,7 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
 export default function RiskAssessmentsPage(
   { data }: PageProps<RiskAssessmentsPageData>,
 ) {
-  const canEdit = data.session?.role !== "viewer";
+  const canEdit = data.session?.role !== "viewer" && data.session?.role !== "explorer";
   const canManageBackups =
     data.session?.role === "admin" || data.session?.role === "manager";
 

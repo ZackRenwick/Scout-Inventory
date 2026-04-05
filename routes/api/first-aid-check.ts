@@ -43,6 +43,7 @@ export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
     if (!session) return forbidden();
+    if (session.role === "explorer") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
 
     let body: FirstAidCheckPayload;

@@ -114,6 +114,9 @@ function profileChipClass(profileId?: string): string {
 export const handler: Handlers<FirstAidPageData> = {
   async GET(req, ctx) {
     const session = ctx.state.session as Session;
+    if (session.role === "explorer") {
+      return new Response("Forbidden", { status: 403 });
+    }
     const url = new URL(req.url);
     const editingKitId = url.searchParams.get("edit")?.trim() || null;
     const [kits, catalog, overallCheckState, kitCheckStates] = await Promise
@@ -214,7 +217,7 @@ export const handler: Handlers<FirstAidPageData> = {
       });
     }
 
-    if (session.role === "viewer") {
+    if (session.role === "viewer" || session.role === "explorer") {
       return new Response("Forbidden", { status: 403 });
     }
 
@@ -423,7 +426,7 @@ export const handler: Handlers<FirstAidPageData> = {
 };
 
 export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
-  const canEdit = data.session?.role !== "viewer";
+  const canEdit = data.session?.role !== "viewer" && data.session?.role !== "explorer";
   const kitLastCheckedById = data.kitLastCheckedById ?? {};
   const kitDismissedUntilById = data.kitDismissedUntilById ?? {};
   const overallCheckDue = data.overallCheckDue ?? false;

@@ -7,7 +7,7 @@ interface LayoutProps {
   children: ComponentChildren;
   title?: string;
   username?: string;
-  role?: "admin" | "manager" | "editor" | "viewer";
+  role?: "admin" | "manager" | "editor" | "explorer" | "viewer";
 }
 
 export default function Layout(

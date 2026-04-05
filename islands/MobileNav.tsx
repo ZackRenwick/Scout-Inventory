@@ -4,7 +4,7 @@ import ThemeToggle from "./ThemeToggle.tsx";
 
 interface MobileNavProps {
   username?: string;
-  role?: "admin" | "manager" | "editor" | "viewer";
+  role?: "admin" | "manager" | "editor" | "explorer" | "viewer";
 }
 
 export default function MobileNav({ username, role }: MobileNavProps) {
@@ -30,8 +30,12 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         {role === "admin" && (
           <a href="/meals" class="hover:text-purple-200 transition-colors">Meal Planner</a>
         )}
-        <a href="/first-aid" class="hover:text-purple-200 transition-colors">First Aid</a>
-        <a href="/risk-assessments" class="hover:text-purple-200 transition-colors">Risk Assessments</a>
+        {role !== "explorer" && (
+          <a href="/first-aid" class="hover:text-purple-200 transition-colors">First Aid</a>
+        )}
+        {role !== "explorer" && (
+          <a href="/risk-assessments" class="hover:text-purple-200 transition-colors">Risk Assessments</a>
+        )}
         {(role === "admin" || role === "manager") && (
           <a href="/neckers" class="hover:text-purple-200 transition-colors">Neckers</a>
         )}
@@ -61,8 +65,12 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           {role === "admin" && (
             <a href="/meals" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🍽️ Meal Planner</a>
           )}
-          <a href="/first-aid" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🩹 First Aid</a>
-          <a href="/risk-assessments" class="block px-6 py-3 hover:bg-purple-800 transition-colors">📝 Risk Assessments</a>
+          {role !== "explorer" && (
+            <a href="/first-aid" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🩹 First Aid</a>
+          )}
+          {role !== "explorer" && (
+            <a href="/risk-assessments" class="block px-6 py-3 hover:bg-purple-800 transition-colors">📝 Risk Assessments</a>
+          )}
           {(role === "admin" || role === "manager") && (
             <a href="/neckers" class="block px-6 py-3 hover:bg-purple-800 transition-colors">🧣 Neckers</a>
           )}

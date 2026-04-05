@@ -362,6 +362,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                       class="text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md focus:ring-1 focus:ring-purple-500 focus:outline-none"
                     >
                       <option value="viewer">viewer</option>
+                      <option value="explorer">explorer</option>
                       <option value="editor">editor</option>
                       <option value="manager">manager</option>
                       {isAdmin && <option value="admin">admin</option>}
@@ -458,6 +459,7 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
               >
                 <option value="viewer">Viewer — read only</option>
+                <option value="explorer">Explorer — inventory only (no first aid / risk)</option>
                 <option value="editor">Editor — manage inventory</option>
                 <option value="manager">Manager — stock-take, exports &amp; users</option>
                 {isAdmin && <option value="admin">Admin — full access</option>}

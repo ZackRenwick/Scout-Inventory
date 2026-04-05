@@ -101,6 +101,9 @@ async function renderPage(
 export const handler: Handlers<EditRiskAssessmentPageData> = {
   async GET(req, ctx) {
     const session = ctx.state.session as Session;
+    if (session.role === "explorer") {
+      return new Response("Forbidden", { status: 403 });
+    }
     const assessmentId = ctx.params.id;
     const url = new URL(req.url);
     const checkMode = getCheckModeFromUrl(url);
@@ -110,7 +113,7 @@ export const handler: Handlers<EditRiskAssessmentPageData> = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session;
     if (!session) return new Response("Forbidden", { status: 403 });
-    if (session.role === "viewer") {
+    if (session.role === "viewer" || session.role === "explorer") {
       return new Response("Forbidden", { status: 403 });
     }
 
