@@ -40,7 +40,12 @@ export const handler: Handlers = {
         return Response.json({ error: "Item not found" }, { status: 404 });
       }
 
-      const updates = await req.json();
+      const raw = await req.json();
+      
+      // Strip fields the server owns — clients must never override these.
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, addedDate: _added, photoIds: _photos, atCamp: _atCamp,
+              quantityAtCamp: _qac, ...updates } = raw;
       
       // Normalise explicit null → undefined for optional string fields so the
       // stored item never contains null (undefined means "field absent").

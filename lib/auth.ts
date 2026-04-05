@@ -372,12 +372,12 @@ const IS_DEPLOYED = !!Deno.env.get("DENO_DEPLOYMENT_ID");
 
 export function makeSessionCookie(sessionId: string): string {
   const secure = IS_DEPLOYED ? "; Secure" : "";
-  return `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DURATION_MS / 1000}${secure}`;
+  return `session=${sessionId}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_DURATION_MS / 1000}${secure}`;
 }
 
 export function clearSessionCookie(): string {
   const secure = IS_DEPLOYED ? "; Secure" : "";
-  return `session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+  return `session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure}`;
 }
 
 // ===== API RESPONSE HELPERS =====

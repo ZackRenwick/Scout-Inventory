@@ -224,6 +224,15 @@ export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session;
 
+    // Reject oversized requests before buffering the body into memory.
+    // multipart overhead is small; the 1 MB cap on the JSON file inside is
+    // checked again after parsing, but this stops the body being buffered first.
+    const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB — generous envelope for multipart overhead
+    const contentLength = req.headers.get("Content-Length");
+    if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+      return Response.json({ error: "Request body too large." }, { status: 413 });
+    }
+
     let form: FormData;
     try {
       form = await req.formData();

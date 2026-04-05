@@ -9,6 +9,9 @@ import {
   createSession,
   makeSessionCookie,
   validatePassword,
+  checkRateLimit,
+  recordFailedLogin,
+  resetRateLimit,
   type Session,
 } from "../../lib/auth.ts";
 
@@ -46,6 +49,13 @@ export const handler: Handlers<AccountData> = {
       return ctx.render({ session, csrfToken: session.csrfToken, error: "Invalid request. Please try again." });
     }
 
+    // Rate-limit password change attempts per user to prevent stolen-session brute-force
+    const pwChangeKey = `pw-change:${session.username}`;
+    const { blocked } = await checkRateLimit(pwChangeKey);
+    if (blocked) {
+      return ctx.render({ session, csrfToken: session.csrfToken, error: "Too many attempts. Please try again in 15 minutes." });
+    }
+
     const currentPassword = form.get("currentPassword") as string ?? "";
     const newPassword = form.get("newPassword") as string ?? "";
     const confirmPassword = form.get("confirmPassword") as string ?? "";
@@ -65,9 +75,11 @@ export const handler: Handlers<AccountData> = {
       const user = await getUserByUsername(session.username);
       const result = user ? await verifyPassword(currentPassword, user.passwordHash) : { valid: false };
       if (!user || !result.valid) {
+        await recordFailedLogin(pwChangeKey);
         throw new Error("Current password is incorrect.");
       }
 
+      await resetRateLimit(pwChangeKey);
       await updateUserPassword(session.username, newPassword);
       // Invalidate all existing sessions (security: force re-login everywhere)
       await deleteAllSessionsForUser(user.id);
