@@ -102,7 +102,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       quantity: parseInt(formData.get("quantity") as string),
       minThreshold: parseInt(formData.get("minThreshold") as string),
       location: formData.get("location"),
-      notes: formData.get("notes") || undefined,
+      notes: (formData.get("notes") as string).trim() || null,
     };
     
     // Category-specific fields

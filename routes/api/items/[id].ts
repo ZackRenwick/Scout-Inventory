@@ -42,6 +42,11 @@ export const handler: Handlers = {
 
       const updates = await req.json();
       
+      // Normalise explicit null → undefined for optional string fields so the
+      // stored item never contains null (undefined means "field absent").
+      if (updates.notes === null) updates.notes = undefined;
+      if (updates.setupInstructions === null) updates.setupInstructions = undefined;
+      
       // Convert date strings to Date objects if needed
       if (updates.expiryDate) {
         updates.expiryDate = new Date(updates.expiryDate);
