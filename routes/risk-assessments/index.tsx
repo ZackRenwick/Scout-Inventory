@@ -1,6 +1,5 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
-import BetaBanner from "../../components/BetaBanner.tsx";
 import RiskAssessmentForm from "../../islands/RiskAssessmentForm.tsx";
 import type { Session } from "../../lib/auth.ts";
 import {
@@ -501,8 +500,6 @@ export default function RiskAssessmentsPage(
       username={data.session?.username}
       role={data.session?.role}
     >
-      <BetaBanner featureName="Risk Assessments" />
-
       <div class="mb-6">
         <p class="text-gray-600 dark:text-gray-400">
           Manage activities and hazards with ad hoc checks plus a separate

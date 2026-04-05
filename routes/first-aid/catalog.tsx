@@ -1,5 +1,4 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
-import BetaBanner from "../../components/BetaBanner.tsx";
 import Layout from "../../components/Layout.tsx";
 import type { Session } from "../../lib/auth.ts";
 import {
@@ -98,8 +97,6 @@ export default function FirstAidCatalogPage({ data }: PageProps<FirstAidCatalogP
 
   return (
     <Layout title="First Aid Catalog" username={data.session?.username} role={data.session?.role}>
-      <BetaBanner featureName="First Aid" />
-
       <div class="mb-6">
         <div class="flex justify-between items-center gap-4 flex-wrap">
           <p class="text-gray-600 dark:text-gray-400">
