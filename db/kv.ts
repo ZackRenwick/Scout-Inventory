@@ -709,74 +709,130 @@ export async function getActiveCheckOutsByItemId(
     );
 }
 
+/**
+ * Adjust stats for a quantity-only item change (no category/space/condition change).
+ * Used by loan create/return/cancel to avoid a full applyItemToStats recalc.
+ */
+function applyQuantityDeltaToStats(
+  stats: ComputedStats,
+  item: InventoryItem,
+  quantityDelta: number,
+  loanCountDelta: number,
+): ComputedStats {
+  const cat = item.category as ItemCategory;
+  const sp = (item.space ?? "camp-store") as ItemSpace;
+  const oldQty = item.quantity;
+  const newQty = oldQty + quantityDelta;
+  const next: ComputedStats = {
+    ...stats,
+    totalQuantity: stats.totalQuantity + quantityDelta,
+    categoryBreakdown: {
+      ...stats.categoryBreakdown,
+      [cat]: {
+        ...stats.categoryBreakdown[cat],
+        quantity: stats.categoryBreakdown[cat].quantity + quantityDelta,
+      },
+    },
+    spaceBreakdown: {
+      ...stats.spaceBreakdown,
+      [sp]: {
+        ...stats.spaceBreakdown[sp],
+        quantity: stats.spaceBreakdown[sp].quantity + quantityDelta,
+      },
+    },
+    lowStockItems: stats.lowStockItems,
+    activeLoansCount: Math.max(0, (stats.activeLoansCount ?? 0) + loanCountDelta),
+  };
+  const threshold = item.minThreshold;
+  if (oldQty > threshold && newQty <= threshold) next.lowStockItems += 1;
+  else if (oldQty <= threshold && newQty > threshold) next.lowStockItems -= 1;
+  return next;
+}
+
 export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
   const db = await initKv();
-  const serializedCheckOut = serializeCheckOut(checkout);
+  // Fetch item and stats concurrently — both are cache-first after warmup.
+  const [item, currentStats] = await Promise.all([
+    getItemById(checkout.itemId),
+    getComputedStats(),
+  ]);
 
-  // Atomically write the checkout record and increment active loans count
-  const currentStats = await getComputedStats();
-  const newStats: ComputedStats = {
-    ...currentStats,
-    activeLoansCount: (currentStats.activeLoansCount ?? 0) + 1,
-  };
-  await db.atomic()
-    .set([...KEYS.checkouts, checkout.id], serializedCheckOut)
-    .set(KEYS.computedStats, newStats)
-    .commit();
-
-  invalidateCheckoutsCache();
-
-  // Deduct quantity from item stock
-  const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, {
-      quantity: item.quantity - checkout.quantity,
-    });
+    const newQty = item.quantity - checkout.quantity;
+    const newStats = applyQuantityDeltaToStats(
+      currentStats, item, -checkout.quantity, 1,
+    );
+    // Single atomic: checkout record + item quantity + stats
+    await db.atomic()
+      .set([...KEYS.checkouts, checkout.id], serializeCheckOut(checkout))
+      .set([...KEYS.items, item.id], serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }))
+      .set(KEYS.computedStats, newStats)
+      .commit();
+  } else {
+    const newStats: ComputedStats = {
+      ...currentStats,
+      activeLoansCount: (currentStats.activeLoansCount ?? 0) + 1,
+    };
+    await db.atomic()
+      .set([...KEYS.checkouts, checkout.id], serializeCheckOut(checkout))
+      .set(KEYS.computedStats, newStats)
+      .commit();
   }
 
+  invalidateCheckoutsCache();
+  invalidateItemsCache();
   return checkout;
 }
 
 export async function returnCheckOut(id: string): Promise<CheckOut | null> {
-  const db = await initKv();
-  const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
+  const existing = await getCheckOutById(id);
+  if (!existing || existing.status === "returned") return null;
 
-  if (!result.value) {
-    return null;
-  }
-
-  const checkout = deserializeCheckOut(result.value);
   const updated: CheckOut = {
-    ...checkout,
+    ...existing,
     actualReturnDate: new Date(),
     status: "returned",
   };
 
-  // Atomically write the return and decrement active loans count
-  const currentStats = await getComputedStats();
-  const newStats: ComputedStats = {
-    ...currentStats,
-    activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
-  };
-  await db.atomic()
-    .set([...KEYS.checkouts, id], serializeCheckOut(updated))
-    .set(KEYS.computedStats, newStats)
-    .commit();
+  const db = await initKv();
+  const [item, currentStats] = await Promise.all([
+    getItemById(existing.itemId),
+    getComputedStats(),
+  ]);
 
-  invalidateCheckoutsCache();
-
-  // Restore item quantity
-  const item = await getItemById(checkout.itemId);
   if (item) {
-    await updateItem(checkout.itemId, {
-      quantity: item.quantity + checkout.quantity,
-    });
+    const newQty = item.quantity + existing.quantity;
+    const newStats = applyQuantityDeltaToStats(
+      currentStats, item, +existing.quantity, -1,
+    );
+    // Single atomic: checkout record + item quantity + stats
+    await db.atomic()
+      .set([...KEYS.checkouts, id], serializeCheckOut(updated))
+      .set([...KEYS.items, item.id], serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }))
+      .set(KEYS.computedStats, newStats)
+      .commit();
+  } else {
+    const newStats: ComputedStats = {
+      ...currentStats,
+      activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
+    };
+    await db.atomic()
+      .set([...KEYS.checkouts, id], serializeCheckOut(updated))
+      .set(KEYS.computedStats, newStats)
+      .commit();
   }
 
+  invalidateCheckoutsCache();
+  invalidateItemsCache();
   return updated;
 }
 
 export async function getCheckOutById(id: string): Promise<CheckOut | null> {
+  // Cache-first: no staleness risk because invalidateCheckoutsCache is called
+  // on every write within this isolate.
+  if (checkoutsCache) {
+    return checkoutsCache.checkouts.find((c) => c.id === id) ?? null;
+  }
   const db = await initKv();
   const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
   return result.value ? deserializeCheckOut(result.value) : null;
@@ -787,30 +843,39 @@ export async function getCheckOutById(id: string): Promise<CheckOut | null> {
  * loaned quantity is restored to the item's stock before the record is removed.
  */
 export async function deleteCheckOut(id: string): Promise<boolean> {
+  const existing = await getCheckOutById(id);
+  if (!existing) return false;
+
   const db = await initKv();
-  const result = await db.get<CheckOut>([...KEYS.checkouts, id]);
-  if (!result.value) return false;
+  const isActive = existing.status !== "returned";
 
-  const checkout = deserializeCheckOut(result.value);
-
-  // Restore stock for loans that were never returned and decrement active loan count
-  const isActive = checkout.status !== "returned";
   if (isActive) {
-    const item = await getItemById(checkout.itemId);
+    const [item, currentStats] = await Promise.all([
+      getItemById(existing.itemId),
+      getComputedStats(),
+    ]);
     if (item) {
-      await updateItem(checkout.itemId, {
-        quantity: item.quantity + checkout.quantity,
-      });
+      const newQty = item.quantity + existing.quantity;
+      const newStats = applyQuantityDeltaToStats(
+        currentStats, item, +existing.quantity, -1,
+      );
+      // Single atomic: delete checkout + restore item quantity + stats
+      await db.atomic()
+        .delete([...KEYS.checkouts, id])
+        .set([...KEYS.items, item.id], serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }))
+        .set(KEYS.computedStats, newStats)
+        .commit();
+    } else {
+      const newStats: ComputedStats = {
+        ...currentStats,
+        activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
+      };
+      await db.atomic()
+        .delete([...KEYS.checkouts, id])
+        .set(KEYS.computedStats, newStats)
+        .commit();
     }
-    const currentStats = await getComputedStats();
-    const newStats: ComputedStats = {
-      ...currentStats,
-      activeLoansCount: Math.max(0, (currentStats.activeLoansCount ?? 1) - 1),
-    };
-    await db.atomic()
-      .delete([...KEYS.checkouts, id])
-      .set(KEYS.computedStats, newStats)
-      .commit();
+    invalidateItemsCache();
   } else {
     await db.delete([...KEYS.checkouts, id]);
   }
