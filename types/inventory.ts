@@ -124,6 +124,14 @@ export interface BaseInventoryItem {
   nextInspectionDate?: Date;
   /** Historical inspection and maintenance records */
   maintenanceHistory?: MaintenanceRecord[];
+  /**
+   * Ordered list of photo UUIDs for this item (first = primary).
+   * Replaces the old `hasPhoto` boolean. Items with `hasPhoto: true` but no
+   * `photoIds` will have their legacy photo served at the migration shim.
+   */
+  photoIds?: string[];
+  /** @deprecated Use photoIds instead */
+  hasPhoto?: boolean;
 }
 
 export interface MaintenanceRecord {

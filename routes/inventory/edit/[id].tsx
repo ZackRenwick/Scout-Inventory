@@ -3,6 +3,7 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import type { InventoryItem } from "../../../types/inventory.ts";
 import Layout from "../../../components/Layout.tsx";
 import ItemForm from "../../../islands/ItemForm.tsx";
+import PhotoUpload from "../../../islands/PhotoUpload.tsx";
 import type { Session } from "../../../lib/auth.ts";
 import { getItemById } from "../../../db/kv.ts";
 
@@ -58,6 +59,11 @@ export default function EditItemPage({ data }: PageProps<EditItemData>) {
           </a>
         </div>
         <ItemForm initialData={data.item} isEdit csrfToken={data.session?.csrfToken} />
+        <PhotoUpload
+          itemId={data.item.id}
+          photoIds={data.item.photoIds ?? []}
+          csrfToken={data.session?.csrfToken ?? ""}
+        />
       </div>
     </Layout>
   );

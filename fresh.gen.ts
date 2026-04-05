@@ -25,6 +25,9 @@ import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
 import * as $api_first_aid_check from "./routes/api/first-aid-check.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
+import * as $api_items_id_photo from "./routes/api/items/[id]/photo.ts";
+import * as $api_items_id_photos_photoId_ from "./routes/api/items/[id]/photos/[photoId].ts";
+import * as $api_items_id_photos_index from "./routes/api/items/[id]/photos/index.ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
 import * as $api_loans_id_ from "./routes/api/loans/[id].ts";
@@ -90,6 +93,8 @@ import * as $NeckerCounter from "./islands/NeckerCounter.tsx";
 import * as $NeckerDashboard from "./islands/NeckerDashboard.tsx";
 import * as $NotificationButtons from "./islands/NotificationButtons.tsx";
 import * as $PasswordInput from "./islands/PasswordInput.tsx";
+import * as $PhotoUpload from "./islands/PhotoUpload.tsx";
+import * as $PhotoViewer from "./islands/PhotoViewer.tsx";
 import * as $PrintButton from "./islands/PrintButton.tsx";
 import * as $RebuildIndexes from "./islands/RebuildIndexes.tsx";
 import * as $RiskAssessmentForm from "./islands/RiskAssessmentForm.tsx";
@@ -126,6 +131,10 @@ const manifest = {
     "./routes/api/camps/index.ts": $api_camps_index,
     "./routes/api/first-aid-check.ts": $api_first_aid_check,
     "./routes/api/items/[id].ts": $api_items_id_,
+    "./routes/api/items/[id]/photo.ts": $api_items_id_photo,
+    "./routes/api/items/[id]/photos/[photoId].ts":
+      $api_items_id_photos_photoId_,
+    "./routes/api/items/[id]/photos/index.ts": $api_items_id_photos_index,
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
     "./routes/api/loans/[id].ts": $api_loans_id_,
@@ -193,6 +202,8 @@ const manifest = {
     "./islands/NeckerDashboard.tsx": $NeckerDashboard,
     "./islands/NotificationButtons.tsx": $NotificationButtons,
     "./islands/PasswordInput.tsx": $PasswordInput,
+    "./islands/PhotoUpload.tsx": $PhotoUpload,
+    "./islands/PhotoViewer.tsx": $PhotoViewer,
     "./islands/PrintButton.tsx": $PrintButton,
     "./islands/RebuildIndexes.tsx": $RebuildIndexes,
     "./islands/RiskAssessmentForm.tsx": $RiskAssessmentForm,

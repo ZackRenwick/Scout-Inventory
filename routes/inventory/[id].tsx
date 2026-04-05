@@ -9,6 +9,7 @@ import { formatDate } from "../../lib/date-utils.ts";
 import type { Session } from "../../lib/auth.ts";
 import { csrfFailed, forbidden } from "../../lib/auth.ts";
 import { getItemById, createItem } from "../../db/kv.ts";
+import PhotoViewer from "../../islands/PhotoViewer.tsx";
 import { logActivity } from "../../lib/activityLog.ts";
 
 interface ItemDetailData {
@@ -214,6 +215,21 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
             <ExpiryBadge expiryDate={item.expiryDate} />
           </div>
         )}
+
+        {/* Photos */}
+        {(item.photoIds?.length ?? 0) > 0
+          ? <PhotoViewer itemId={item.id} photoIds={item.photoIds!} />
+          : item.hasPhoto && (
+            <div class="mb-6">
+              <img
+                src={`/api/items/${item.id}/photo`}
+                alt={`Photo of ${item.name}`}
+                class="max-w-sm w-full rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm object-contain"
+                style="max-height: 320px"
+              />
+            </div>
+          )
+        }
         
         {/* Common Details */}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">

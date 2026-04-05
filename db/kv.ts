@@ -366,6 +366,11 @@ function removeFromIndex(op: Deno.AtomicOperation, item: InventoryItem): void {
 // ===== INVENTORY ITEMS OPERATIONS =====
 
 export async function getItemById(id: string): Promise<InventoryItem | null> {
+  // Serve from the in-memory cache when it's warm — the cache is invalidated on
+  // every write within this isolate, so there is no staleness risk.
+  if (itemsCache) {
+    return itemsCache.items.find((item) => item.id === id) ?? null;
+  }
   const db = await initKv();
   const result = await db.get<InventoryItem>([...KEYS.items, id]);
   return result.value ? deserializeItem(result.value) : null;
@@ -475,6 +480,12 @@ export async function deleteItem(id: string): Promise<boolean> {
   const db = await initKv();
   const op = db.atomic();
   op.delete([...KEYS.items, id]);
+  // Delete legacy single-photo key
+  op.delete(["inventory", "photos", id]);
+  // Delete all per-photo entries
+  for (const photoId of existing.photoIds ?? []) {
+    op.delete(["inventory", "photos", photoId]);
+  }
   removeFromIndex(op, existing);
   op.set(KEYS.computedStats, newStats);
   await op.commit();
@@ -492,6 +503,125 @@ export async function searchItems(query: string): Promise<InventoryItem[]> {
     item.category.toLowerCase().includes(lowerQuery) ||
     item.notes?.toLowerCase().includes(lowerQuery)
   );
+}
+
+// ===== ITEM PHOTO OPERATIONS =====
+
+interface ItemPhoto {
+  data: Uint8Array;
+  contentType: string;
+}
+
+/** Fetch one photo by its own UUID (new multi-photo scheme). */
+export async function getItemPhotoById(photoId: string): Promise<ItemPhoto | null> {
+  const db = await initKv();
+  const result = await db.get<ItemPhoto>(["inventory", "photos", photoId]);
+  return result.value ?? null;
+}
+
+/**
+ * Legacy single-photo lookup — keyed by item id.
+ * Only present on items that had `hasPhoto: true` before the multi-photo migration.
+ */
+export async function getItemPhoto(itemId: string): Promise<ItemPhoto | null> {
+  const db = await initKv();
+  const result = await db.get<ItemPhoto>(["inventory", "photos", itemId]);
+  return result.value ?? null;
+}
+
+/** Store a new photo. Returns the generated photoId.
+ * Pass `existingItem` (already fetched by the caller) to avoid a redundant KV read. */
+export async function addItemPhoto(
+  itemId: string,
+  data: Uint8Array,
+  contentType: string,
+  existingItem?: InventoryItem,
+): Promise<string> {
+  const db = await initKv();
+  const photoId = crypto.randomUUID();
+
+  const item = existingItem ?? await getItemById(itemId);
+  if (item) {
+    const newPhotoIds = [...(item.photoIds ?? []), photoId];
+    // Write photo and updated item atomically. photoIds doesn't affect stats or
+    // secondary indexes, so we bypass updateItem's stat recalculation entirely.
+    await db.atomic()
+      .set(["inventory", "photos", photoId], { data, contentType })
+      .set([...KEYS.items, itemId], serializeItem({
+        ...item,
+        photoIds: newPhotoIds,
+        hasPhoto: true,
+        lastUpdated: new Date(),
+      }))
+      .commit();
+    invalidateItemsCache();
+  } else {
+    await db.set(["inventory", "photos", photoId], { data, contentType });
+  }
+
+  return photoId;
+}
+
+/** Remove a single photo by its UUID. */
+export async function removeItemPhotoById(
+  itemId: string,
+  photoId: string,
+): Promise<void> {
+  const db = await initKv();
+  const item = await getItemById(itemId);
+  if (item) {
+    const remaining = (item.photoIds ?? []).filter((p) => p !== photoId);
+    // Delete photo and update item atomically. photoIds doesn't affect stats or
+    // secondary indexes, so we bypass updateItem's stat recalculation.
+    await db.atomic()
+      .delete(["inventory", "photos", photoId])
+      .set([...KEYS.items, itemId], serializeItem({
+        ...item,
+        photoIds: remaining,
+        hasPhoto: remaining.length > 0,
+        lastUpdated: new Date(),
+      }))
+      .commit();
+    invalidateItemsCache();
+  } else {
+    await db.delete(["inventory", "photos", photoId]);
+  }
+}
+
+/** Reorder an item's photos. The caller must supply all existing photoIds in the desired order. */
+export async function reorderItemPhotos(
+  itemId: string,
+  orderedPhotoIds: string[],
+): Promise<void> {
+  const item = await getItemById(itemId);
+  if (!item) return;
+  // Only keep ids that actually exist on this item
+  const current = new Set(item.photoIds ?? []);
+  const safe = orderedPhotoIds.filter((p) => current.has(p));
+  // photoIds reorder doesn't affect stats or secondary indexes — write directly.
+  const db = await initKv();
+  await db.set([...KEYS.items, itemId], serializeItem({
+    ...item,
+    photoIds: safe,
+    lastUpdated: new Date(),
+  }));
+  invalidateItemsCache();
+}
+
+/** Legacy: store a single photo keyed by item id (used only for migration shim). */
+export async function setItemPhoto(
+  id: string,
+  data: Uint8Array,
+  contentType: string,
+): Promise<void> {
+  const db = await initKv();
+  await db.set(["inventory", "photos", id], { data, contentType });
+}
+
+/** Legacy: delete single-photo entry keyed by item id. */
+export async function deleteItemPhoto(id: string): Promise<void> {
+  const db = await initKv();
+  await db.delete(["inventory", "photos", id]);
 }
 
 /**
@@ -1980,6 +2110,11 @@ export async function getAllRiskAssessments(): Promise<RiskAssessment[]> {
 export async function getRiskAssessmentById(
   id: string,
 ): Promise<RiskAssessment | null> {
+  // Cache-first: no staleness risk because invalidateRiskAssessmentsCache is
+  // called on every write.
+  if (riskAssessmentsCache) {
+    return riskAssessmentsCache.assessments.find((a) => a.id === id) ?? null;
+  }
   const db = await initKv();
   const result = await db.get<RiskAssessment>([...KEYS.riskAssessments, id]);
   return result.value ? deserializeRiskAssessment(result.value) : null;
