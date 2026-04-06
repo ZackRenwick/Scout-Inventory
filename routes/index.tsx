@@ -2,7 +2,6 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../components/Layout.tsx";
 import StatCard from "../components/StatCard.tsx";
-import SpaceDashboard from "../islands/SpaceDashboard.tsx";
 import NeckerCounter from "../islands/NeckerCounter.tsx";
 import NeckerAlert from "../islands/NeckerAlert.tsx";
 import type { Session } from "../lib/auth.ts";
@@ -72,6 +71,7 @@ interface DashboardData {
     needsRepairItems: number;
     activeLoans: number;
     overdueLoans: number;
+    itemsAtCamp: number;
     expiringFood: {
       expired: number;
       expiringSoon: number;
@@ -169,6 +169,7 @@ export const handler: Handlers<DashboardData> = {
         needsRepairItems: computed.needsRepairItems,
         activeLoans: computed.activeLoansCount ?? activeLoansData.length,
         overdueLoans,
+        itemsAtCamp: computed.itemsAtCampCount ?? 0,
         expiringFood,
         inspections,
       };
@@ -213,6 +214,7 @@ export const handler: Handlers<DashboardData> = {
           needsRepairItems: 0,
           activeLoans: 0,
           overdueLoans: 0,
+          itemsAtCamp: 0,
           expiringFood: { expired: 0, expiringSoon: 0, expiringWarning: 0 },
           inspections: { dueSoon: 0, overdue: 0 },
         },
@@ -239,18 +241,21 @@ export default function Home({ data }: PageProps<DashboardData>) {
     session?.role === "admin";
   const canViewNeckers = session?.role === "manager" ||
     session?.role === "admin";
+  const canViewFirstAidAndRisk = session?.role !== "explorer";
   const inspectionTotal = stats.inspections.overdue + stats.inspections.dueSoon;
   const hasExpiredFoodIssue = stats.expiringFood.expired > 0;
+  const hasExpiringSoonIssue = stats.expiringFood.expiringSoon > 0;
+  const hasExpiringWarningIssue = stats.expiringFood.expiringWarning > 0;
   const hasLowStockIssue = stats.lowStockItems > 0;
   const hasNeedsRepairIssue = stats.needsRepairItems > 0;
   const hasInspectionDueIssue = canViewInspections && inspectionTotal > 0;
-  const hasComplianceIssues = hasExpiredFoodIssue || hasLowStockIssue ||
-    hasNeedsRepairIssue || hasInspectionDueIssue;
-  const totalAlerts = stats.lowStockItems + stats.expiringFood.expired +
-    stats.expiringFood.expiringSoon + stats.expiringFood.expiringWarning +
-    stats.needsRepairItems;
-  const hasFirstAidDue = firstAid.overallDue || firstAid.dueKitCount > 0;
-  const hasRiskAssessmentDue = riskAssessments.annualDueCount > 0;
+  const hasFirstAidDue = canViewFirstAidAndRisk &&
+    (firstAid.overallDue || firstAid.dueKitCount > 0);
+  const hasRiskAssessmentDue = canViewFirstAidAndRisk &&
+    riskAssessments.annualDueCount > 0;
+  const hasComplianceIssues = hasExpiredFoodIssue || hasExpiringSoonIssue ||
+    hasExpiringWarningIssue || hasLowStockIssue || hasNeedsRepairIssue ||
+    hasInspectionDueIssue || hasFirstAidDue || hasRiskAssessmentDue;
 
   return (
     <Layout username={session?.username} role={session?.role}>
@@ -263,148 +268,8 @@ export default function Home({ data }: PageProps<DashboardData>) {
         </p>
       </div>
 
-      {/* Alert Banner */}
-      {totalAlerts > 0 && (
-        <div class="bg-red-100 dark:bg-red-900/60 border-l-4 border-red-600 dark:border-red-400 p-4 mb-8">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <span class="text-2xl">⚠️</span>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-lg font-medium text-red-900 dark:text-red-100">
-                Attention Required Soon
-              </h3>
-              <div class="mt-2 text-sm text-red-800 dark:text-red-200">
-                <ul class="list-disc list-inside space-y-1">
-                  {stats.lowStockItems > 0 && (
-                    <li>
-                      <a
-                        href="/inventory?lowstock=true"
-                        class="underline hover:text-red-900 dark:hover:text-red-50"
-                      >
-                        {stats.lowStockItems}{" "}
-                        item{stats.lowStockItems !== 1 ? "s" : ""}{" "}
-                        running low on stock
-                      </a>
-                    </li>
-                  )}
-                  {stats.expiringFood.expired > 0 && (
-                    <li>
-                      <a
-                        href="/reports/expiring"
-                        class="underline hover:text-red-900 dark:hover:text-red-50"
-                      >
-                        {stats.expiringFood.expired}{" "}
-                        food item{stats.expiringFood.expired !== 1 ? "s" : ""}
-                        {" "}
-                        expired
-                      </a>
-                    </li>
-                  )}
-                  {stats.expiringFood.expiringSoon > 0 && (
-                    <li>
-                      <a
-                        href="/reports/expiring"
-                        class="underline hover:text-red-900 dark:hover:text-red-50"
-                      >
-                        {stats.expiringFood.expiringSoon}{" "}
-                        food item{stats.expiringFood.expiringSoon !== 1
-                          ? "s"
-                          : ""} expiring within 7 days
-                      </a>
-                    </li>
-                  )}
-                  {stats.expiringFood.expiringWarning > 0 && (
-                    <li>
-                      <a
-                        href="/reports/expiring"
-                        class="underline hover:text-red-900 dark:hover:text-red-50"
-                      >
-                        {stats.expiringFood.expiringWarning}{" "}
-                        food item{stats.expiringFood.expiringWarning !== 1
-                          ? "s"
-                          : ""} expiring within 30 days
-                      </a>
-                    </li>
-                  )}
-                  {stats.needsRepairItems > 0 && (
-                    <li>
-                      <a
-                        href="/inventory?needsrepair=true"
-                        class="underline hover:text-red-900 dark:hover:text-red-50"
-                      >
-                        {stats.needsRepairItems}{" "}
-                        item{stats.needsRepairItems !== 1 ? "s" : ""}{" "}
-                        need repair
-                      </a>
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Dynamic necker low-stock alert (client-side, updates with NeckerCounter) */}
       <NeckerAlert minThreshold={neckerThreshold} />
-
-      {hasFirstAidDue && (
-        <div class="bg-amber-100 dark:bg-amber-900/60 border-l-4 border-amber-500 dark:border-amber-400 p-4 mb-8">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <span class="text-2xl">🩹</span>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-base font-medium text-amber-900 dark:text-amber-100">
-                First Aid Checks Due
-              </h3>
-              <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">
-                {firstAid.overallDue
-                  ? "Monthly overall check is due"
-                  : "Overall check is up to date"}
-                {firstAid.dueKitCount > 0 &&
-                  ` · ${firstAid.dueKitCount} kit${
-                    firstAid.dueKitCount === 1 ? "" : "s"
-                  } due individual checks`}
-                .{" "}
-                <a
-                  href="/first-aid"
-                  class="underline hover:text-amber-900 dark:hover:text-amber-50"
-                >
-                  Open First Aid
-                </a>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {hasRiskAssessmentDue && (
-        <div class="bg-red-100 dark:bg-red-900/60 border-l-4 border-red-500 dark:border-red-400 p-4 mb-8">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <span class="text-2xl">📝</span>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-base font-medium text-red-900 dark:text-red-100">
-                Risk Assessment Annual Checks Due
-              </h3>
-              <p class="mt-1 text-sm text-red-800 dark:text-red-200">
-                {riskAssessments.annualDueCount} assessment
-                {riskAssessments.annualDueCount === 1 ? "" : "s"} due annual
-                review.{" "}
-                <a
-                  href="/risk-assessments"
-                  class="underline hover:text-red-900 dark:hover:text-red-50"
-                >
-                  Open Risk Assessments
-                </a>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Quick Actions */}
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4 sm:p-5 mb-8">
@@ -544,6 +409,64 @@ export default function Home({ data }: PageProps<DashboardData>) {
                   />
                 </a>
               )}
+              {hasExpiringSoonIssue && (
+                <a
+                  href="/reports/expiring"
+                  class="block hover:shadow-lg transition-shadow"
+                >
+                  <StatCard
+                    title="Expiring Soon"
+                    value={stats.expiringFood.expiringSoon}
+                    icon="⏰"
+                    color="red"
+                    subtitle="Within 7 days"
+                  />
+                </a>
+              )}
+              {hasExpiringWarningIssue && (
+                <a
+                  href="/reports/expiring"
+                  class="block hover:shadow-lg transition-shadow"
+                >
+                  <StatCard
+                    title="Expiring (30d)"
+                    value={stats.expiringFood.expiringWarning}
+                    icon="⏳"
+                    color="yellow"
+                    subtitle="Within 30 days"
+                  />
+                </a>
+              )}
+              {hasFirstAidDue && (
+                <a
+                  href="/first-aid"
+                  class="block hover:shadow-lg transition-shadow"
+                >
+                  <StatCard
+                    title="First Aid Due"
+                    value={firstAid.dueKitCount + (firstAid.overallDue ? 1 : 0)}
+                    icon="🩹"
+                    color="red"
+                    subtitle={firstAid.overallDue
+                      ? "Incl. overall check"
+                      : "Kit checks pending"}
+                  />
+                </a>
+              )}
+              {hasRiskAssessmentDue && (
+                <a
+                  href="/risk-assessments"
+                  class="block hover:shadow-lg transition-shadow"
+                >
+                  <StatCard
+                    title="Risk Review Due"
+                    value={riskAssessments.annualDueCount}
+                    icon="📝"
+                    color="red"
+                    subtitle="Annual reviews due"
+                  />
+                </a>
+              )}
             </div>
           </div>
         )}
@@ -576,6 +499,20 @@ export default function Home({ data }: PageProps<DashboardData>) {
                   : "Items out on loan"}
               />
             </a>
+            {stats.itemsAtCamp > 0 && (
+              <a
+                href="/inventory?atcamp=true"
+                class="block hover:shadow-lg transition-shadow"
+              >
+                <StatCard
+                  title="At Camp"
+                  value={stats.itemsAtCamp}
+                  icon="🏕️"
+                  color="blue"
+                  subtitle="Items packed for camp"
+                />
+              </a>
+            )}
             <NeckerCounter
               csrfToken={session?.csrfToken ?? ""}
               canIncrease={session?.role !== "viewer"}
@@ -585,11 +522,6 @@ export default function Home({ data }: PageProps<DashboardData>) {
           </div>
         </div>
 
-        <SpaceDashboard
-          categoryBreakdown={stats.categoryBreakdown}
-          spaceBreakdown={stats.spaceBreakdown}
-          expiringFood={stats.expiringFood}
-        />
       </div>
     </Layout>
   );

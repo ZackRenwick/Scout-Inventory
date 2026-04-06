@@ -95,6 +95,7 @@ export interface ComputedStats {
   lowStockItems: number;
   needsRepairItems: number;
   activeLoansCount: number;
+  itemsAtCampCount: number;
 }
 
 function emptyStats(): ComputedStats {
@@ -118,6 +119,7 @@ function emptyStats(): ComputedStats {
     lowStockItems: 0,
     needsRepairItems: 0,
     activeLoansCount: 0,
+    itemsAtCampCount: 0,
   };
 }
 
@@ -148,6 +150,7 @@ function applyItemToStats(
     lowStockItems: stats.lowStockItems,
     needsRepairItems: stats.needsRepairItems,
     activeLoansCount: stats.activeLoansCount ?? 0,
+    itemsAtCampCount: stats.itemsAtCampCount ?? 0,
   };
 
   // Deep-copy the two buckets we'll touch
@@ -167,6 +170,7 @@ function applyItemToStats(
     (item.condition === "needs-repair" ||
       ((item as { quantityNeedsRepair?: number }).quantityNeedsRepair ?? 0) > 0)
   ) next.needsRepairItems += sign;
+  if ((item as { atCamp?: boolean }).atCamp) next.itemsAtCampCount += sign;
 
   return next;
 }
@@ -190,6 +194,7 @@ function normalizeComputedStats(stats: ComputedStats | null): ComputedStats {
       ...(stats.spaceBreakdown ?? {}),
     },
     activeLoansCount: stats.activeLoansCount ?? 0,
+    itemsAtCampCount: stats.itemsAtCampCount ?? 0,
   };
 }
 
@@ -1378,9 +1383,9 @@ function deserializeItem(data: any): InventoryItem {
     item.nextInspectionDate = new Date(data.nextInspectionDate);
   }
   if (Array.isArray(data.maintenanceHistory)) {
-    item.maintenanceHistory = data.maintenanceHistory.map((entry: any) => ({
+    item.maintenanceHistory = data.maintenanceHistory.map((entry: Record<string, unknown>) => ({
       ...entry,
-      date: new Date(entry.date),
+      date: new Date(entry.date as string),
     }));
   }
 

@@ -9,6 +9,7 @@ interface CategoryBreakdown {
   fuel: { count: number; quantity: number };
   "camping-tools": { count: number; quantity: number };
   games: { count: number; quantity: number };
+  kit: { count: number; quantity: number };
 }
 
 interface SpaceBreakdown {
@@ -154,6 +155,7 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
             <CategoryCard title={`${getCategoryEmoji("cooking")} ${getCategoryLabel("cooking")}`} value={c.cooking.quantity} color="purple" href="/inventory?category=cooking" />
             <CategoryCard title={`${getCategoryEmoji("food")} ${getCategoryLabel("food")}`} value={c.food.quantity} color="green" href="/inventory?category=food" />
             <CategoryCard title={`${getCategoryEmoji("camping-tools")} ${getCategoryLabel("camping-tools")}`} value={c["camping-tools"].quantity} color="yellow" href="/inventory?category=camping-tools" />
+            <CategoryCard title={`${getCategoryEmoji("kit")} ${getCategoryLabel("kit")}`} value={c.kit.quantity} color="purple" href="/inventory?category=kit" />
           </div>
         </div>
       )}
@@ -201,6 +203,7 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
           <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">🏠 Scout Post Loft — Categories</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
             <CategoryCard title="⚽ Games" value={c.games.quantity} color="indigo" href="/inventory?category=games" />
+            <CategoryCard title={`${getCategoryEmoji("kit")} ${getCategoryLabel("kit")}`} value={c.kit.quantity} color="purple" href="/inventory?category=kit" />
           </div>
         </div>
       )}
