@@ -9,12 +9,12 @@ import {
   type Session,
 } from "../../lib/auth.ts";
 import { clearActivityLog } from "../../lib/activityLog.ts";
+import type { Handlers } from "$fresh/server.ts";
 
 type Category = "inventory" | "loans" | "camps" | "meals" | "activityLog";
 
-export const handler = {
-  async POST(ctx) {
-    const req = ctx.req;
+export const handler: Handlers = {
+  async POST(req, ctx) {
     const session = ctx.state.session as Session;
     if (session.role !== "admin") return forbidden();
     if (!csrfOk(req, session)) return csrfFailed();
