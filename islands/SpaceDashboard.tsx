@@ -10,6 +10,7 @@ interface CategoryBreakdown {
   "camping-tools": { count: number; quantity: number };
   games: { count: number; quantity: number };
   kit: { count: number; quantity: number };
+  kilt: { count: number; quantity: number };
 }
 
 interface SpaceBreakdown {
@@ -156,6 +157,7 @@ export default function SpaceDashboard({ categoryBreakdown: c, spaceBreakdown: s
             <CategoryCard title={`${getCategoryEmoji("food")} ${getCategoryLabel("food")}`} value={c.food.quantity} color="green" href="/inventory?category=food" />
             <CategoryCard title={`${getCategoryEmoji("camping-tools")} ${getCategoryLabel("camping-tools")}`} value={c["camping-tools"].quantity} color="yellow" href="/inventory?category=camping-tools" />
             <CategoryCard title={`${getCategoryEmoji("kit")} ${getCategoryLabel("kit")}`} value={c.kit.quantity} color="purple" href="/inventory?category=kit" />
+            <CategoryCard title={`${getCategoryEmoji("kilt")} ${getCategoryLabel("kilt")}`} value={c.kilt.quantity} color="indigo" href="/inventory?category=kilt" />
           </div>
         </div>
       )}

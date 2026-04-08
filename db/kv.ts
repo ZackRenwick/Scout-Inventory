@@ -110,6 +110,7 @@ function emptyStats(): ComputedStats {
       "camping-tools": { count: 0, quantity: 0 },
       games: { count: 0, quantity: 0 },
       kit: { count: 0, quantity: 0 },
+      kilt: { count: 0, quantity: 0 },
     },
     spaceBreakdown: {
       "camp-store": { count: 0, quantity: 0 },

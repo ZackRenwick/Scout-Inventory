@@ -44,6 +44,7 @@ interface ItemFormData {
   servings?: number;
   allergens?: string[];
   contents?: Array<{ name: string; quantity: number }>;
+  kiltComponents?: string[];
 }
 
 interface ItemFormProps {
@@ -65,6 +66,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
   const boxContents = useSignal<{ name: string; quantity: number }[]>(initialContents);
   const equipmentType = useSignal<string>(initialData?.equipmentType ?? "stove");
   const gameType = useSignal<string>(initialData?.gameType ?? "board-game");
+  const kiltComponents = useSignal<string[]>(initialData?.kiltComponents ?? []);
 
   const getLocationsForSpace = (spaceValue: "camp-store" | "scout-post-loft" | "gas-storage-box") => {
     if (spaceValue === "scout-post-loft") return LOFT_LOCATIONS;
@@ -159,6 +161,13 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.fuelType = formData.get("fuelType");
       data.condition = formData.get("condition");
       data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.brand = formData.get("brand") || undefined;
+      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+    } else if (category.value === "kilt") {
+      data.condition = formData.get("condition");
+      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.kiltComponents = kiltComponents.value;
+      data.size = formData.get("size") || undefined;
       data.brand = formData.get("brand") || undefined;
       data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
     }
@@ -848,6 +857,81 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Kilt-specific fields */}
+      {category.value === "kilt" && (
+        <div class="mb-6 p-4 bg-purple-50 dark:bg-purple-950/40 rounded-lg">
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Kilt Outfit Details</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+              <label class={labelClass}>Components Included</label>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Check each piece that is present in this outfit</p>
+              <div class="flex flex-wrap gap-3">
+                {(["kilt", "sporran", "socks", "flashes"] as const).map((component) => {
+                  const labels: Record<string, string> = { kilt: "Kilt", sporran: "Sporran", socks: "Socks", flashes: "Flashes" };
+                  const checked = kiltComponents.value.includes(component);
+                  return (
+                    <label key={component} class={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 cursor-pointer select-none transition-colors ${
+                      checked
+                        ? "border-purple-500 bg-purple-100 dark:bg-purple-800/60 text-purple-800 dark:text-purple-200"
+                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
+                    }`}>
+                      <input
+                        type="checkbox"
+                        class="sr-only"
+                        checked={checked}
+                        onChange={() => {
+                          if (checked) {
+                            kiltComponents.value = kiltComponents.value.filter((c) => c !== component);
+                          } else {
+                            kiltComponents.value = [...kiltComponents.value, component];
+                          }
+                        }}
+                      />
+                      <span class={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                        checked ? "border-purple-600 bg-purple-600" : "border-gray-400 dark:border-gray-500"
+                      }`}>
+                        {checked && <span class="text-white text-xs leading-none">✓</span>}
+                      </span>
+                      <span class="font-medium text-sm">{labels[component]}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label class={labelClass}>Condition *</label>
+              <select name="condition" required class={inputClass}>
+                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
+                <option value="good" selected={initialData?.condition === "good"}>Good</option>
+                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
+                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+              </select>
+            </div>
+            <div>
+              <label class={labelClass}>Units needing repair</label>
+              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Size</label>
+              <input type="text" name="size" defaultValue={initialData?.size} placeholder="e.g. 32&quot; waist, Age 12–14" class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Brand</label>
+              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+            </div>
+            <div>
+              <label class={labelClass}>Year Purchased</label>
+              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
+                <option value="">— select year —</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       )}

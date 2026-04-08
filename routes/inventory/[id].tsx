@@ -1,7 +1,7 @@
 // Individual item details page
 import { Handlers, PageProps } from "$fresh/server.ts";
-import type { InventoryItem, TentItem, CookingEquipment, FoodItem, GamesItem, KitItem } from "../../types/inventory.ts";
-import { isTentItem, isCookingEquipment, isFoodItem, isGamesItem, isKitItem } from "../../types/inventory.ts";
+import type { InventoryItem, TentItem, CookingEquipment, FoodItem, GamesItem, KitItem, KiltOutfitItem } from "../../types/inventory.ts";
+import { isTentItem, isCookingEquipment, isFoodItem, isGamesItem, isKitItem, isKiltOutfitItem } from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import CategoryIcon from "../../components/CategoryIcon.tsx";
@@ -456,6 +456,53 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 borderColor="border-teal-200 dark:border-teal-700"
                 dividerColor="border-teal-100 dark:border-teal-900/40"
               />
+            </div>
+          </div>
+        )}
+
+        {isKiltOutfitItem(item) && (
+          <div class="mt-6 p-4 bg-purple-50 dark:bg-purple-950/40 rounded-lg">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Kilt Outfit Details</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Components Included</h3>
+                {item.kiltComponents.length === 0 ? (
+                  <p class="mt-1 text-gray-400 dark:text-gray-500 italic text-sm">No components recorded</p>
+                ) : (
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    {item.kiltComponents.map((c) => {
+                      const labels: Record<string, string> = { kilt: "Kilt", sporran: "Sporran", socks: "Socks", flashes: "Flashes" };
+                      return (
+                        <span key={c} class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-800/60 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-700">
+                          {labels[c] ?? c}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>
+              </div>
+              {item.size && (
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Size</h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.size}</p>
+                </div>
+              )}
+              {item.brand && (
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Brand</h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.brand}</p>
+                </div>
+              )}
+              {item.yearPurchased && (
+                <div>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.yearPurchased}</p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -3,7 +3,7 @@
 
 import type { ItemCategory, ItemSpace } from "../types/inventory.ts";
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel"]);
+const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel", "kilt"]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft", "gas-storage-box"]);
 const VALID_FOOD_TYPES = new Set(["canned", "jarred", "dried", "packaged", "fresh", "frozen"]);
 
@@ -114,6 +114,24 @@ export function validateGasStorageItem(body: Record<string, any>): string | null
   }
   if (body.category === "fuel" && body.space !== "gas-storage-box") {
     return "Fuel category items must be stored in gas-storage-box";
+  }
+  return null;
+}
+
+const VALID_KILT_COMPONENTS = new Set(["kilt", "sporran", "socks", "flashes"]);
+
+/**
+ * Validates kilt-outfit-specific fields.
+ */
+// deno-lint-ignore no-explicit-any
+export function validateKiltItem(body: Record<string, any>): string | null {
+  if (!Array.isArray(body.kiltComponents)) {
+    return "kiltComponents must be an array for kilt items";
+  }
+  for (const c of body.kiltComponents) {
+    if (!VALID_KILT_COMPONENTS.has(c)) {
+      return `Invalid kilt component "${c}" — must be one of: kilt, sporran, socks, flashes`;
+    }
   }
   return null;
 }

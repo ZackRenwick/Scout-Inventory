@@ -3,7 +3,7 @@ import { Handlers } from "$fresh/server.ts";
 import { getItemById, updateItem, deleteItem } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
-import { validateFuelItem, validateGasStorageItem, validateItemBase, validateFoodItem } from "../../../lib/validation.ts";
+import { validateFuelItem, validateGasStorageItem, validateItemBase, validateFoodItem, validateKiltItem } from "../../../lib/validation.ts";
 
 export const handler: Handlers = {
   // GET /api/items/[id] - Get a specific item
@@ -72,6 +72,12 @@ export const handler: Handlers = {
         const fuelErr = validateFuelItem(merged);
         if (fuelErr) {
           return Response.json({ error: fuelErr }, { status: 400 });
+        }
+      }
+      if (merged.category === "kilt") {
+        const kiltErr = validateKiltItem(merged);
+        if (kiltErr) {
+          return Response.json({ error: kiltErr }, { status: 400 });
         }
       }
       const gasErr = validateGasStorageItem(merged);

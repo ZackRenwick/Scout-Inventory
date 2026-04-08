@@ -1,5 +1,5 @@
 // Base inventory item interface
-export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit" | "fuel";
+export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit" | "fuel" | "kilt";
 
 export const CATEGORY_META: Record<ItemCategory, { emoji: string; label: string; searchLabel: string }> = {
   tent: { emoji: "⛺", label: "Tents", searchLabel: "tents" },
@@ -9,9 +9,10 @@ export const CATEGORY_META: Record<ItemCategory, { emoji: string; label: string;
   "camping-tools": { emoji: "🧰", label: "Camping Tools", searchLabel: "camping tools" },
   games: { emoji: "⚽", label: "Games Equipment", searchLabel: "games" },
   kit: { emoji: "📦", label: "Box / Kit", searchLabel: "box kit" },
+  kilt: { emoji: "🏴\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F", label: "Kilts", searchLabel: "kilt highland dress sporran" },
 };
 
-export const CAMP_STORE_CATEGORIES: ItemCategory[] = ["tent", "cooking", "food", "camping-tools", "kit"];
+export const CAMP_STORE_CATEGORIES: ItemCategory[] = ["tent", "cooking", "food", "camping-tools", "kit", "kilt"];
 export const LOFT_CATEGORIES: ItemCategory[] = ["games", "kit"];
 export const GAS_STORAGE_CATEGORIES: ItemCategory[] = ["fuel"];
 
@@ -225,8 +226,21 @@ export interface GamesItem extends BaseInventoryItem {
   contents?: BoxContentItem[];
 }
 
+// Highland dress / kilt outfit properties
+export type KiltComponent = "kilt" | "sporran" | "socks" | "flashes";
+
+export interface KiltOutfitItem extends BaseInventoryItem {
+  category: "kilt";
+  condition: "excellent" | "good" | "fair" | "needs-repair";
+  /** Which components are included in this outfit */
+  kiltComponents: KiltComponent[];
+  size?: string;
+  brand?: string;
+  yearPurchased?: number;
+}
+
 // Union type for all inventory items
-export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | KitItem | FuelItem;
+export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | KitItem | FuelItem | KiltOutfitItem;
 
 // Helper type guards
 export function isTentItem(item: InventoryItem): item is TentItem {
@@ -255,6 +269,10 @@ export function isGamesItem(item: InventoryItem): item is GamesItem {
 
 export function isKitItem(item: InventoryItem): item is KitItem {
   return item.category === "kit";
+}
+
+export function isKiltOutfitItem(item: InventoryItem): item is KiltOutfitItem {
+  return item.category === "kilt";
 }
 
 // Expiry status for food items

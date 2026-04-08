@@ -8,13 +8,13 @@
 // Returns JSON: { imported: number; errors: { row: number; name?: string; error: string }[] }
 import type { Handlers } from "$fresh/server.ts";
 import { createItem } from "../../db/kv.ts";
-import type { InventoryItem, ItemCategory, ItemLocation, ItemSpace } from "../../types/inventory.ts";
+import type { InventoryItem, ItemCategory, ItemLocation, ItemSpace, KiltComponent } from "../../types/inventory.ts";
 import type { Session } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 
 // ===== CONSTANTS =====
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel"]);
+const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel", "kilt"]);
 const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft", "gas-storage-box"]);
 
 // Required extra fields per category (beyond the base fields)
@@ -26,6 +26,7 @@ const CATEGORY_REQUIRED: Record<ItemCategory, string[]> = {
   "camping-tools": ["toolType", "condition"],
   games:           ["gameType", "condition"],
   kit:             ["kitType", "condition"],
+  kilt:            ["condition"],
 };
 
 // ===== VALIDATION =====
@@ -200,18 +201,44 @@ function validateItem(
     };
   }
   // kit
-  const contents = parseContents(raw.contents);
-  if (typeof contents === "string") {
-    return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+  if (category === "kit") {
+    const contents = parseContents(raw.contents);
+    if (typeof contents === "string") {
+      return err(`Row ${index + 1} ("${raw.name}"): ${contents}`);
+    }
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "kit",
+        kitType: raw.kitType,
+        condition: raw.condition,
+        contents: contents.length ? contents : undefined,
+        brand: raw.brand,
+        yearPurchased: raw.yearPurchased,
+      },
+    };
+  }
+  // kilt
+  const VALID_KILT_COMPONENTS = new Set(["kilt", "sporran", "socks", "flashes"]);
+  const rawComponents = raw.kiltComponents;
+  if (rawComponents !== undefined && !Array.isArray(rawComponents)) {
+    return err(`Row ${index + 1} ("${raw.name}"): "kiltComponents" must be an array`);
+  }
+  const kiltComponents: KiltComponent[] = Array.isArray(rawComponents) ? rawComponents as KiltComponent[] : [];
+  for (const c of kiltComponents) {
+    if (!VALID_KILT_COMPONENTS.has(c)) {
+      return err(`Row ${index + 1} ("${raw.name}"): invalid kilt component "${c}" — must be one of: kilt, sporran, socks, flashes`);
+    }
   }
   return {
     ok: true,
     item: {
       ...base,
-      category: "kit",
-      kitType: raw.kitType,
+      category: "kilt",
       condition: raw.condition,
-      contents: contents.length ? contents : undefined,
+      kiltComponents,
+      size: raw.size,
       brand: raw.brand,
       yearPurchased: raw.yearPurchased,
     },
