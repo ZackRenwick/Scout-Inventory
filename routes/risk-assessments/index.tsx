@@ -618,6 +618,19 @@ export default function RiskAssessmentsPage(
         </details>
       )}
 
+      {data.assessments.length > 0 && (
+        <div class="mb-4 flex justify-end">
+          <a
+            href="/risk-assessments/print"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            🖨️ Export All as PDF
+          </a>
+        </div>
+      )}
+
       {data.assessments.length === 0
         ? (
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 text-sm text-gray-600 dark:text-gray-400">
