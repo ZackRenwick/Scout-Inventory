@@ -492,7 +492,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
                 color={stats.overdueLoans > 0
                   ? "red"
                   : stats.activeLoans > 0
-                  ? "yellow"
+                  ? "blue"
                   : "green"}
                 subtitle={stats.overdueLoans > 0
                   ? `${stats.overdueLoans} overdue`
