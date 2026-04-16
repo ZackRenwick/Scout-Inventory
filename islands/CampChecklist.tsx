@@ -78,9 +78,7 @@ export default function CampChecklist(
   const itemSearch = useSignal("");
   const itemCategoryFilter = useSignal("all");
   const itemLocationFilter = useSignal("all");
-  const addingItem = useSignal<string>(""); // item id to add
-  const addQty = useSignal(1);
-  const addNote = useSignal("");
+  const selectedItems = useSignal<Map<string, { qty: number; note: string }>>(new Map());
   const showAddPanel = useSignal(false);
   const addMode = useSignal<"item" | "box" | "template">("item");
   const selectedBox = useSignal("");
@@ -302,9 +300,6 @@ export default function CampChecklist(
     patch({ items });
   }
 
-  const selectedIsFood = useComputed(() =>
-    selectedInv.value?.category === "food"
-  );
   const availableToPlan = (inv: InventoryItem): number => {
     if (inv.category === "food") {
       return inv.quantity;
@@ -345,64 +340,83 @@ export default function CampChecklist(
     await patch({ items });
   }
 
-  const selectedStock = useComputed(() =>
-    selectedInv.value ? availableToPlan(selectedInv.value) : 0
-  );
-  const addQtyTooHigh = useComputed(() =>
-    !!selectedInv.value && addQty.value > selectedStock.value
-  );
+  function toggleItemSelection(inv: InventoryItem) {
+    const next = new Map(selectedItems.value);
+    if (next.has(inv.id)) {
+      next.delete(inv.id);
+    } else {
+      next.set(inv.id, { qty: 1, note: "" });
+    }
+    selectedItems.value = next;
+  }
+
+  function updateSelectedQty(itemId: string, qty: number) {
+    const entry = selectedItems.value.get(itemId);
+    if (!entry) return;
+    const next = new Map(selectedItems.value);
+    next.set(itemId, { ...entry, qty });
+    selectedItems.value = next;
+  }
+
+  function updateSelectedNote(itemId: string, note: string) {
+    const entry = selectedItems.value.get(itemId);
+    if (!entry) return;
+    const next = new Map(selectedItems.value);
+    next.set(itemId, { ...entry, note });
+    selectedItems.value = next;
+  }
 
   function removeItem(itemId: string) {
     const items = plan.value.items.filter((i) => i.itemId !== itemId);
     patch({ items });
   }
 
-  async function addItem() {
-    if (!addingItem.value) {
+  async function addSelectedItems() {
+    if (selectedItems.value.size === 0) return;
+    const newEntries: CampPlanItem[] = [];
+    const skipped: string[] = [];
+    for (const [itemId, { qty, note }] of selectedItems.value) {
+      const inv = allItems.find((i) => i.id === itemId);
+      if (!inv) continue;
+      const available = availableToPlan(inv);
+      if (available < 1) {
+        skipped.push(inv.name);
+        continue;
+      }
+      const plannedQty = Math.min(Math.max(1, qty), available);
+      newEntries.push({
+        itemId: inv.id,
+        itemName: inv.name,
+        itemCategory: inv.category,
+        itemLocation: inv.location,
+        quantityPlanned: plannedQty,
+        packedStatus: false,
+        returnedStatus: false,
+        notes: note.trim() || undefined,
+        contents: ("contents" in inv && Array.isArray(inv.contents) &&
+            inv.contents.length > 0)
+          ? (inv.contents as { name: string; quantity: number }[])
+          : undefined,
+      });
+    }
+    if (newEntries.length === 0) {
+      error.value = skipped.length > 0
+        ? `Could not add: ${skipped.join(", ")} — no available stock.`
+        : "No items to add.";
       return;
     }
-    const inv = allItems.find((i) => i.id === addingItem.value);
-    if (!inv) {
-      return;
-    }
-    const available = availableToPlan(inv);
-    if (available < 1) {
-      error.value =
-        `Cannot add "${inv.name}" because there is no available stock.`;
-      return;
-    }
-    const plannedQty = Math.min(Math.max(1, addQty.value), available);
-    const newEntry: CampPlanItem = {
-      itemId: inv.id,
-      itemName: inv.name,
-      itemCategory: inv.category,
-      itemLocation: inv.location,
-      quantityPlanned: plannedQty,
-      packedStatus: false,
-      returnedStatus: false,
-      notes: addNote.value.trim() || undefined,
-      contents: ("contents" in inv && Array.isArray(inv.contents) &&
-          inv.contents.length > 0)
-        ? (inv.contents as { name: string; quantity: number }[])
-        : undefined,
-    };
-    const items = [...plan.value.items, newEntry];
+    const items = [...plan.value.items, ...newEntries];
     const ok = await patch({ items });
-    if (!ok) {
-      return;
-    }
-    addingItem.value = "";
-    addQty.value = 1;
-    addNote.value = "";
+    if (!ok) return;
+    selectedItems.value = new Map();
     itemSearch.value = "";
+    if (skipped.length > 0) {
+      error.value = `Added ${newEntries.length} item${newEntries.length !== 1 ? "s" : ""}. Skipped (no stock): ${skipped.join(", ")}.`;
+    }
   }
 
   const inputClass =
     "px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm";
-
-  const selectedInv = useComputed(() =>
-    allItems.find((i) => i.id === addingItem.value)
-  );
 
   const boxItems = useComputed(() => {
     if (!selectedBox.value) return [];
@@ -747,7 +761,7 @@ export default function CampChecklist(
                   type="button"
                   onClick={() => {
                     addMode.value = "box";
-                    addingItem.value = "";
+                    selectedItems.value = new Map();
                     itemSearch.value = "";
                     selectedTemplateId.value = "";
                   }}
@@ -764,7 +778,7 @@ export default function CampChecklist(
                     type="button"
                     onClick={() => {
                       addMode.value = "template";
-                      addingItem.value = "";
+                      selectedItems.value = new Map();
                       itemSearch.value = "";
                       selectedBox.value = "";
                     }}
@@ -960,7 +974,6 @@ export default function CampChecklist(
                         onInput={(e) => {
                           itemSearch.value =
                             (e.target as HTMLInputElement).value;
-                          addingItem.value = "";
                         }}
                       />
                       <select
@@ -969,7 +982,6 @@ export default function CampChecklist(
                         onChange={(e) => {
                           itemCategoryFilter.value =
                             (e.target as HTMLSelectElement).value;
-                          addingItem.value = "";
                         }}
                       >
                         <option value="all">All categories</option>
@@ -990,7 +1002,6 @@ export default function CampChecklist(
                         onChange={(e) => {
                           itemLocationFilter.value =
                             (e.target as HTMLSelectElement).value;
-                          addingItem.value = "";
                         }}
                       >
                         <option value="all">All locations</option>
@@ -1014,137 +1025,165 @@ export default function CampChecklist(
                       )}
 
                     {filteredInventory.value.length > 0 && (
-                      <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
-                        {filteredInventory.value.slice(0, 50).map((inv) => (
-                          (() => {
+                      <div>
+                        {selectedItems.value.size === 0 && (
+                          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                            Tick items to select them, then adjust quantities below.
+                          </p>
+                        )}
+                        <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
+                          {filteredInventory.value.slice(0, 50).map((inv) => {
                             const available = availableToPlan(inv);
+                            const isSelected = selectedItems.value.has(inv.id);
                             return (
                               <button
                                 type="button"
                                 key={inv.id}
-                                onClick={() => {
-                                  addingItem.value = inv.id;
-                                  addQty.value = 1;
-                                }}
-                                class={`w-full text-left px-3 py-2 text-sm hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors ${
-                                  addingItem.value === inv.id
+                                onClick={() => toggleItemSelection(inv)}
+                                disabled={!isSelected && available < 1}
+                                class={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                                  isSelected
                                     ? "bg-purple-50 dark:bg-purple-900/30"
-                                    : ""
+                                    : available < 1
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "hover:bg-purple-50 dark:hover:bg-purple-900/20"
                                 }`}
                               >
-                                <div class="flex items-baseline justify-between gap-2">
-                                  <span class="font-medium text-gray-800 dark:text-gray-100 truncate">
-                                    {inv.name}
-                                  </span>
+                                <div class="flex items-center gap-2">
                                   <span
-                                    class={`text-xs shrink-0 px-2 py-0.5 rounded-full border font-semibold ${
-                                      available > 5
-                                        ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700"
-                                        : available > 0
-                                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
-                                        : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700"
+                                    class={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                                      isSelected
+                                        ? "bg-purple-600 border-purple-600 text-white"
+                                        : "bg-white dark:bg-gray-700 border-gray-400 dark:border-gray-500"
                                     }`}
                                   >
-                                    Available: {available}
-                                    {inv.category === "food" && (
-                                      <span class="ml-1 text-orange-500">
-                                        🍽️
-                                      </span>
-                                    )}
+                                    {isSelected && <span class="text-xs font-bold">✓</span>}
                                   </span>
-                                </div>
-                                <div class="text-gray-400 dark:text-gray-500 text-xs truncate mt-0.5">
-                                  {getCategoryLabel(inv.category)} ·{" "}
-                                  {inv.location}
+                                  <div class="flex-1 min-w-0">
+                                    <div class="flex items-baseline justify-between gap-2">
+                                      <span class="font-medium text-gray-800 dark:text-gray-100 truncate">
+                                        {inv.name}
+                                      </span>
+                                      <span
+                                        class={`text-xs shrink-0 px-2 py-0.5 rounded-full border font-semibold ${
+                                          available > 5
+                                            ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700"
+                                            : available > 0
+                                            ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+                                            : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700"
+                                        }`}
+                                      >
+                                        Available: {available}
+                                        {inv.category === "food" && (
+                                          <span class="ml-1 text-orange-500">🍽️</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div class="text-gray-400 dark:text-gray-500 text-xs truncate mt-0.5">
+                                      {getCategoryLabel(inv.category)} · {inv.location}
+                                    </div>
+                                  </div>
                                 </div>
                               </button>
                             );
-                          })()
-                        ))}
+                          })}
+                        </div>
                       </div>
                     )}
 
-                    {selectedInv.value && (
-                      <div class="space-y-3">
-                        {selectedIsFood.value && (
-                          <div class="flex items-start gap-2 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-md text-sm text-orange-800 dark:text-orange-300">
-                            <span class="shrink-0 mt-0.5">⚠️</span>
+                    {/* ── Selected items summary ── */}
+                    {selectedItems.value.size > 0 && (
+                      <div class="space-y-3 border border-purple-200 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-900/10 rounded-md p-3">
+                        <div class="flex items-center justify-between">
+                          <p class="text-sm font-medium text-purple-800 dark:text-purple-200">
+                            {selectedItems.value.size} item{selectedItems.value.size !== 1 ? "s" : ""} selected
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => { selectedItems.value = new Map(); }}
+                            class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                          >
+                            Clear all
+                          </button>
+                        </div>
+
+                        {[...selectedItems.value].some(([id]) => {
+                          const inv = allItems.find((i) => i.id === id);
+                          return inv?.category === "food";
+                        }) && (
+                          <div class="flex items-start gap-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded text-xs text-orange-800 dark:text-orange-300">
+                            <span class="shrink-0">⚠️</span>
                             <span>
-                              <strong>Food item:</strong>{" "}
-                              when ticked as packed the quantity will be
-                              deducted from inventory stock because it will be
-                              consumed at camp. It won't appear in the return
-                              list.
+                              <strong>Food items</strong> will have their quantity deducted from inventory when packed. They won't appear in the return list.
                             </span>
                           </div>
                         )}
-                        <div class="flex items-end gap-2">
-                          <div class="shrink-0 w-36">
-                            <div class="mb-1 space-y-1">
-                              <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                {selectedIsFood.value
-                                  ? "Qty (to take)"
-                                  : "Qty (to pack)"}
-                              </label>
-                              <span
-                                class={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border font-semibold whitespace-nowrap ${
-                                  selectedStock.value > 5
-                                    ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700"
-                                    : selectedStock.value > 0
-                                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
-                                    : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700"
-                                }`}
-                              >
-                                <span>📦</span>
-                                <span>In stock {selectedStock.value}</span>
-                              </span>
-                            </div>
-                            <NumberInput
-                              key={selectedInv.value.id}
-                              value={addQty.value}
-                              min={1}
-                              onChange={(n) => {
-                                addQty.value = n;
-                              }}
-                              class={`${inputClass} w-full`}
-                            />
-                            {addQtyTooHigh.value && (
-                              <p class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
-                                Only {selectedStock.value} available in stock.
-                              </p>
-                            )}
-                          </div>
-                          <div class="flex-1 min-w-0">
-                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                              Note (optional)
-                            </label>
-                            <input
-                              type="text"
-                              class={`${inputClass} w-full`}
-                              placeholder="e.g. bring spare pegs"
-                              value={addNote.value}
-                              onInput={(
-                                e,
-                              ) => (addNote.value =
-                                (e.target as HTMLInputElement).value)}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={addItem}
-                            disabled={saving.value || selectedStock.value < 1 ||
-                              addQtyTooHigh.value}
-                            class="shrink-0 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors"
-                          >
-                            {saving.value
-                              ? "…"
-                              : selectedStock.value < 1
-                              ? "Out of stock"
-                              : addQtyTooHigh.value
-                              ? "Exceeds stock"
-                              : "Add"}
-                          </button>
+
+                        <div class="max-h-48 overflow-y-auto divide-y divide-purple-100 dark:divide-purple-800/40">
+                          {[...selectedItems.value].map(([itemId, { qty, note }]) => {
+                            const inv = allItems.find((i) => i.id === itemId);
+                            if (!inv) return null;
+                            const available = availableToPlan(inv);
+                            const qtyTooHigh = qty > available;
+                            return (
+                              <div key={itemId} class="py-2 first:pt-0 last:pb-0">
+                                <div class="flex items-center justify-between gap-2 mb-1">
+                                  <span class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                                    {getCategoryEmoji(inv.category)} {inv.name}
+                                    {inv.category === "food" && <span class="ml-1 text-xs text-orange-500">🍽️</span>}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleItemSelection(inv)}
+                                    class="shrink-0 text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm leading-none"
+                                    title="Deselect"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                  <label class="text-xs text-gray-500 dark:text-gray-400 shrink-0">Qty</label>
+                                  <NumberInput
+                                    value={qty}
+                                    min={1}
+                                    max={available}
+                                    onChange={(n) => updateSelectedQty(itemId, n)}
+                                    class={`${inputClass} w-20`}
+                                  />
+                                  <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+                                    / {available}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    class={`${inputClass} flex-1 min-w-0`}
+                                    placeholder="Note (optional)"
+                                    value={note}
+                                    onInput={(e) => updateSelectedNote(itemId, (e.target as HTMLInputElement).value)}
+                                  />
+                                </div>
+                                {qtyTooHigh && (
+                                  <p class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
+                                    Only {available} available in stock.
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={addSelectedItems}
+                          disabled={saving.value || [...selectedItems.value].some(([id, { qty }]) => {
+                            const inv = allItems.find((i) => i.id === id);
+                            return !inv || qty > availableToPlan(inv);
+                          })}
+                          class="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors"
+                        >
+                          {saving.value
+                            ? "Adding…"
+                            : `Add ${selectedItems.value.size} item${selectedItems.value.size !== 1 ? "s" : ""} to plan`}
+                        </button>
                       </div>
                     )}
                   </>
