@@ -785,39 +785,40 @@ export default function InventoryTable(
                       </a>
                     )}
                     {canEdit && (
-                      confirmDeleteId.value === item.id
-                        ? (
-                          <span class="flex items-center gap-2 ml-auto">
-                            <span class="text-gray-500 dark:text-gray-400 text-xs">
-                              Delete?
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(item.id)}
-                              class="text-red-600 hover:text-red-800 font-semibold text-xs"
-                            >
-                              Yes
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => confirmDeleteId.value = null}
-                              class="text-gray-400 hover:text-gray-600 text-xs"
-                            >
-                              No
-                            </button>
-                          </span>
-                        )
-                        : (
-                          <button
-                            type="button"
-                            onClick={() => confirmDeleteId.value = item.id}
-                            class="ml-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
-                          >
-                            Delete
-                          </button>
-                        )
+                      confirmDeleteId.value !== item.id && (
+                        <button
+                          type="button"
+                          onClick={() => confirmDeleteId.value = item.id}
+                          class="ml-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                        >
+                          Delete
+                        </button>
+                      )
                     )}
                   </div>
+                  {canEdit && confirmDeleteId.value === item.id && (
+                    <div class="px-4 py-3 bg-red-50 dark:bg-red-950/40 border-t border-red-200 dark:border-red-900 rounded-b-lg">
+                      <p class="text-xs font-medium text-red-700 dark:text-red-300 mb-2">
+                        Permanently delete <strong>{item.name}</strong>? This cannot be undone.
+                      </p>
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors"
+                        >
+                          🗑️ Delete permanently
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => confirmDeleteId.value = null}
+                          class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })

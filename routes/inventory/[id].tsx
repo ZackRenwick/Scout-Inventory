@@ -10,6 +10,7 @@ import type { Session } from "../../lib/auth.ts";
 import { csrfFailed, forbidden } from "../../lib/auth.ts";
 import { getItemById, createItem } from "../../db/kv.ts";
 import PhotoViewer from "../../islands/PhotoViewer.tsx";
+import ItemDeleteButton from "../../islands/ItemDeleteButton.tsx";
 import { logActivity } from "../../lib/activityLog.ts";
 
 interface ItemDetailData {
@@ -198,6 +199,13 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
             >
               🔎 QR Quick Actions
             </a>
+            {data.session?.role !== "viewer" && (
+              <ItemDeleteButton
+                itemId={item.id}
+                itemName={item.name}
+                csrfToken={data.csrfToken ?? ""}
+              />
+            )}
           </div>
         </div>
         

@@ -82,6 +82,7 @@ import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $FirstAidCheckWizard from "./islands/FirstAidCheckWizard.tsx";
 import * as $FirstAidKitEditor from "./islands/FirstAidKitEditor.tsx";
 import * as $InventoryTable from "./islands/InventoryTable.tsx";
+import * as $ItemDeleteButton from "./islands/ItemDeleteButton.tsx";
 import * as $ItemForm from "./islands/ItemForm.tsx";
 import * as $LoanForm from "./islands/LoanForm.tsx";
 import * as $LoanList from "./islands/LoanList.tsx";
@@ -191,6 +192,7 @@ const manifest = {
     "./islands/FirstAidCheckWizard.tsx": $FirstAidCheckWizard,
     "./islands/FirstAidKitEditor.tsx": $FirstAidKitEditor,
     "./islands/InventoryTable.tsx": $InventoryTable,
+    "./islands/ItemDeleteButton.tsx": $ItemDeleteButton,
     "./islands/ItemForm.tsx": $ItemForm,
     "./islands/LoanForm.tsx": $LoanForm,
     "./islands/LoanList.tsx": $LoanList,
