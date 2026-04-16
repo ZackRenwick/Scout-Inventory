@@ -1011,20 +1011,13 @@ export async function getNeckerMetrics(): Promise<NeckerMetrics> {
 export async function adjustNeckerCount(delta: number): Promise<number> {
   const db = await initKv();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const [stockRes, totalRes] = await Promise.all([
-      db.get<number>(KEYS.neckers),
-      db.get<number>(KEYS.neckersTotalMade),
-    ]);
+    const stockRes = await db.get<number>(KEYS.neckers);
     const currentStock = stockRes.value ?? 0;
     const nextStock = Math.max(0, currentStock + delta);
-    const positiveIncrease = Math.max(0, nextStock - currentStock);
-    const nextTotal = (totalRes.value ?? 0) + positiveIncrease;
 
     const result = await db.atomic()
       .check(stockRes)
-      .check(totalRes)
       .set(KEYS.neckers, nextStock)
-      .set(KEYS.neckersTotalMade, nextTotal)
       .commit();
 
     if (result.ok) {
@@ -1042,19 +1035,11 @@ export async function setNeckerCount(value: number): Promise<number> {
   const requested = Math.max(0, value);
 
   for (let attempt = 0; attempt < 3; attempt++) {
-    const [stockRes, totalRes] = await Promise.all([
-      db.get<number>(KEYS.neckers),
-      db.get<number>(KEYS.neckersTotalMade),
-    ]);
-    const currentStock = stockRes.value ?? 0;
-    const positiveIncrease = Math.max(0, requested - currentStock);
-    const nextTotal = (totalRes.value ?? 0) + positiveIncrease;
+    const stockRes = await db.get<number>(KEYS.neckers);
 
     const result = await db.atomic()
       .check(stockRes)
-      .check(totalRes)
       .set(KEYS.neckers, requested)
-      .set(KEYS.neckersTotalMade, nextTotal)
       .commit();
 
     if (result.ok) {
