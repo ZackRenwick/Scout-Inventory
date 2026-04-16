@@ -23,6 +23,7 @@ import * as $api_camp_templates_id_ from "./routes/api/camp-templates/[id].ts";
 import * as $api_camp_templates_index from "./routes/api/camp-templates/index.ts";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
+import * as $api_easter_egg from "./routes/api/easter-egg.ts";
 import * as $api_first_aid_check from "./routes/api/first-aid-check.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_id_photo from "./routes/api/items/[id]/photo.ts";
@@ -130,6 +131,7 @@ const manifest = {
     "./routes/api/camp-templates/index.ts": $api_camp_templates_index,
     "./routes/api/camps/[id].ts": $api_camps_id_,
     "./routes/api/camps/index.ts": $api_camps_index,
+    "./routes/api/easter-egg.ts": $api_easter_egg,
     "./routes/api/first-aid-check.ts": $api_first_aid_check,
     "./routes/api/items/[id].ts": $api_items_id_,
     "./routes/api/items/[id]/photo.ts": $api_items_id_photo,

@@ -47,6 +47,7 @@ export type ActivityAction =
   | "neckers.created_reset"
   | "neckers.total_set"
   | "stocktake.completed"
+  | "easter_egg.found"
   | "db.cleared";
 
 export interface ActivityEntry {
@@ -101,6 +102,7 @@ export async function logActivity(
       { ...entry, id, timestamp } satisfies ActivityEntry,
       { expireIn: NINETY_DAYS_MS },
     );
+    invalidateActivityCache();
   } catch (err) {
     console.error("[activityLog] Failed to write entry:", err);
   }
@@ -117,11 +119,25 @@ export async function clearActivityLog(): Promise<number> {
   return deleteOps.length;
 }
 
+// In-memory cache for dashboard widget — avoids a KV scan on every page load.
+// Writes invalidate immediately via invalidateActivityCache(); the TTL is a
+// safety net matching the 10-minute window used by the other KV caches.
+const ACTIVITY_CACHE_TTL_MS = 10 * 60_000; // 10 minutes
+let activityCache: { entries: ActivityEntry[]; limit: number; expiresAt: number } | null = null;
+
+/** Invalidate the activity cache (called after writing a new entry). */
+function invalidateActivityCache() {
+  activityCache = null;
+}
+
 /**
  * Retrieve the most recent activity entries (default 100, max 500).
  * Returns entries in reverse chronological order (newest first).
  */
 export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
+  if (activityCache && Date.now() < activityCache.expiresAt && limit <= activityCache.limit) {
+    return activityCache.entries.slice(0, limit);
+  }
   const kv = await getKv();
   const entries: ActivityEntry[] = [];
   const effectiveLimit = Math.min(limit, 500);
@@ -132,5 +148,6 @@ export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
   ) {
     entries.push(entry.value);
   }
+  activityCache = { entries, limit: effectiveLimit, expiresAt: Date.now() + ACTIVITY_CACHE_TTL_MS };
   return entries;
 }

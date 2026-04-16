@@ -16,6 +16,7 @@ import {
   getFoodItemsSortedByExpiry,
 } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
+import { getRecentActivity, type ActivityEntry } from "../lib/activityLog.ts";
 
 const YEARLY_CHECK_DAYS = 365;
 
@@ -89,6 +90,7 @@ interface DashboardData {
   riskAssessments: {
     annualDueCount: number;
   };
+  recentActivity: ActivityEntry[];
   session?: Session;
 }
 
@@ -98,6 +100,8 @@ export const handler: Handlers<DashboardData> = {
       const session = ctx.state.session as Session;
       const canViewInspections = session.role === "manager" ||
         session.role === "admin";
+
+      const isAdmin = session.role === "admin";
 
       // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
       // getActiveCheckOuts is cache-backed after the first request.
@@ -111,6 +115,7 @@ export const handler: Handlers<DashboardData> = {
         overallFirstAidCheck,
         firstAidKitStates,
         riskAssessments,
+        recentActivity,
       ] = await Promise.all([
         getComputedStats(),
         getFoodItemsSortedByExpiry(),
@@ -120,6 +125,7 @@ export const handler: Handlers<DashboardData> = {
         getFirstAidOverallCheckState(),
         getFirstAidKitCheckStates(),
         getAllRiskAssessments(),
+        isAdmin ? getRecentActivity(10) : Promise.resolve([]),
       ]);
       const overallFirstAidDue =
         isMonthlyDue(overallFirstAidCheck?.lastCheckedAt) &&
@@ -188,6 +194,7 @@ export const handler: Handlers<DashboardData> = {
         riskAssessments: {
           annualDueCount: annualRiskDueCount,
         },
+        recentActivity,
       });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
@@ -230,13 +237,42 @@ export const handler: Handlers<DashboardData> = {
         riskAssessments: {
           annualDueCount: 0,
         },
+        recentActivity: [],
       });
     }
   },
 };
 
+function actionIcon(action: string): string {
+  if (action.includes("easter_egg")) return "🍋";
+  if (action.includes("login")) return "🔑";
+  if (action.includes("logout")) return "🚪";
+  if (action.includes("deleted") || action.includes("delete")) return "🗑️";
+  if (action.includes("created") || action.includes("imported")) return "✨";
+  if (action.includes("updated") || action.includes("password")) return "✏️";
+  if (action.includes("camp")) return "🏕️";
+  if (action.includes("loan")) return "📤";
+  if (action.includes("neckers")) return "🧣";
+  if (action.includes("first_aid")) return "🩹";
+  if (action.includes("risk")) return "📝";
+  if (action.includes("stocktake")) return "📋";
+  if (action.includes("meal")) return "🍽️";
+  return "📌";
+}
+
+function timeAgo(ts: string): string {
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
 export default function Home({ data }: PageProps<DashboardData>) {
-  const { stats, session, neckerThreshold, firstAid, riskAssessments } = data;
+  const { stats, session, neckerThreshold, firstAid, riskAssessments, recentActivity } = data;
   const canViewInspections = session?.role === "manager" ||
     session?.role === "admin";
   const canViewNeckers = session?.role === "manager" ||
@@ -520,6 +556,56 @@ export default function Home({ data }: PageProps<DashboardData>) {
             />
           </div>
         </div>
+
+        {session?.role === "admin" && recentActivity.length > 0 && (
+          <div class="mb-6 space-y-3 sm:space-y-4">
+            <div class="flex items-center justify-between pt-1">
+              <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-purple-100">
+                Recent Activity
+              </h2>
+              <a
+                href="/admin/activity"
+                class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+              >
+                View all →
+              </a>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+              {recentActivity.map((entry) => (
+                <div
+                  key={entry.id}
+                  class="flex items-start gap-3 px-4 py-3"
+                >
+                  <span class="shrink-0 text-base mt-0.5">
+                    {actionIcon(entry.action)}
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-gray-800 dark:text-gray-100">
+                      <span class="font-medium">{entry.username}</span>
+                      {" "}
+                      <span class="text-gray-500 dark:text-gray-400">
+                        {entry.action.replace(/_/g, " ").replace(/\./g, " › ")}
+                      </span>
+                      {entry.resource && (
+                        <span class="text-gray-700 dark:text-gray-200">
+                          {" — "}{entry.resource}
+                        </span>
+                      )}
+                    </p>
+                    {entry.details && (
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {entry.details}
+                      </p>
+                    )}
+                  </div>
+                  <span class="shrink-0 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap mt-0.5">
+                    {timeAgo(entry.timestamp)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>
     </Layout>

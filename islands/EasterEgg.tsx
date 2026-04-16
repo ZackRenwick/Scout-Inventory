@@ -16,6 +16,8 @@ export default function EasterEgg() {
     try {
       const res = await fetch("/api/joke");
       joke.value = await res.text();
+      // Notify admins — fire-and-forget
+      fetch("/api/easter-egg", { method: "POST" }).catch(() => {});
     } catch {
       joke.value = "Why do programmers prefer dark mode? Because light attracts bugs! 🐛";
     } finally {
