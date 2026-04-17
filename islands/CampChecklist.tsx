@@ -293,6 +293,11 @@ export default function CampChecklist(
     patch({ items });
   }
 
+  function packAll() {
+    const items = plan.value.items.map((i) => ({ ...i, packedStatus: true }));
+    patch({ items });
+  }
+
   function returnAll() {
     const items = plan.value.items.map((i) =>
       i.itemCategory !== "food" ? { ...i, returnedStatus: true } : i
@@ -1245,6 +1250,19 @@ export default function CampChecklist(
             {tab.value === "pack"
               ? (
                 <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                  {totalItems.value > 0 &&
+                    (packedGearCount.value + packedFoodCount.value) < totalItems.value && canEdit && (
+                    <div class="px-4 py-2 flex justify-end bg-gray-50 dark:bg-gray-800/60">
+                      <button
+                        type="button"
+                        onClick={packAll}
+                        disabled={saving.value}
+                        class="text-xs font-medium px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-60 transition-colors"
+                      >
+                        ✓ Mark all packed
+                      </button>
+                    </div>
+                  )}
                   {gearItems.value.length > 0 && (
                     <>
                       {totalFood.value > 0 && (
