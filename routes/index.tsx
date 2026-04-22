@@ -10,6 +10,7 @@ import {
   getAllFirstAidKitIds,
   getAllItems,
   getAllRiskAssessments,
+  rebuildComputedStats,
   getComputedStats,
   getFirstAidKitCheckStates,
   getFirstAidOverallCheckState,
@@ -102,6 +103,8 @@ export const handler: Handlers<DashboardData> = {
         session.role === "admin";
 
       const isAdmin = session.role === "admin";
+
+      await rebuildComputedStats();
 
       // getComputedStats is O(1). getFoodItemsSortedByExpiry is O(n_food).
       // getActiveCheckOuts is cache-backed after the first request.

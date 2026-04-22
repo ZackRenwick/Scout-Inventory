@@ -674,6 +674,34 @@ export async function rebuildIndexes(): Promise<void> {
   invalidateCheckoutsCache();
 }
 
+/**
+ * Rebuild only the precomputed stats from primary item and checkout data.
+ * Use this to recover stats drift without rewriting secondary indexes.
+ */
+export async function rebuildComputedStats(): Promise<void> {
+  const db = await initKv();
+
+  let stats = emptyStats();
+  for await (const entry of db.list<InventoryItem>({ prefix: KEYS.items })) {
+    const item = deserializeItem(entry.value);
+    stats = applyItemToStats(stats, item, 1);
+  }
+
+  let activeLoansCount = 0;
+  for await (const entry of db.list<CheckOut>({ prefix: KEYS.checkouts })) {
+    const checkout = deserializeCheckOut(entry.value);
+    if (checkout.status !== "returned") {
+      activeLoansCount++;
+    }
+  }
+  stats.activeLoansCount = activeLoansCount;
+
+  await db.set(KEYS.computedStats, stats);
+
+  invalidateItemsCache();
+  invalidateCheckoutsCache();
+}
+
 // ===== CHECK-OUT OPERATIONS =====
 
 export async function getAllCheckOuts(): Promise<CheckOut[]> {

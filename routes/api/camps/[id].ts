@@ -1,6 +1,6 @@
 // API route for individual camp plans
 import { Handlers } from "$fresh/server.ts";
-import { getCampPlanById, updateCampPlan, deleteCampPlan, getItemById, updateItem } from "../../../db/kv.ts";
+import { deleteCampPlan, getCampPlanById, getItemById, rebuildComputedStats, updateCampPlan, updateItem } from "../../../db/kv.ts";
 import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
 import type { CampPlanItem } from "../../../types/inventory.ts";
 
@@ -9,7 +9,8 @@ import type { CampPlanItem } from "../../../types/inventory.ts";
  * - Food items: deduct quantity from inventory when packed; restore when unpacked or removed.
  * - Non-food items: set atCamp=true when packed; set atCamp=false when returned or removed.
  *
- * All independent KV operations are issued concurrently via Promise.all.
+ * Side effects are applied sequentially because each updateItem call also rewrites
+ * shared computed stats.
  * Gear transitions are merged into a single updateItem call per item to avoid races.
  */
 async function applyItemSideEffects(
@@ -19,7 +20,7 @@ async function applyItemSideEffects(
   const oldMap = new Map(oldItems.map((i) => [i.itemId, i]));
   const newMap = new Map(newItems.map((i) => [i.itemId, i]));
 
-  const tasks: Promise<unknown>[] = [];
+  const tasks: Array<() => Promise<unknown>> = [];
 
   // Items removed from the plan
   for (const [itemId, old] of oldMap) {
@@ -28,7 +29,7 @@ async function applyItemSideEffects(
     }
     if (old.itemCategory === "food" && old.packedStatus) {
       // Restore food quantity that was previously deducted
-      tasks.push(
+      tasks.push(() =>
         getItemById(itemId).then((inv) => {
           if (inv) {
             return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
@@ -37,7 +38,7 @@ async function applyItemSideEffects(
       );
     } else if (old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus) {
       // Gear removed while still at camp — mark as returned to store
-      tasks.push(updateItem(itemId, { atCamp: false, quantityAtCamp: 0 }));
+      tasks.push(() => updateItem(itemId, { atCamp: false, quantityAtCamp: 0 }));
     }
   }
 
@@ -51,7 +52,7 @@ async function applyItemSideEffects(
     if (newItem.itemCategory === "food") {
       if (!old.packedStatus && newItem.packedStatus) {
         // Food packed → deduct from inventory
-        tasks.push(
+        tasks.push(() =>
           getItemById(itemId).then((inv) => {
             if (inv) {
               return updateItem(itemId, { quantity: Math.max(0, inv.quantity - newItem.quantityPlanned) });
@@ -60,7 +61,7 @@ async function applyItemSideEffects(
         );
       } else if (old.packedStatus && !newItem.packedStatus) {
         // Food unpacked → restore quantity
-        tasks.push(
+        tasks.push(() =>
           getItemById(itemId).then((inv) => {
             if (inv) {
               return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
@@ -83,12 +84,14 @@ async function applyItemSideEffects(
       }
       if (atCamp !== undefined) {
         const quantityAtCamp = atCamp ? newItem.quantityPlanned : 0;
-        tasks.push(updateItem(itemId, { atCamp, quantityAtCamp }));
+        tasks.push(() => updateItem(itemId, { atCamp, quantityAtCamp }));
       }
     }
   }
 
-  await Promise.all(tasks);
+  for (const task of tasks) {
+    await task();
+  }
 }
 
 /**
@@ -203,6 +206,7 @@ export const handler: Handlers = {
           return Response.json({ error: quantityError }, { status: 400 });
         }
         await applyItemSideEffects(existing.items, nextItems);
+        await rebuildComputedStats();
       }
 
       const updated = await updateCampPlan(id, body, existing);
