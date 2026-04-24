@@ -23,9 +23,16 @@ function getR2Config(): R2Config {
   const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID")?.trim() ?? "";
   const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY")?.trim() ?? "";
 
-  if (!accountId || !bucket || !accessKeyId || !secretAccessKey) {
+  const missing: string[] = [];
+  if (!accountId) missing.push("R2_ACCOUNT_ID");
+  if (!bucket) missing.push("R2_BUCKET");
+  if (!accessKeyId) missing.push("R2_ACCESS_KEY_ID");
+  if (!secretAccessKey) missing.push("R2_SECRET_ACCESS_KEY");
+
+  if (missing.length > 0) {
+    const runtime = Deno.env.get("DENO_DEPLOYMENT_ID") ? "deploy" : "local";
     throw new Error(
-      "R2 is not configured. Set R2_ACCOUNT_ID, R2_BUCKET, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY.",
+      `R2 is not configured. Missing/empty env vars: ${missing.join(", ")}. Runtime=${runtime}.`,
     );
   }
 
