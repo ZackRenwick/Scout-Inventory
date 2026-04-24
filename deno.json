@@ -9,6 +9,7 @@
     "preview": "deno run -A --unstable-kv main.ts",
     "update": "deno run -A -r https://fresh.deno.dev/update .",
     "seed": "deno run -A --unstable-kv db/seed.ts",
+    "migrate:photos-r2": "deno run -A --unstable-kv scripts/migrate_photos_to_r2.ts",
     "brand:upgrade": "cp static/branding/upgrade/favicon.svg static/favicon.svg && cp static/branding/upgrade/icon.svg static/icon.svg && cp static/branding/upgrade/icon-512.png static/icon-512.png && cp static/branding/upgrade/icon-192.png static/icon-192.png && cp static/branding/upgrade/apple-touch-icon.png static/apple-touch-icon.png && cp static/branding/upgrade/manifest.json static/manifest.json",
     "brand:production": "cp static/branding/production/favicon.svg static/favicon.svg && cp static/branding/production/icon.svg static/icon.svg && cp static/branding/production/icon-512.png static/icon-512.png && cp static/branding/production/icon-192.png static/icon-192.png && cp static/branding/production/apple-touch-icon.png static/apple-touch-icon.png && cp static/branding/production/manifest.json static/manifest.json",
     "stamp:upgrade": "echo 'export const APP_MODE: \"production\" | \"upgrade\" = \"upgrade\";' > lib/mode.ts",
@@ -29,7 +30,8 @@
     "preact/": "https://esm.sh/preact@10.22.0/",
     "@preact/signals": "https://esm.sh/*@preact/signals@1.2.2",
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
-    "$std/": "https://deno.land/std@0.216.0/"
+    "$std/": "https://deno.land/std@0.216.0/",
+    "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3@3.901.0"
   },
   "compilerOptions": { "jsx": "react-jsx", "jsxImportSource": "preact" }
 }

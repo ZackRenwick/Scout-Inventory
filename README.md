@@ -112,6 +112,15 @@ Required environment variables:
 | `NECKER_MIN_THRESHOLD` | *(optional)* Necker low-stock threshold — defaults to `10` |
 | `ENABLE_NOTIFY_CRON` | Set to `true` only in the one deployment that should run scheduled notifications |
 
+Photo storage environment variables:
+
+| Variable | Description |
+|---|---|
+| `R2_ACCOUNT_ID` | Cloudflare account ID used for the R2 S3 endpoint |
+| `R2_BUCKET` | R2 bucket name for inventory photos |
+| `R2_ACCESS_KEY_ID` | R2 access key ID |
+| `R2_SECRET_ACCESS_KEY` | R2 secret access key |
+
 If `RESEND_API_KEY` or `NOTIFY_EMAIL` are unset the notification functions are safe no-ops (they log to console), so local dev works without any email configuration.
 
 ### 📜 Activity Log
@@ -125,7 +134,8 @@ All significant actions are logged to KV with a 90-day TTL and viewable at `/adm
 |---|---|
 | **Framework** | [Fresh 1.7](https://fresh.deno.dev/) — file-based routing, islands architecture |
 | **Runtime** | [Deno](https://deno.land/) — TypeScript-native, secure by default |
-| **Database** | [Deno KV](https://deno.com/kv) — built-in key-value store, no setup required |
+| **Database** | [Deno KV](https://deno.com/kv) — app data and photo metadata |
+| **Object Storage** | [Cloudflare R2](https://www.cloudflare.com/developer-platform/products/r2/) — photo binaries |
 | **Styling** | Tailwind CSS 3 |
 | **UI** | Preact with signals — islands for all interactive components |
 | **Auth** | Custom session-based auth with bcrypt password hashing |
@@ -163,6 +173,7 @@ deno task seed       # Populate database with sample items
 deno task build      # Build for production
 deno task preview    # Preview production build
 deno task check      # Type check, lint, and format check
+deno task migrate:photos-r2      # Migrate legacy KV photo blobs into R2
 ```
 
 ---

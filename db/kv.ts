@@ -18,6 +18,12 @@ import type { FirstAidCheckState } from "../types/firstAid.ts";
 import type { RiskAssessment } from "../types/risk.ts";
 import { DEFAULT_FIRST_AID_CATALOG } from "../lib/firstAidCatalog.ts";
 import { FIRST_AID_SECTIONS } from "../types/firstAid.ts";
+import {
+  deletePhotoObject,
+  isLegacyPhotoRecord,
+  type StoredPhotoRecord,
+  uploadPhotoObject,
+} from "../lib/r2Photos.ts";
 
 // Initialize Deno KV
 let kv: Deno.Kv | null = null;
@@ -480,10 +486,16 @@ export async function deleteItem(id: string): Promise<boolean> {
     return false;
   }
 
+  const db = await initKv();
+  const photoRecords = await Promise.all((existing.photoIds ?? []).map(async (photoId) => {
+    const result = await db.get<StoredPhotoRecord>(["inventory", "photos", photoId]);
+    return result.value;
+  }));
+  const legacyPhoto = await db.get<StoredPhotoRecord>(["inventory", "photos", id]);
+
   const currentStats = await getComputedStats();
   const newStats = applyItemToStats(currentStats, existing, -1);
 
-  const db = await initKv();
   const op = db.atomic();
   op.delete([...KEYS.items, id]);
   // Delete legacy single-photo key
@@ -495,6 +507,24 @@ export async function deleteItem(id: string): Promise<boolean> {
   removeFromIndex(op, existing);
   op.set(KEYS.computedStats, newStats);
   await op.commit();
+
+  for (const record of photoRecords) {
+    if (!record) continue;
+    if (isLegacyPhotoRecord(record)) continue;
+    try {
+      await deletePhotoObject(record.objectKey);
+    } catch (error) {
+      console.error("[photos] failed to delete R2 object during item delete", error);
+    }
+  }
+
+  if (legacyPhoto.value && !isLegacyPhotoRecord(legacyPhoto.value)) {
+    try {
+      await deletePhotoObject(legacyPhoto.value.objectKey);
+    } catch (error) {
+      console.error("[photos] failed to delete legacy R2 object during item delete", error);
+    }
+  }
 
   invalidateItemsCache();
   return true;
@@ -513,15 +543,10 @@ export async function searchItems(query: string): Promise<InventoryItem[]> {
 
 // ===== ITEM PHOTO OPERATIONS =====
 
-interface ItemPhoto {
-  data: Uint8Array;
-  contentType: string;
-}
-
 /** Fetch one photo by its own UUID (new multi-photo scheme). */
-export async function getItemPhotoById(photoId: string): Promise<ItemPhoto | null> {
+export async function getItemPhotoById(photoId: string): Promise<StoredPhotoRecord | null> {
   const db = await initKv();
-  const result = await db.get<ItemPhoto>(["inventory", "photos", photoId]);
+  const result = await db.get<StoredPhotoRecord>(["inventory", "photos", photoId]);
   return result.value ?? null;
 }
 
@@ -529,9 +554,9 @@ export async function getItemPhotoById(photoId: string): Promise<ItemPhoto | nul
  * Legacy single-photo lookup — keyed by item id.
  * Only present on items that had `hasPhoto: true` before the multi-photo migration.
  */
-export async function getItemPhoto(itemId: string): Promise<ItemPhoto | null> {
+export async function getItemPhoto(itemId: string): Promise<StoredPhotoRecord | null> {
   const db = await initKv();
-  const result = await db.get<ItemPhoto>(["inventory", "photos", itemId]);
+  const result = await db.get<StoredPhotoRecord>(["inventory", "photos", itemId]);
   return result.value ?? null;
 }
 
@@ -545,24 +570,34 @@ export async function addItemPhoto(
 ): Promise<string> {
   const db = await initKv();
   const photoId = crypto.randomUUID();
+  const photoMeta = await uploadPhotoObject(photoId, data, contentType);
 
   const item = existingItem ?? await getItemById(itemId);
-  if (item) {
-    const newPhotoIds = [...(item.photoIds ?? []), photoId];
-    // Write photo and updated item atomically. photoIds doesn't affect stats or
-    // secondary indexes, so we bypass updateItem's stat recalculation entirely.
-    await db.atomic()
-      .set(["inventory", "photos", photoId], { data, contentType })
-      .set([...KEYS.items, itemId], serializeItem({
-        ...item,
-        photoIds: newPhotoIds,
-        hasPhoto: true,
-        lastUpdated: new Date(),
-      }))
-      .commit();
-    invalidateItemsCache();
-  } else {
-    await db.set(["inventory", "photos", photoId], { data, contentType });
+  try {
+    if (item) {
+      const newPhotoIds = [...(item.photoIds ?? []), photoId];
+      // Write metadata and updated item atomically. photoIds doesn't affect stats or
+      // secondary indexes, so we bypass updateItem's stat recalculation entirely.
+      await db.atomic()
+        .set(["inventory", "photos", photoId], photoMeta)
+        .set([...KEYS.items, itemId], serializeItem({
+          ...item,
+          photoIds: newPhotoIds,
+          hasPhoto: true,
+          lastUpdated: new Date(),
+        }))
+        .commit();
+      invalidateItemsCache();
+    } else {
+      await db.set(["inventory", "photos", photoId], photoMeta);
+    }
+  } catch (error) {
+    try {
+      await deletePhotoObject(photoMeta.objectKey);
+    } catch {
+      // no-op cleanup attempt; keep original error
+    }
+    throw error;
   }
 
   return photoId;
@@ -574,6 +609,7 @@ export async function removeItemPhotoById(
   photoId: string,
 ): Promise<void> {
   const db = await initKv();
+  const photoResult = await db.get<StoredPhotoRecord>(["inventory", "photos", photoId]);
   const item = await getItemById(itemId);
   if (item) {
     const remaining = (item.photoIds ?? []).filter((p) => p !== photoId);
@@ -591,6 +627,15 @@ export async function removeItemPhotoById(
     invalidateItemsCache();
   } else {
     await db.delete(["inventory", "photos", photoId]);
+  }
+
+  const record = photoResult.value;
+  if (record && !isLegacyPhotoRecord(record)) {
+    try {
+      await deletePhotoObject(record.objectKey);
+    } catch (error) {
+      console.error("[photos] failed to delete R2 object", error);
+    }
   }
 }
 
@@ -621,13 +666,22 @@ export async function setItemPhoto(
   contentType: string,
 ): Promise<void> {
   const db = await initKv();
-  await db.set(["inventory", "photos", id], { data, contentType });
+  const meta = await uploadPhotoObject(id, data, contentType);
+  await db.set(["inventory", "photos", id], meta);
 }
 
 /** Legacy: delete single-photo entry keyed by item id. */
 export async function deleteItemPhoto(id: string): Promise<void> {
   const db = await initKv();
+  const result = await db.get<StoredPhotoRecord>(["inventory", "photos", id]);
   await db.delete(["inventory", "photos", id]);
+  if (result.value && !isLegacyPhotoRecord(result.value)) {
+    try {
+      await deletePhotoObject(result.value.objectKey);
+    } catch (error) {
+      console.error("[photos] failed to delete legacy R2 object", error);
+    }
+  }
 }
 
 /**

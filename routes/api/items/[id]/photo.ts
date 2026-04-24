@@ -11,6 +11,7 @@ import {
   deleteItemPhoto,
   getItemPhoto,
 } from "../../../../db/kv.ts";
+import { getPhotoObject, isLegacyPhotoRecord } from "../../../../lib/r2Photos.ts";
 import {
   csrfFailed,
   csrfOk,
@@ -25,9 +26,24 @@ export const handler: Handlers = {
     if (!photo) {
       return new Response("Not found", { status: 404 });
     }
-    return new Response(photo.data.buffer.slice(0) as ArrayBuffer, {
+
+    if (isLegacyPhotoRecord(photo)) {
+      return new Response(photo.data.buffer.slice(0) as ArrayBuffer, {
+        headers: {
+          "Content-Type": photo.contentType,
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+
+    const object = await getPhotoObject(photo.objectKey);
+    if (!object) {
+      return new Response("Not found", { status: 404 });
+    }
+
+    return new Response(object.data.buffer.slice(0) as ArrayBuffer, {
       headers: {
-        "Content-Type": photo.contentType,
+        "Content-Type": object.contentType,
         "Cache-Control": "public, max-age=3600",
       },
     });

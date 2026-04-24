@@ -13,7 +13,7 @@ import {
   type Session,
 } from "../../../../../lib/auth.ts";
 
-const MAX_PHOTO_BYTES = 60 * 1024; // 60 KB — fits within Deno KV 64 KB value limit
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB hard safety cap
 const MAX_PHOTOS_PER_ITEM = 5;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -59,7 +59,7 @@ export const handler: Handlers = {
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (bytes.length > MAX_PHOTO_BYTES) {
       return Response.json(
-        { error: "Image exceeds 60 KB limit — please resize before uploading" },
+        { error: "Image exceeds 10 MB limit — please upload a smaller image" },
         { status: 413 },
       );
     }
