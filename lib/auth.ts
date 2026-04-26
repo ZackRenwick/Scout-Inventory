@@ -56,6 +56,20 @@ export const ASSIGNABLE_USER_ROLES: Record<UserRole, readonly UserRole[]> = {
   viewer: [],
 };
 
+export const USER_ROLE_META: Record<
+  UserRole,
+  { label: string; description: string }
+> = {
+  admin: { label: "Admin", description: "full access" },
+  manager: { label: "Manager", description: "stock-take, exports & users" },
+  editor: { label: "Editor", description: "manage inventory" },
+  explorer: {
+    label: "Explorer",
+    description: "inventory only (no first aid / risk)",
+  },
+  viewer: { label: "Viewer", description: "read only" },
+};
+
 export interface User {
   id: string;
   username: string;
