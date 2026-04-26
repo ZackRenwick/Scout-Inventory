@@ -126,7 +126,7 @@ Weekly backup environment variables:
 | Variable | Description |
 |---|---|
 | `ENABLE_INVENTORY_BACKUP_CRON` | Set to `true` to enable weekly JSON snapshots into R2 |
-| `INVENTORY_BACKUP_CRON` | *(optional)* Cron expression for backups — defaults to `0 3 * * 0` (Sunday 03:00 UTC) |
+| `INVENTORY_BACKUP_CRON` | *(optional)* Cron expression for backups — defaults to `0 3 * * 7` (Sunday 03:00 UTC) |
 | `R2_BACKUP_PREFIX` | *(optional)* Object key prefix for backups — defaults to `backups/inventory` |
 | `INVENTORY_BACKUP_KEEP_COUNT` | *(optional)* How many recent backup JSON files to retain — defaults to `8`; older files are pruned automatically |
 

@@ -32,7 +32,7 @@ import type {
 } from "../types/inventory.ts";
 import type { RiskAssessment } from "../types/risk.ts";
 
-const DEFAULT_WEEKLY_BACKUP_CRON = "0 3 * * 0";
+const DEFAULT_WEEKLY_BACKUP_CRON = "0 3 * * 7";
 const DEFAULT_BACKUP_PREFIX = "backups/inventory";
 const DEFAULT_BACKUP_KEEP_COUNT = 8;
 const LATEST_BACKUP_KEY = ["inventory", "backups", "latest"] as const;
