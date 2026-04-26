@@ -38,11 +38,29 @@ export function validatePassword(password: string): string | null {
   return null;
 }
 
+export const USER_ROLES = [
+  "admin",
+  "manager",
+  "editor",
+  "explorer",
+  "viewer",
+] as const;
+
+export type UserRole = (typeof USER_ROLES)[number];
+
+export const ASSIGNABLE_USER_ROLES: Record<UserRole, readonly UserRole[]> = {
+  admin: USER_ROLES,
+  manager: ["manager", "editor", "explorer", "viewer"],
+  editor: [],
+  explorer: [],
+  viewer: [],
+};
+
 export interface User {
   id: string;
   username: string;
   passwordHash: string;
-  role: "admin" | "manager" | "editor" | "explorer" | "viewer";
+  role: UserRole;
   createdAt: string;
 }
 
@@ -50,7 +68,7 @@ export interface Session {
   id: string;
   userId: string;
   username: string;
-  role: "admin" | "manager" | "editor" | "explorer" | "viewer";
+  role: UserRole;
   expiresAt: string;
   csrfToken: string;
 }
@@ -142,7 +160,7 @@ export async function getAllUsers(): Promise<User[]> {
 export async function createUser(
   username: string,
   password: string,
-  role: "admin" | "manager" | "editor" | "explorer" | "viewer" = "viewer",
+  role: UserRole = "viewer",
 ): Promise<User> {
   const kv = await getKv();
   const user: User = {

@@ -13,6 +13,8 @@ import PasswordInput from "../../islands/PasswordInput.tsx";
 import ConfirmDeleteForm from "../../islands/ConfirmDeleteForm.tsx";
 import { getLatestInventoryBackup } from "../../lib/inventoryBackups.ts";
 import {
+  ASSIGNABLE_USER_ROLES,
+  USER_ROLES,
   getAllUsers,
   createUser,
   deleteUser,
@@ -21,8 +23,8 @@ import {
   deleteAllSessionsForUser,
   getUserByUsername,
   validatePassword,
-  type User,
   type Session,
+  type User,
 } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 
@@ -74,9 +76,7 @@ export const handler: Handlers<UsersPageData> = {
         const createErr = validatePassword(password);
         if (createErr) throw new Error(createErr);
 
-        const allowedRoles: User["role"][] = session.role === "admin"
-          ? ["admin", "manager", "editor", "viewer"]
-          : ["manager", "editor", "viewer"];
+        const allowedRoles = ASSIGNABLE_USER_ROLES[session.role];
         if (!allowedRoles.includes(role)) throw new Error("You cannot create a user with that role.");
 
         const existing = await getAllUsers();
@@ -117,7 +117,7 @@ export const handler: Handlers<UsersPageData> = {
         const username = form.get("username") as string;
         const role = form.get("role") as User["role"];
         if (username === session.username) throw new Error("You cannot change your own role.");
-        if (!["admin", "manager", "editor", "viewer"].includes(role)) throw new Error("Invalid role.");
+        if (!USER_ROLES.includes(role)) throw new Error("Invalid role.");
         // Managers cannot assign admin role or modify admin users
         if (session.role === "manager") {
           if (role === "admin") throw new Error("Managers cannot assign the admin role.");
