@@ -104,19 +104,31 @@ export const handler: Handlers<FeedbackPageData> = {
 };
 
 function statusClasses(status: FeedbackRequest["status"]): string {
+  if (status === "pending") {
+    return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200";
+  }
   if (status === "accepted") {
     return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200";
+  }
+  if (status === "completed") {
+    return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200";
   }
   if (status === "rejected") {
     return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200";
   }
-  return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200";
+  return "bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-200";
+}
+
+function statusLabel(status: FeedbackRequest["status"]): string {
+  if (status === "pending") return "⏳ pending";
+  if (status === "accepted") return "✅ accepted";
+  if (status === "completed") return "🎉 completed";
+  if (status === "rejected") return "❌ rejected";
+  return status;
 }
 
 function getFeedbackPhotoUrl(photoId: string): string {
-  const accountId = Deno.env.get("R2_ACCOUNT_ID")?.trim() ?? "";
-  const bucket = Deno.env.get("R2_BUCKET")?.trim() ?? "";
-  return `https://${bucket}.${accountId}.r2.cloudflarestorage.com/feedback/photos/${photoId}`;
+  return `/api/feedback-photos/${encodeURIComponent(photoId)}`;
 }
 
 export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
@@ -127,7 +139,7 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
       <div class="max-w-4xl space-y-6">
         <div>
           <p class="text-gray-600 dark:text-gray-400">
-            Submit an improvement idea or bug report. Admins can accept or reject it, and rejected requests include a reason.
+            Submit an improvement idea or bug report. Admins can accept, complete, or reject it, and reviewed requests include notes.
           </p>
         </div>
 
@@ -232,7 +244,7 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
                     <div class="flex flex-wrap items-center gap-2 mb-2">
                       <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{request.title}</span>
                       <span class={`text-xs px-2 py-0.5 rounded-full font-medium ${statusClasses(request.status)}`}>
-                        {request.status}
+                        {statusLabel(request.status)}
                       </span>
                       <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                         {request.kind}

@@ -59,7 +59,7 @@ export const handler: Handlers<AdminFeedbackData> = {
 
     try {
       if (!requestId) throw new Error("Missing request id.");
-      if (action !== "accept" && action !== "reject") {
+      if (action !== "accept" && action !== "complete" && action !== "reject") {
         throw new Error("Invalid review action.");
       }
       if (action === "reject" && !reason) {
@@ -68,7 +68,7 @@ export const handler: Handlers<AdminFeedbackData> = {
 
       const updated = await reviewFeedbackRequest(
         requestId,
-        action === "accept" ? "accepted" : "rejected",
+        action === "accept" ? "accepted" : action === "complete" ? "completed" : "rejected",
         session.username,
         reason || null,
       );
@@ -98,25 +98,31 @@ export const handler: Handlers<AdminFeedbackData> = {
 };
 
 function statusClasses(status: FeedbackRequest["status"]): string {
+  if (status === "pending") {
+    return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200";
+  }
   if (status === "accepted") {
     return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200";
+  }
+  if (status === "completed") {
+    return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200";
   }
   if (status === "rejected") {
     return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200";
   }
-  return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200";
+  return "bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-200";
 }
 
 function statusLabel(status: FeedbackRequest["status"]): string {
+  if (status === "pending") return "⏳ pending";
   if (status === "accepted") return "✅ accepted";
+  if (status === "completed") return "🎉 completed";
   if (status === "rejected") return "❌ rejected";
-  return "⏳ pending";
+  return status;
 }
 
 function getFeedbackPhotoUrl(photoId: string): string {
-  const accountId = Deno.env.get("R2_ACCOUNT_ID")?.trim() ?? "";
-  const bucket = Deno.env.get("R2_BUCKET")?.trim() ?? "";
-  return `https://${bucket}.${accountId}.r2.cloudflarestorage.com/feedback/photos/${photoId}`;
+  return `/api/feedback-photos/${encodeURIComponent(photoId)}`;
 }
 
 export default function AdminFeedbackPage({ data }: PageProps<AdminFeedbackData>) {
@@ -129,7 +135,7 @@ export default function AdminFeedbackPage({ data }: PageProps<AdminFeedbackData>
       <div class="space-y-6">
         <div>
           <p class="text-gray-600 dark:text-gray-400">
-            Review feature requests and bug reports submitted by users. Rejected requests must include a reason.
+            Review feature requests and bug reports submitted by users. You can accept, complete, or reject requests.
           </p>
         </div>
 
@@ -256,6 +262,23 @@ export default function AdminFeedbackPage({ data }: PageProps<AdminFeedbackData>
                         <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{request.reviewReason}</p>
                       )}
                     </div>
+                    {request.status === "accepted" && (
+                      <form method="POST" class="mt-3 rounded-md border border-blue-200 dark:border-blue-900 p-3 bg-blue-50/60 dark:bg-blue-950/20">
+                        <input type="hidden" name="csrf_token" value={csrfToken} />
+                        <input type="hidden" name="requestId" value={request.id} />
+                        <input type="hidden" name="action" value="complete" />
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Completion note (optional)</label>
+                        <textarea
+                          name="reason"
+                          rows={2}
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                          placeholder="Optional release details"
+                        />
+                        <button type="submit" class="mt-3 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-md text-sm font-medium transition-colors">
+                          Mark as Completed
+                        </button>
+                      </form>
+                    )}
                   </article>
                 ))}
               </div>

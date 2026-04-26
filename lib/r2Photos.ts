@@ -111,6 +111,7 @@ export interface LegacyItemPhoto {
 
 export type StoredPhotoRecord = ItemPhotoMeta | LegacyItemPhoto;
 export const INVENTORY_PHOTO_PREFIX = "inventory/photos/";
+export const FEEDBACK_PHOTO_PREFIX = "feedback/photos/";
 
 export function isLegacyPhotoRecord(record: StoredPhotoRecord): record is LegacyItemPhoto {
   return "data" in record;
@@ -118,6 +119,10 @@ export function isLegacyPhotoRecord(record: StoredPhotoRecord): record is Legacy
 
 export function buildPhotoObjectKey(photoId: string): string {
   return `${INVENTORY_PHOTO_PREFIX}${photoId}`;
+}
+
+export function buildFeedbackPhotoObjectKey(photoId: string): string {
+  return `${FEEDBACK_PHOTO_PREFIX}${photoId}`;
 }
 
 export function isInventoryPhotoObjectKey(objectKey: string): boolean {
@@ -154,6 +159,26 @@ export async function uploadPhotoObject(
   contentType: string,
 ): Promise<ItemPhotoMeta> {
   const objectKey = buildPhotoObjectKey(photoId);
+  const stored = await putR2Object(
+    objectKey,
+    data,
+    contentType,
+    "public, max-age=31536000, immutable",
+  );
+
+  return {
+    contentType: stored.contentType,
+    objectKey: stored.objectKey,
+    byteLength: stored.byteLength,
+  };
+}
+
+export async function uploadFeedbackPhotoObject(
+  photoId: string,
+  data: Uint8Array,
+  contentType: string,
+): Promise<ItemPhotoMeta> {
+  const objectKey = buildFeedbackPhotoObjectKey(photoId);
   const stored = await putR2Object(
     objectKey,
     data,

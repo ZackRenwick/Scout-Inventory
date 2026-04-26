@@ -1,6 +1,6 @@
 // POST /api/feedback-photos — upload a feedback bug report photo to R2
 import { Handlers } from "$fresh/server.ts";
-import { uploadPhotoObject } from "../../lib/r2Photos.ts";
+import { uploadFeedbackPhotoObject } from "../../lib/r2Photos.ts";
 import type { Session } from "../../lib/auth.ts";
 import { forbidden } from "../../lib/auth.ts";
 
@@ -41,7 +41,7 @@ export const handler: Handlers = {
 
     try {
       const photoId = crypto.randomUUID();
-      await uploadPhotoObject(photoId, bytes, file.type);
+      await uploadFeedbackPhotoObject(photoId, bytes, file.type);
       
       return Response.json({ ok: true, photoId }, { status: 201 });
     } catch (err) {

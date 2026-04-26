@@ -2477,9 +2477,16 @@ export async function getMealById(id: string): Promise<Meal | null> {
 // ===== FEEDBACK REQUESTS =====
 
 function sortFeedbackRequests(requests: FeedbackRequest[]): FeedbackRequest[] {
+  const rank: Record<FeedbackRequest["status"], number> = {
+    pending: 0,
+    accepted: 1,
+    completed: 2,
+    rejected: 3,
+  };
+
   return requests.sort((a, b) => {
-    if (a.status === "pending" && b.status !== "pending") return -1;
-    if (a.status !== "pending" && b.status === "pending") return 1;
+    const byRank = rank[a.status] - rank[b.status];
+    if (byRank !== 0) return byRank;
     return b.createdAt.localeCompare(a.createdAt);
   });
 }
@@ -2550,7 +2557,7 @@ export async function createFeedbackRequest(
 
 export async function reviewFeedbackRequest(
   id: string,
-  status: "accepted" | "rejected",
+  status: "accepted" | "completed" | "rejected",
   reviewedBy: string,
   reviewReason: string | null,
 ): Promise<FeedbackRequest | null> {

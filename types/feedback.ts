@@ -1,5 +1,5 @@
 export type FeedbackKind = "feature" | "bug";
-export type FeedbackStatus = "pending" | "accepted" | "rejected";
+export type FeedbackStatus = "pending" | "accepted" | "completed" | "rejected";
 
 export interface FeedbackRequest {
   id: string;

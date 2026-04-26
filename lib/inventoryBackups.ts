@@ -196,7 +196,7 @@ function reviveFeedbackRequest(raw: Record<string, unknown>): FeedbackRequest {
   if (!["feature", "bug"].includes(kind)) {
     throw new Error("Invalid feedback request kind.");
   }
-  if (!["pending", "accepted", "rejected"].includes(status)) {
+  if (!["pending", "accepted", "completed", "rejected"].includes(status)) {
     throw new Error("Invalid feedback request status.");
   }
 
