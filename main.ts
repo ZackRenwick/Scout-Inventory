@@ -81,22 +81,14 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   Deno.cron("notify-daily", "30 8 * * 3,5", () => runNotifications("cron"));
 
   if (isWeeklyInventoryBackupEnabled()) {
-    const weeklyBackupSchedule = getWeeklyInventoryBackupSchedule();
-    try {
-      Deno.cron("inventory-weekly-backup", weeklyBackupSchedule, async () => {
-        try {
-          const result = await createInventoryBackup("cron");
-          console.log(`[backup] Stored weekly inventory backup: ${result.objectKey} (${result.byteLength} bytes)`);
-        } catch (error) {
-          console.error("[backup] Weekly inventory backup failed:", error);
-        }
-      });
-    } catch (error) {
-      console.error(
-        `[backup] Invalid INVENTORY_BACKUP_CRON schedule "${weeklyBackupSchedule}". Weekly backup cron disabled.`,
-        error,
-      );
-    }
+    Deno.cron("inventory-weekly-backup", "0 3 * * 7", async () => {
+      try {
+        const result = await createInventoryBackup("cron");
+        console.log(`[backup] Stored weekly inventory backup: ${result.objectKey} (${result.byteLength} bytes)`);
+      } catch (error) {
+        console.error("[backup] Weekly inventory backup failed:", error);
+      }
+    });
   }
 
   // Startup catch-up: if we're deployed on a notification day (Wed=3, Fri=5) between
