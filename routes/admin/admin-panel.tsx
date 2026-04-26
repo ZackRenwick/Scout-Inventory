@@ -1,7 +1,9 @@
 // Admin — manage users (admin role only)
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
+import BackupButtons from "../../islands/BackupButtons.tsx";
 import NotificationButtons from "../../islands/NotificationButtons.tsx";
+import RestoreBackupForm from "../../islands/RestoreBackupForm.tsx";
 import BulkImport from "../../islands/BulkImport.tsx";
 import TemplateBulkImport from "../../islands/TemplateBulkImport.tsx";
 import RebuildIndexes from "../../islands/RebuildIndexes.tsx";
@@ -9,6 +11,7 @@ import DbCleanup from "../../islands/DbCleanup.tsx";
 import DbClear from "../../islands/DbClear.tsx";
 import PasswordInput from "../../islands/PasswordInput.tsx";
 import ConfirmDeleteForm from "../../islands/ConfirmDeleteForm.tsx";
+import { getLatestInventoryBackup } from "../../lib/inventoryBackups.ts";
 import {
   getAllUsers,
   createUser,
@@ -27,6 +30,7 @@ interface UsersPageData {
   users: Omit<User, "passwordHash">[];
   session: Session;
   csrfToken: string;
+  latestBackup: Awaited<ReturnType<typeof getLatestInventoryBackup>>;
   message?: string;
   error?: string;
 }
@@ -34,8 +38,16 @@ interface UsersPageData {
 export const handler: Handlers<UsersPageData> = {
   async GET(_req, ctx) {
     const session = ctx.state.session as Session;
-    const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-    return ctx.render({ users, session, csrfToken: session.csrfToken });
+    const [users, latestBackup] = await Promise.all([
+      getAllUsers(),
+      getLatestInventoryBackup(),
+    ]);
+    return ctx.render({
+      users: users.map(({ passwordHash: _ph, ...u }) => u),
+      session,
+      csrfToken: session.csrfToken,
+      latestBackup,
+    });
   },
 
   async POST(req, ctx) {
@@ -46,8 +58,8 @@ export const handler: Handlers<UsersPageData> = {
     // CSRF validation
     const csrfToken = form.get("csrf_token") as string;
     if (!csrfToken || csrfToken !== session.csrfToken) {
-      const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-      return ctx.render({ users, session, csrfToken: session.csrfToken, error: "Invalid request. Please try again." });
+      const [users, latestBackup] = await Promise.all([getAllUsers(), getLatestInventoryBackup()]);
+      return ctx.render({ users: users.map(({ passwordHash: _ph, ...u }) => u), session, csrfToken: session.csrfToken, latestBackup, error: "Invalid request. Please try again." });
     }
 
     const action = form.get("action") as string;
@@ -71,8 +83,8 @@ export const handler: Handlers<UsersPageData> = {
         if (existing.some((u) => u.username === username)) throw new Error(`User "${username}" already exists.`);
 
         await createUser(username, password, role);
-        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `User "${username}" created successfully.` });
+        const [users, latestBackup] = await Promise.all([getAllUsers(), getLatestInventoryBackup()]);
+        return ctx.render({ users: users.map(({ passwordHash: _ph, ...u }) => u), session, csrfToken: session.csrfToken, latestBackup, message: `User "${username}" created successfully.` });
       }
 
       if (action === "delete") {
@@ -82,8 +94,8 @@ export const handler: Handlers<UsersPageData> = {
         const target = await getUserByUsername(username);
         if (target) await deleteAllSessionsForUser(target.id);
         await deleteUser(username);
-        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `User "${username}" deleted.` });
+        const [users, latestBackup] = await Promise.all([getAllUsers(), getLatestInventoryBackup()]);
+        return ctx.render({ users: users.map(({ passwordHash: _ph, ...u }) => u), session, csrfToken: session.csrfToken, latestBackup, message: `User "${username}" deleted.` });
       }
 
       if (action === "change-password") {
@@ -97,8 +109,8 @@ export const handler: Handlers<UsersPageData> = {
         const target = await getUserByUsername(username);
         if (target) await deleteAllSessionsForUser(target.id);
         await logActivity({ username: session.username, action: "user.password_changed", resource: username });
-        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Password updated for "${username}". Their active sessions have been invalidated.` });
+        const [users, latestBackup] = await Promise.all([getAllUsers(), getLatestInventoryBackup()]);
+        return ctx.render({ users: users.map(({ passwordHash: _ph, ...u }) => u), session, csrfToken: session.csrfToken, latestBackup, message: `Password updated for "${username}". Their active sessions have been invalidated.` });
       }
 
       if (action === "change-role") {
@@ -117,21 +129,21 @@ export const handler: Handlers<UsersPageData> = {
         const target = await getUserByUsername(username);
         if (target) await deleteAllSessionsForUser(target.id);
         await logActivity({ username: session.username, action: "user.role_changed", resource: username, details: role });
-        const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-        return ctx.render({ users, session, csrfToken: session.csrfToken, message: `Role for "${username}" changed to ${role}.` });
+        const [users, latestBackup] = await Promise.all([getAllUsers(), getLatestInventoryBackup()]);
+        return ctx.render({ users: users.map(({ passwordHash: _ph, ...u }) => u), session, csrfToken: session.csrfToken, latestBackup, message: `Role for "${username}" changed to ${role}.` });
       }
     } catch (err) {
-      const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-      return ctx.render({ users, session, csrfToken: session.csrfToken, error: (err as Error).message });
+      const [users, latestBackup] = await Promise.all([getAllUsers(), getLatestInventoryBackup()]);
+      return ctx.render({ users: users.map(({ passwordHash: _ph, ...u }) => u), session, csrfToken: session.csrfToken, latestBackup, error: (err as Error).message });
     }
 
-    const users = (await getAllUsers()).map(({ passwordHash: _ph, ...u }) => u);
-    return ctx.render({ users, session, csrfToken: session.csrfToken });
+    const [users, latestBackup] = await Promise.all([getAllUsers(), getLatestInventoryBackup()]);
+    return ctx.render({ users: users.map(({ passwordHash: _ph, ...u }) => u), session, csrfToken: session.csrfToken, latestBackup });
   },
 };
 
 export default function UsersPage({ data }: PageProps<UsersPageData>) {
-  const { users, session, csrfToken, message, error } = data;
+  const { users, session, csrfToken, latestBackup, message, error } = data;
   const isAdmin = session.role === "admin";
 
   return (
@@ -150,6 +162,19 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
         <div class="flex flex-wrap gap-3 mb-3">
           <NotificationButtons csrfToken={csrfToken} />
         </div>
+      </div>
+      )}
+
+      {isAdmin && (
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">🗄️ Backups</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Create an on-demand JSON snapshot of inventory data in R2. Weekly backups can also run automatically when
+          <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs ml-1">ENABLE_INVENTORY_BACKUP_CRON</code>
+          is enabled.
+        </p>
+        <BackupButtons csrfToken={csrfToken} latestBackup={latestBackup} />
+        <RestoreBackupForm csrfToken={csrfToken} />
       </div>
       )}
 

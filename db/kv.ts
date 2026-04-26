@@ -16,11 +16,16 @@ import type { FirstAidKit } from "../types/firstAid.ts";
 import type { FirstAidCatalogItem } from "../types/firstAid.ts";
 import type { FirstAidCheckState } from "../types/firstAid.ts";
 import type { RiskAssessment } from "../types/risk.ts";
+import type {
+  BackupPhotoRecord,
+  InventoryBackupSnapshot,
+} from "../types/inventoryBackup.ts";
 import { DEFAULT_FIRST_AID_CATALOG } from "../lib/firstAidCatalog.ts";
 import { FIRST_AID_SECTIONS } from "../types/firstAid.ts";
 import {
   deletePhotoObject,
   isLegacyPhotoRecord,
+  type ItemPhotoMeta,
   type StoredPhotoRecord,
   uploadPhotoObject,
 } from "../lib/r2Photos.ts";
@@ -558,6 +563,23 @@ export async function getItemPhoto(itemId: string): Promise<StoredPhotoRecord | 
   const db = await initKv();
   const result = await db.get<StoredPhotoRecord>(["inventory", "photos", itemId]);
   return result.value ?? null;
+}
+
+export async function getAllItemPhotoMetadataRecords(): Promise<BackupPhotoRecord[]> {
+  const db = await initKv();
+  const records: BackupPhotoRecord[] = [];
+  for await (const entry of db.list<StoredPhotoRecord>({ prefix: ["inventory", "photos"] })) {
+    const photoId = String(entry.key[entry.key.length - 1]);
+    if (isLegacyPhotoRecord(entry.value)) continue;
+    const meta = entry.value as ItemPhotoMeta;
+    records.push({
+      photoId,
+      contentType: meta.contentType,
+      objectKey: meta.objectKey,
+      byteLength: meta.byteLength,
+    });
+  }
+  return records;
 }
 
 /** Store a new photo. Returns the generated photoId.
@@ -2618,4 +2640,139 @@ export async function clearMeals(): Promise<number> {
   }
   await Promise.all(deleteOps);
   return deleteOps.length;
+}
+
+export async function replaceAllFromInventoryBackup(
+  snapshot: InventoryBackupSnapshot,
+): Promise<void> {
+  const db = await initKv();
+  const BATCH_SIZE = 250;
+
+  async function runInBatches<T>(
+    values: T[],
+    worker: (value: T) => Promise<unknown>,
+  ): Promise<void> {
+    for (let i = 0; i < values.length; i += BATCH_SIZE) {
+      const chunk = values.slice(i, i + BATCH_SIZE);
+      await Promise.all(chunk.map(worker));
+    }
+  }
+
+  const deleteKeys: Deno.KvKey[] = [];
+
+  for await (const entry of db.list({ prefix: KEYS.items })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: ["inventory", "idx"] })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: ["inventory", "photos"] })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.checkouts })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.camps })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.templates })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.firstAidKits })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.firstAidCatalog })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.firstAidChecks })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.riskAssessments })) {
+    deleteKeys.push(entry.key);
+  }
+  for await (const entry of db.list({ prefix: KEYS.meals })) {
+    deleteKeys.push(entry.key);
+  }
+
+  deleteKeys.push(KEYS.neckers as unknown as Deno.KvKey);
+  deleteKeys.push(KEYS.neckersCreated as unknown as Deno.KvKey);
+  deleteKeys.push(KEYS.neckersTotalMade as unknown as Deno.KvKey);
+  deleteKeys.push(KEYS.adultNeckersCreated as unknown as Deno.KvKey);
+  deleteKeys.push(KEYS.adultNeckersTotalMade as unknown as Deno.KvKey);
+  deleteKeys.push(KEYS.computedStats as unknown as Deno.KvKey);
+
+  await runInBatches(deleteKeys, (key) => db.delete(key));
+
+  const writeOps: Array<() => Promise<unknown>> = [];
+
+  for (const item of snapshot.items) {
+    writeOps.push(() => db.set([...KEYS.items, item.id], serializeItem(item)));
+  }
+  for (const photo of snapshot.photoRecords) {
+    writeOps.push(() => db.set(["inventory", "photos", photo.photoId], {
+      contentType: photo.contentType,
+      objectKey: photo.objectKey,
+      byteLength: photo.byteLength,
+    } satisfies ItemPhotoMeta));
+  }
+  for (const checkout of snapshot.checkOuts) {
+    writeOps.push(() => db.set([...KEYS.checkouts, checkout.id], serializeCheckOut(checkout)));
+  }
+  for (const plan of snapshot.campPlans) {
+    writeOps.push(() => db.set([...KEYS.camps, plan.id], serializeCampPlan(plan)));
+  }
+  for (const template of snapshot.campTemplates) {
+    writeOps.push(() => db.set([...KEYS.templates, template.id], serializeCampTemplate(template)));
+  }
+  for (const kit of snapshot.firstAidKits) {
+    writeOps.push(() => db.set([...KEYS.firstAidKits, kit.id], serializeFirstAidKit(kit)));
+  }
+  for (const item of snapshot.firstAidCatalog) {
+    writeOps.push(() => db.set([...KEYS.firstAidCatalog, item.id], item));
+  }
+  const overallFirstAidCheck = snapshot.firstAidChecks.overall;
+  if (overallFirstAidCheck !== null) {
+    writeOps.push(() => db.set(
+      [...KEYS.firstAidChecks, "overall"],
+      serializeFirstAidCheckState(overallFirstAidCheck),
+    ));
+  }
+  for (const [kitId, state] of Object.entries(snapshot.firstAidChecks.kits)) {
+    writeOps.push(() => db.set(
+      [...KEYS.firstAidChecks, "kits", kitId],
+      serializeFirstAidCheckState(state),
+    ));
+  }
+  for (const assessment of snapshot.riskAssessments) {
+    writeOps.push(() => db.set(
+      [...KEYS.riskAssessments, assessment.id],
+      serializeRiskAssessment(assessment),
+    ));
+  }
+  for (const meal of snapshot.meals) {
+    writeOps.push(() => db.set([...KEYS.meals, meal.id], meal));
+  }
+
+  writeOps.push(() => db.set(KEYS.neckers, Math.max(0, snapshot.neckers.inStock)));
+  writeOps.push(() => db.set(KEYS.neckersCreated, Math.max(0, snapshot.neckers.created)));
+  writeOps.push(() => db.set(KEYS.neckersTotalMade, Math.max(0, snapshot.neckers.totalMade)));
+  writeOps.push(() => db.set(KEYS.adultNeckersCreated, Math.max(0, snapshot.neckers.adultCreated)));
+  writeOps.push(() => db.set(KEYS.adultNeckersTotalMade, Math.max(0, snapshot.neckers.adultTotalMade)));
+
+  for (let i = 0; i < writeOps.length; i += BATCH_SIZE) {
+    const chunk = writeOps.slice(i, i + BATCH_SIZE);
+    await Promise.all(chunk.map((op) => op()));
+  }
+
+  invalidateItemsCache();
+  invalidateCheckoutsCache();
+  invalidateCampPlansCache();
+  invalidateTemplatesCache();
+  invalidateFirstAidKitsCache();
+  invalidateFirstAidCatalogCache();
+  invalidateFirstAidCheckStateCaches();
+  invalidateRiskAssessmentsCache();
+  invalidateMealsCache();
+
+  await rebuildIndexes();
 }

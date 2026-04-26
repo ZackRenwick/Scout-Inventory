@@ -121,6 +121,15 @@ Photo storage environment variables:
 | `R2_ACCESS_KEY_ID` | R2 access key ID |
 | `R2_SECRET_ACCESS_KEY` | R2 secret access key |
 
+Weekly backup environment variables:
+
+| Variable | Description |
+|---|---|
+| `ENABLE_INVENTORY_BACKUP_CRON` | Set to `true` to enable weekly JSON snapshots into R2 |
+| `INVENTORY_BACKUP_CRON` | *(optional)* Cron expression for backups — defaults to `0 3 * * 0` (Sunday 03:00 UTC) |
+| `R2_BACKUP_PREFIX` | *(optional)* Object key prefix for backups — defaults to `backups/inventory` |
+| `INVENTORY_BACKUP_KEEP_COUNT` | *(optional)* How many recent backup JSON files to retain — defaults to `8`; older files are pruned automatically |
+
 If `RESEND_API_KEY` or `NOTIFY_EMAIL` are unset the notification functions are safe no-ops (they log to console), so local dev works without any email configuration.
 
 ### 📜 Activity Log
@@ -283,6 +292,8 @@ One notification `Deno.cron` job runs at 08:30 UTC on Wednesday + Friday (only w
 - Low stock check — emails if any inventory items or neckers are below threshold
 - Food expiry check — emails if any food items are expired or expiring within 30 days
 - Overdue loans check — emails if any loans are overdue
+
+An optional weekly backup `Deno.cron` job can also write a full JSON snapshot of the app's inventory data into R2 when `ENABLE_INVENTORY_BACKUP_CRON=true`. By default it runs on Sunday at 03:00 UTC and stores snapshots under `backups/inventory/` in the configured R2 bucket.
 
 A third cron runs every 5 minutes to self-ping the app and keep the isolate warm, reducing cold-start latency. Set `APP_URL` in the Deno Deploy dashboard to the production URL.
 

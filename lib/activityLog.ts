@@ -18,6 +18,8 @@ export type ActivityAction =
   | "item.created"
   | "item.updated"
   | "item.deleted"
+  | "inventory.backup_exported"
+  | "inventory.backup_restored"
   | "item.qr_failed"
   | "item.maintenance_logged"
   | "items.imported"

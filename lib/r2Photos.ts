@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -15,6 +16,12 @@ interface R2Config {
 interface PhotoObject {
   data: Uint8Array;
   contentType: string;
+}
+
+export interface R2ObjectSummary {
+  key: string;
+  lastModified: string | null;
+  size: number;
 }
 
 function getR2Config(): R2Config {
@@ -93,13 +100,42 @@ export interface LegacyItemPhoto {
 }
 
 export type StoredPhotoRecord = ItemPhotoMeta | LegacyItemPhoto;
+export const INVENTORY_PHOTO_PREFIX = "inventory/photos/";
 
 export function isLegacyPhotoRecord(record: StoredPhotoRecord): record is LegacyItemPhoto {
   return "data" in record;
 }
 
 export function buildPhotoObjectKey(photoId: string): string {
-  return `inventory/photos/${photoId}`;
+  return `${INVENTORY_PHOTO_PREFIX}${photoId}`;
+}
+
+export function isInventoryPhotoObjectKey(objectKey: string): boolean {
+  return objectKey.startsWith(INVENTORY_PHOTO_PREFIX) &&
+    objectKey.length > INVENTORY_PHOTO_PREFIX.length;
+}
+
+export async function putR2Object(
+  objectKey: string,
+  data: Uint8Array,
+  contentType: string,
+  cacheControl?: string,
+): Promise<{ objectKey: string; byteLength: number; contentType: string }> {
+  await getR2Client().send(
+    new PutObjectCommand({
+      Bucket: getBucketName(),
+      Key: objectKey,
+      Body: data,
+      ContentType: contentType,
+      CacheControl: cacheControl,
+    }),
+  );
+
+  return {
+    objectKey,
+    byteLength: data.byteLength,
+    contentType,
+  };
 }
 
 export async function uploadPhotoObject(
@@ -108,20 +144,17 @@ export async function uploadPhotoObject(
   contentType: string,
 ): Promise<ItemPhotoMeta> {
   const objectKey = buildPhotoObjectKey(photoId);
-  await getR2Client().send(
-    new PutObjectCommand({
-      Bucket: getBucketName(),
-      Key: objectKey,
-      Body: data,
-      ContentType: contentType,
-      CacheControl: "public, max-age=31536000, immutable",
-    }),
+  const stored = await putR2Object(
+    objectKey,
+    data,
+    contentType,
+    "public, max-age=31536000, immutable",
   );
 
   return {
-    contentType,
-    objectKey,
-    byteLength: data.byteLength,
+    contentType: stored.contentType,
+    objectKey: stored.objectKey,
+    byteLength: stored.byteLength,
   };
 }
 
@@ -154,4 +187,38 @@ export async function deletePhotoObject(objectKey: string): Promise<void> {
       Key: objectKey,
     }),
   );
+}
+
+export async function listR2ObjectsByPrefix(
+  prefix: string,
+): Promise<R2ObjectSummary[]> {
+  const client = getR2Client();
+  const bucket = getBucketName();
+  const out: R2ObjectSummary[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const result = await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    for (const obj of result.Contents ?? []) {
+      if (!obj.Key) continue;
+      out.push({
+        key: obj.Key,
+        lastModified: obj.LastModified ? obj.LastModified.toISOString() : null,
+        size: obj.Size ?? 0,
+      });
+    }
+
+    continuationToken = result.IsTruncated
+      ? result.NextContinuationToken
+      : undefined;
+  } while (continuationToken);
+
+  return out;
 }

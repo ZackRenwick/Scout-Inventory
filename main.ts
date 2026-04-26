@@ -10,6 +10,11 @@ import { start } from "$fresh/server.ts";
 import manifest from "./fresh.gen.ts";
 import config from "./fresh.config.ts";
 import { ensureDefaultAdmin } from "./lib/auth.ts";
+import {
+  createInventoryBackup,
+  getWeeklyInventoryBackupSchedule,
+  isWeeklyInventoryBackupEnabled,
+} from "./lib/inventoryBackups.ts";
 import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "./lib/notifications.ts";
 import { initKv, preloadCaches } from "./db/kv.ts";
 
@@ -74,6 +79,17 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   // Running at 08:30 rather than 08:00 gives a buffer so a deploy just before 08:00 doesn't
   // cause the cron to be registered too late to fire that morning.
   Deno.cron("notify-daily", "30 8 * * 3,5", () => runNotifications("cron"));
+
+  if (isWeeklyInventoryBackupEnabled()) {
+    Deno.cron("inventory-weekly-backup", getWeeklyInventoryBackupSchedule(), async () => {
+      try {
+        const result = await createInventoryBackup("cron");
+        console.log(`[backup] Stored weekly inventory backup: ${result.objectKey} (${result.byteLength} bytes)`);
+      } catch (error) {
+        console.error("[backup] Weekly inventory backup failed:", error);
+      }
+    });
+  }
 
   // Startup catch-up: if we're deployed on a notification day (Wed=3, Fri=5) between
   // 08:30 and 09:30 UTC, run notifications in case the 08:30 cron was missed.
