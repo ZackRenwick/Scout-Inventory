@@ -1,12 +1,12 @@
 // Printable QR label page for a single inventory item
 import { Handlers, PageProps } from "$fresh/server.ts";
-import QRCode from "npm:qrcode@1.5.4";
 import type { InventoryItem } from "../../../types/inventory.ts";
 import { getCategoryEmoji } from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
 import { getItemById } from "../../../db/kv.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 import PrintButton from "../../../islands/PrintButton.tsx";
+import { generateQrDataUri } from "../../../lib/qr.ts";
 
 interface QrPageData {
   item: InventoryItem;
@@ -32,11 +32,7 @@ export const handler: Handlers<QrPageData> = {
     // Generate QR server-side so item URLs are never sent to third-party services.
     let qrDataUri = "";
     try {
-      qrDataUri = await QRCode.toDataURL(itemUrl, {
-        width: 220,
-        margin: 1,
-        errorCorrectionLevel: "M",
-      });
+      qrDataUri = generateQrDataUri(itemUrl, { moduleMargin: 1 });
     } catch (err) {
       // Keep label page usable while recording failed QR generation for admin follow-up.
       await logActivity({
