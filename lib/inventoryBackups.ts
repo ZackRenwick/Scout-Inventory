@@ -43,8 +43,8 @@ export function isWeeklyInventoryBackupEnabled(): boolean {
 }
 
 export function getWeeklyInventoryBackupSchedule(): string {
-  return (Deno.env.get("INVENTORY_BACKUP_CRON") ?? DEFAULT_WEEKLY_BACKUP_CRON)
-    .trim();
+  const raw = (Deno.env.get("INVENTORY_BACKUP_CRON") ?? "").trim();
+  return raw || DEFAULT_WEEKLY_BACKUP_CRON;
 }
 
 export function getInventoryBackupKeepCount(): number {
