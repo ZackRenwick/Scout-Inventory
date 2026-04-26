@@ -318,6 +318,12 @@ Planned next step: a smart camp planning assistant that suggests quantities base
 
 ---
 
+## Third-Party Notices
+
+- Third-party license attributions are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+
+---
+
 ## 💡 Ideas
 
 ### 📋 Stocktake Wizard
