@@ -68,7 +68,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (request.mode === "navigate") {
+  // Only handle GET navigations. Form submissions can navigate with POST,
+  // and Cache API rejects non-GET requests.
+  if (request.mode === "navigate" && request.method === "GET") {
     event.respondWith(networkFirstPage(request));
     return;
   }
@@ -117,6 +119,10 @@ async function cacheFirst(request, cacheName) {
 }
 
 async function networkFirstPage(request) {
+  if (request.method !== "GET") {
+    return fetch(request);
+  }
+
   try {
     const response = await fetch(request);
     // Only cache genuine 200 pages — redirects (30x) must not be cached.

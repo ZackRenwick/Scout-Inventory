@@ -34,6 +34,12 @@ const DEV_SESSION: Session = {
 
 // Security headers applied to every response
 function applySecurityHeaders(headers: Headers): void {
+  const r2AccountId = Deno.env.get("R2_ACCOUNT_ID")?.trim() ?? "";
+  const r2Bucket = Deno.env.get("R2_BUCKET")?.trim() ?? "";
+  const r2ImageHost = (r2AccountId && r2Bucket)
+    ? `https://${r2Bucket}.${r2AccountId}.r2.cloudflarestorage.com`
+    : "";
+
   // Prevent the app being embedded in iframes (clickjacking)
   headers.set("X-Frame-Options", "DENY");
   // Stop browsers from MIME-sniffing responses away from the declared content-type
@@ -56,7 +62,7 @@ function applySecurityHeaders(headers: Headers): void {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://esm.sh",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data:",
+      `img-src 'self' data:${r2ImageHost ? ` ${r2ImageHost}` : ""}`,
       "connect-src 'self'",
       "font-src 'self'",
       "frame-ancestors 'none'",
