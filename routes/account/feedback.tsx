@@ -8,6 +8,7 @@ import type { FeedbackKind, FeedbackRequest } from "../../types/feedback.ts";
 import type { Session } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 import { isR2Configured } from "../../lib/r2Photos.ts";
+import FeedbackFormClient from "../../islands/FeedbackFormClient.tsx";
 
 interface FeedbackPageData {
   session: Session;
@@ -144,7 +145,7 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
             </div>
           )}
 
-          <form method="POST" class="space-y-4">
+          <form id="feedback-form" method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value={csrfToken} />
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
@@ -268,106 +269,7 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
         </div>
       </div>
 
-      <script>
-        {`
-          const kindSelect = document.querySelector('select[name="kind"]');
-          const photoSection = document.getElementById('photo-section');
-          
-          // Photo upload only initialized if R2 is configured
-          if (photoSection) {
-            const photoInput = document.getElementById('photo-input');
-            const photoPreview = document.getElementById('photo-preview');
-            const previewImg = document.getElementById('preview-img');
-            const photoIdInput = document.getElementById('photo-id-input');
-            const clearBtn = document.getElementById('clear-photo-btn');
-            const uploadStatus = document.getElementById('upload-status');
-
-            let pendingFile = null;
-            let pendingPhotoId = null;
-
-            function updatePhotoSectionVisibility() {
-              photoSection.style.display = kindSelect.value === 'bug' ? 'block' : 'none';
-              if (kindSelect.value !== 'bug') {
-                photoPreview.classList.add('hidden');
-                photoInput.value = '';
-                photoIdInput.value = '';
-                pendingFile = null;
-                pendingPhotoId = null;
-              }
-            }
-
-            photoInput.addEventListener('change', async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              
-              pendingFile = file;
-              uploadStatus.textContent = 'Loading preview...';
-              
-              try {
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                  const dataUrl = ev.target?.result;
-                  previewImg.src = dataUrl;
-                  photoPreview.classList.remove('hidden');
-                  uploadStatus.textContent = 'Ready to submit (will upload on submit)';
-                };
-                reader.readAsDataURL(file);
-              } catch (err) {
-                alert('Could not load image: ' + err.message);
-                photoInput.value = '';
-              }
-            });
-
-            clearBtn.addEventListener('click', () => {
-              photoPreview.classList.add('hidden');
-              photoInput.value = '';
-              photoIdInput.value = '';
-              pendingFile = null;
-              pendingPhotoId = null;
-            });
-
-            // Intercept form submission to upload photo first if present
-            const form = document.querySelector('form');
-            form.addEventListener('submit', async (e) => {
-              if (kindSelect.value !== 'bug' || !pendingFile) {
-                return; // No photo, submit normally
-              }
-              
-              e.preventDefault();
-              uploadStatus.textContent = 'Uploading...';
-              
-              try {
-                const fd = new FormData();
-                fd.append('photo', pendingFile);
-                
-                const res = await fetch('/api/feedback-photos', {
-                  method: 'POST',
-                  body: fd,
-                });
-                
-                if (!res.ok) {
-                  const body = await res.json().catch(() => ({}));
-                  throw new Error(body.error ?? 'Upload failed with status ' + res.status);
-                }
-                
-                const { photoId } = await res.json();
-                photoIdInput.value = photoId;
-                uploadStatus.textContent = 'Upload complete';
-                pendingFile = null;
-                
-                // Now submit the form
-                form.submit();
-              } catch (err) {
-                uploadStatus.textContent = 'Upload failed: ' + err.message;
-                photoPreview.classList.remove('hidden');
-              }
-            });
-
-            kindSelect.addEventListener('change', updatePhotoSectionVisibility);
-            updatePhotoSectionVisibility();
-          }
-        `}
-      </script>
+      <FeedbackFormClient />
     </Layout>
   );
 }
