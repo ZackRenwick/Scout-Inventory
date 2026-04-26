@@ -2,6 +2,7 @@ import {
   getAllCampPlans,
   getAllCampTemplates,
   getAllCheckOuts,
+  getAllFeedbackRequests,
   getAllFirstAidCatalogItems,
   getAllFirstAidKits,
   getAllItemPhotoMetadataRecords,
@@ -23,6 +24,7 @@ import type {
   InventoryBackupMeta,
   InventoryBackupSnapshot,
 } from "../types/inventoryBackup.ts";
+import type { FeedbackRequest } from "../types/feedback.ts";
 import type { FirstAidCheckState } from "../types/firstAid.ts";
 import type {
   CampPlan,
@@ -184,6 +186,42 @@ function reviveRiskAssessment(raw: Record<string, unknown>): RiskAssessment {
   } as RiskAssessment;
 }
 
+function reviveIsoTimestamp(field: string, value: unknown): string {
+  return reviveDateStrict(field, value).toISOString();
+}
+
+function reviveFeedbackRequest(raw: Record<string, unknown>): FeedbackRequest {
+  const status = String(raw.status ?? "pending");
+  const kind = String(raw.kind ?? "feature");
+  if (!["feature", "bug"].includes(kind)) {
+    throw new Error("Invalid feedback request kind.");
+  }
+  if (!["pending", "accepted", "rejected"].includes(status)) {
+    throw new Error("Invalid feedback request status.");
+  }
+
+  const request: FeedbackRequest = {
+    id: String(raw.id ?? "").trim(),
+    kind: kind as FeedbackRequest["kind"],
+    title: String(raw.title ?? "").trim(),
+    description: String(raw.description ?? "").trim(),
+    status: status as FeedbackRequest["status"],
+    createdBy: String(raw.createdBy ?? "").trim().toLowerCase(),
+    createdAt: reviveIsoTimestamp("feedbackRequests[].createdAt", raw.createdAt),
+    reviewedBy: raw.reviewedBy ? String(raw.reviewedBy).trim().toLowerCase() : null,
+    reviewedAt: raw.reviewedAt
+      ? reviveIsoTimestamp("feedbackRequests[].reviewedAt", raw.reviewedAt)
+      : null,
+    reviewReason: raw.reviewReason ? String(raw.reviewReason).trim() : null,
+  };
+
+  if (raw.photoId) {
+    request.photoId = String(raw.photoId).trim();
+  }
+
+  return request;
+}
+
 export function parseInventoryBackupPayload(text: string): {
   snapshot: InventoryBackupSnapshot | null;
   error?: string;
@@ -335,6 +373,11 @@ export function parseInventoryBackupPayload(text: string): {
       meals: Array.isArray(raw.meals)
         ? raw.meals as Awaited<ReturnType<typeof getAllMeals>>
         : [],
+      feedbackRequests: Array.isArray(raw.feedbackRequests)
+        ? raw.feedbackRequests.map((request) =>
+          reviveFeedbackRequest(request as Record<string, unknown>)
+        )
+        : [],
     };
 
     if (!Number.isFinite(snapshot.neckers.inStock) ||
@@ -355,6 +398,7 @@ export function parseInventoryBackupPayload(text: string): {
     ensureUniqueIds(snapshot.firstAidKits, "firstAidKits");
     ensureUniqueIds(snapshot.riskAssessments, "riskAssessments");
     ensureUniqueIds(snapshot.meals, "meals");
+    ensureUniqueIds(snapshot.feedbackRequests, "feedbackRequests");
     const photoIdSet = new Set<string>();
     for (const record of snapshot.photoRecords) {
       if (photoIdSet.has(record.photoId)) {
@@ -421,6 +465,7 @@ export async function createInventoryBackup(source: "cron" | "manual" = "cron") 
     firstAidKitStates,
     riskAssessments,
     meals,
+    feedbackRequests,
   ] = await Promise.all([
     getAllItems(),
     getAllItemPhotoMetadataRecords(),
@@ -434,6 +479,7 @@ export async function createInventoryBackup(source: "cron" | "manual" = "cron") 
     getFirstAidKitCheckStates(),
     getAllRiskAssessments(),
     getAllMeals(),
+    getAllFeedbackRequests(),
   ]);
 
   const now = new Date();
@@ -456,6 +502,7 @@ export async function createInventoryBackup(source: "cron" | "manual" = "cron") 
     },
     riskAssessments,
     meals,
+    feedbackRequests,
   };
 
   const json = JSON.stringify(snapshot, null, 2);

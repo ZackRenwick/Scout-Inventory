@@ -5,6 +5,7 @@
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $_middleware from "./routes/_middleware.ts";
+import * as $account_feedback from "./routes/account/feedback.tsx";
 import * as $account_settings from "./routes/account/settings.tsx";
 import * as $admin_middleware from "./routes/admin/_middleware.ts";
 import * as $admin_activity from "./routes/admin/activity.tsx";
@@ -15,6 +16,7 @@ import * as $admin_clear_db from "./routes/admin/clear-db.ts";
 import * as $admin_export_json from "./routes/admin/export-json.ts";
 import * as $admin_export_templates_json from "./routes/admin/export-templates-json.ts";
 import * as $admin_export from "./routes/admin/export.ts";
+import * as $admin_feedback from "./routes/admin/feedback.tsx";
 import * as $admin_import_templates from "./routes/admin/import-templates.ts";
 import * as $admin_import from "./routes/admin/import.ts";
 import * as $admin_notify from "./routes/admin/notify.ts";
@@ -26,6 +28,7 @@ import * as $api_camp_templates_index from "./routes/api/camp-templates/index.ts
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
 import * as $api_easter_egg from "./routes/api/easter-egg.ts";
+import * as $api_feedback_photos from "./routes/api/feedback-photos.ts";
 import * as $api_first_aid_check from "./routes/api/first-aid-check.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_id_photo from "./routes/api/items/[id]/photo.ts";
@@ -117,6 +120,7 @@ const manifest = {
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
     "./routes/_middleware.ts": $_middleware,
+    "./routes/account/feedback.tsx": $account_feedback,
     "./routes/account/settings.tsx": $account_settings,
     "./routes/admin/_middleware.ts": $admin_middleware,
     "./routes/admin/activity.tsx": $admin_activity,
@@ -127,6 +131,7 @@ const manifest = {
     "./routes/admin/export-json.ts": $admin_export_json,
     "./routes/admin/export-templates-json.ts": $admin_export_templates_json,
     "./routes/admin/export.ts": $admin_export,
+    "./routes/admin/feedback.tsx": $admin_feedback,
     "./routes/admin/import-templates.ts": $admin_import_templates,
     "./routes/admin/import.ts": $admin_import,
     "./routes/admin/notify.ts": $admin_notify,
@@ -138,6 +143,7 @@ const manifest = {
     "./routes/api/camps/[id].ts": $api_camps_id_,
     "./routes/api/camps/index.ts": $api_camps_index,
     "./routes/api/easter-egg.ts": $api_easter_egg,
+    "./routes/api/feedback-photos.ts": $api_feedback_photos,
     "./routes/api/first-aid-check.ts": $api_first_aid_check,
     "./routes/api/items/[id].ts": $api_items_id_,
     "./routes/api/items/[id]/photo.ts": $api_items_id_photo,

@@ -46,6 +46,16 @@ function getR2Config(): R2Config {
   return { accountId, bucket, accessKeyId, secretAccessKey };
 }
 
+/** Check if R2 is configured without throwing */
+export function isR2Configured(): boolean {
+  const accountId = Deno.env.get("R2_ACCOUNT_ID")?.trim() ?? "";
+  const bucket = Deno.env.get("R2_BUCKET")?.trim() ?? "";
+  const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID")?.trim() ?? "";
+  const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY")?.trim() ?? "";
+  
+  return !!(accountId && bucket && accessKeyId && secretAccessKey);
+}
+
 let client: S3Client | null = null;
 
 function getR2Client(): S3Client {

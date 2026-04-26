@@ -230,6 +230,14 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
             📋 Activity Log
           </a>
           )}
+          {isAdmin && (
+          <a
+            href="/admin/feedback"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            💡 Review Feedback
+          </a>
+          )}
         </div>
         {isAdmin && (
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">Inventory JSON and camp templates JSON can both be re-uploaded from the import section below.</p>

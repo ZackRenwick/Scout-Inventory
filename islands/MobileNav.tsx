@@ -43,6 +43,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         {(role === "admin" || role === "manager") && (
           <a href="/admin/admin-panel" class="hover:text-purple-200 transition-colors">Admin</a>
         )}
+        <a href="/account/feedback" class="hover:text-purple-200 transition-colors">💡 Feedback</a>
         <ThemeToggle />
         {username && (
           <div class="flex items-center space-x-2 border-l border-purple-500 pl-4">
@@ -78,6 +79,7 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           {(role === "admin" || role === "manager") && (
             <a href="/admin/admin-panel" class="block px-6 py-3 hover:bg-purple-800 transition-colors">⚙️ Admin</a>
           )}
+          <a href="/account/feedback" class="block px-6 py-3 hover:bg-purple-800 transition-colors">💡 Feedback</a>
           {username && (
             <div class="border-t border-purple-700 mt-1">
               <a href="/account/settings" class="block px-6 py-3 text-sm hover:bg-purple-800 transition-colors">⚙️ Account Settings ({username})</a>

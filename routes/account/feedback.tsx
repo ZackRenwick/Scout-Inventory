@@ -1,0 +1,373 @@
+import { Handlers, PageProps } from "$fresh/server.ts";
+import Layout from "../../components/Layout.tsx";
+import {
+  createFeedbackRequest,
+  getFeedbackRequestsByUsername,
+} from "../../db/kv.ts";
+import type { FeedbackKind, FeedbackRequest } from "../../types/feedback.ts";
+import type { Session } from "../../lib/auth.ts";
+import { logActivity } from "../../lib/activityLog.ts";
+import { isR2Configured } from "../../lib/r2Photos.ts";
+
+interface FeedbackPageData {
+  session: Session;
+  csrfToken: string;
+  requests: FeedbackRequest[];
+  r2Configured: boolean;
+  message?: string;
+  error?: string;
+  form?: {
+    kind?: FeedbackKind;
+    title?: string;
+    description?: string;
+    photoId?: string;
+  };
+}
+
+async function renderPage(
+  session: Session,
+  overrides: Partial<FeedbackPageData> = {},
+): Promise<FeedbackPageData> {
+  const requests = await getFeedbackRequestsByUsername(session.username);
+  return {
+    session,
+    csrfToken: session.csrfToken,
+    requests,
+    r2Configured: isR2Configured(),
+    ...overrides,
+  };
+}
+
+export const handler: Handlers<FeedbackPageData> = {
+  async GET(_req, ctx) {
+    const session = ctx.state.session as Session;
+    return ctx.render(await renderPage(session));
+  },
+
+  async POST(req, ctx) {
+    const session = ctx.state.session as Session;
+    const form = await req.formData();
+
+    const csrfToken = form.get("csrf_token") as string;
+    if (!csrfToken || csrfToken !== session.csrfToken) {
+      return ctx.render(
+        await renderPage(session, {
+          error: "Invalid request. Please try again.",
+        }),
+      );
+    }
+
+    const kind = (form.get("kind") as FeedbackKind | null) ?? "feature";
+    const title = String(form.get("title") ?? "").trim();
+    const description = String(form.get("description") ?? "").trim();
+    const photoId = kind === "bug" ? (String(form.get("photoId") ?? "").trim() || undefined) : undefined;
+
+    try {
+      if (!["feature", "bug"].includes(kind)) {
+        throw new Error("Please choose feature request or bug report.");
+      }
+      if (title.length < 5 || title.length > 120) {
+        throw new Error("Title must be between 5 and 120 characters.");
+      }
+      if (description.length < 20 || description.length > 4000) {
+        throw new Error("Details must be between 20 and 4000 characters.");
+      }
+
+      const created = await createFeedbackRequest(
+        { kind, title, description, ...(photoId && { photoId }) },
+        session.username,
+      );
+      await logActivity({
+        username: session.username,
+        action: "feedback.submitted",
+        resource: created.title,
+        resourceId: created.id,
+        details: created.kind,
+      });
+
+      return ctx.render(
+        await renderPage(session, {
+          message: "Your request has been submitted for admin review.",
+          form: { kind: "feature", title: "", description: "", photoId: undefined },
+        }),
+      );
+    } catch (err) {
+      return ctx.render(
+        await renderPage(session, {
+          error: (err as Error).message,
+          form: { kind, title, description, photoId },
+        }),
+      );
+    }
+  },
+};
+
+function statusClasses(status: FeedbackRequest["status"]): string {
+  if (status === "accepted") {
+    return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200";
+  }
+  if (status === "rejected") {
+    return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200";
+  }
+  return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200";
+}
+
+function getFeedbackPhotoUrl(photoId: string): string {
+  const accountId = Deno.env.get("R2_ACCOUNT_ID")?.trim() ?? "";
+  const bucket = Deno.env.get("R2_BUCKET")?.trim() ?? "";
+  return `https://${bucket}.${accountId}.r2.cloudflarestorage.com/feedback/photos/${photoId}`;
+}
+
+export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
+  const { session, csrfToken, requests, r2Configured, message, error, form } = data;
+
+  return (
+    <Layout title="Feature Requests & Bug Reports" username={session.username} role={session.role}>
+      <div class="max-w-4xl space-y-6">
+        <div>
+          <p class="text-gray-600 dark:text-gray-400">
+            Submit an improvement idea or bug report. Admins can accept or reject it, and rejected requests include a reason.
+          </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">Submit New Request</h2>
+
+          {message && (
+            <div class="mb-4 p-3 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
+              ✅ {message}
+            </div>
+          )}
+          {error && (
+            <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-700 rounded-lg text-red-800 dark:text-red-200 text-sm">
+              ❌ {error}
+            </div>
+          )}
+
+          <form method="POST" class="space-y-4">
+            <input type="hidden" name="csrf_token" value={csrfToken} />
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+              <select
+                name="kind"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                defaultValue={form?.kind ?? "feature"}
+              >
+                <option value="feature">Feature request</option>
+                <option value="bug">Bug report</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+              <input
+                type="text"
+                name="title"
+                required
+                minLength={5}
+                maxLength={120}
+                value={form?.title ?? ""}
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Details</label>
+              <textarea
+                name="description"
+                required
+                minLength={20}
+                maxLength={4000}
+                rows={6}
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+              >{form?.description ?? ""}</textarea>
+            </div>
+
+            {/* Photo upload — bug reports only, if R2 is configured */}
+            {r2Configured && (
+              <div id="photo-section" style="display: none;" class="border-t pt-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">📸 Screenshot (optional)</label>
+                <input
+                  type="file"
+                  id="photo-input"
+                  accept="image/*"
+                  class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:px-3 file:py-2 file:bg-purple-100 dark:file:bg-purple-900/40 file:text-purple-700 dark:file:text-purple-300 file:border-0 file:rounded-md file:text-sm file:font-medium cursor-pointer"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">JPEG, PNG, or WebP • max 10MB</p>
+                <div id="photo-preview" class="mt-3 hidden">
+                  <img id="preview-img" alt="Preview" class="max-w-xs rounded-lg border border-purple-300 dark:border-purple-700 shadow-sm object-contain" style="max-height: 240px" />
+                  <div class="flex gap-2 mt-2">
+                    <span id="upload-status" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                    <button
+                      type="button"
+                      id="clear-photo-btn"
+                      class="px-3 py-1 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                <input type="hidden" name="photoId" id="photo-id-input" value={form?.photoId ?? ""} />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors text-sm"
+            >
+              Submit for Review
+            </button>
+          </form>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">Your Submitted Requests</h2>
+          {requests.length === 0
+            ? (
+              <p class="text-sm text-gray-500 dark:text-gray-400">You have not submitted any requests yet.</p>
+            )
+            : (
+              <div class="space-y-4">
+                {requests.map((request) => (
+                  <article class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                      <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{request.title}</span>
+                      <span class={`text-xs px-2 py-0.5 rounded-full font-medium ${statusClasses(request.status)}`}>
+                        {request.status}
+                      </span>
+                      <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        {request.kind}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{request.description}</p>
+                    {request.photoId && (
+                      <div class="mt-4">
+                        <img
+                          src={getFeedbackPhotoUrl(request.photoId)}
+                          alt="Screenshot"
+                          class="max-w-md rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm object-contain"
+                          style="max-height: 400px"
+                        />
+                      </div>
+                    )}
+                    <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                      Submitted {new Date(request.createdAt).toLocaleString()}
+                    </p>
+                    {request.reviewedAt && (
+                      <div class="mt-3 rounded-md bg-gray-50 dark:bg-gray-900/40 p-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                          Reviewed by {request.reviewedBy} on {new Date(request.reviewedAt).toLocaleString()}
+                        </p>
+                        {request.reviewReason && (
+                          <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{request.reviewReason}</p>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+        </div>
+      </div>
+
+      <script>
+        {`
+          const kindSelect = document.querySelector('select[name="kind"]');
+          const photoSection = document.getElementById('photo-section');
+          
+          // Photo upload only initialized if R2 is configured
+          if (photoSection) {
+            const photoInput = document.getElementById('photo-input');
+            const photoPreview = document.getElementById('photo-preview');
+            const previewImg = document.getElementById('preview-img');
+            const photoIdInput = document.getElementById('photo-id-input');
+            const clearBtn = document.getElementById('clear-photo-btn');
+            const uploadStatus = document.getElementById('upload-status');
+
+            let pendingFile = null;
+            let pendingPhotoId = null;
+
+            function updatePhotoSectionVisibility() {
+              photoSection.style.display = kindSelect.value === 'bug' ? 'block' : 'none';
+              if (kindSelect.value !== 'bug') {
+                photoPreview.classList.add('hidden');
+                photoInput.value = '';
+                photoIdInput.value = '';
+                pendingFile = null;
+                pendingPhotoId = null;
+              }
+            }
+
+            photoInput.addEventListener('change', async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              
+              pendingFile = file;
+              uploadStatus.textContent = 'Loading preview...';
+              
+              try {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  const dataUrl = ev.target?.result;
+                  previewImg.src = dataUrl;
+                  photoPreview.classList.remove('hidden');
+                  uploadStatus.textContent = 'Ready to submit (will upload on submit)';
+                };
+                reader.readAsDataURL(file);
+              } catch (err) {
+                alert('Could not load image: ' + err.message);
+                photoInput.value = '';
+              }
+            });
+
+            clearBtn.addEventListener('click', () => {
+              photoPreview.classList.add('hidden');
+              photoInput.value = '';
+              photoIdInput.value = '';
+              pendingFile = null;
+              pendingPhotoId = null;
+            });
+
+            // Intercept form submission to upload photo first if present
+            const form = document.querySelector('form');
+            form.addEventListener('submit', async (e) => {
+              if (kindSelect.value !== 'bug' || !pendingFile) {
+                return; // No photo, submit normally
+              }
+              
+              e.preventDefault();
+              uploadStatus.textContent = 'Uploading...';
+              
+              try {
+                const fd = new FormData();
+                fd.append('photo', pendingFile);
+                
+                const res = await fetch('/api/feedback-photos', {
+                  method: 'POST',
+                  body: fd,
+                });
+                
+                if (!res.ok) {
+                  const body = await res.json().catch(() => ({}));
+                  throw new Error(body.error ?? 'Upload failed with status ' + res.status);
+                }
+                
+                const { photoId } = await res.json();
+                photoIdInput.value = photoId;
+                uploadStatus.textContent = 'Upload complete';
+                pendingFile = null;
+                
+                // Now submit the form
+                form.submit();
+              } catch (err) {
+                uploadStatus.textContent = 'Upload failed: ' + err.message;
+                photoPreview.classList.remove('hidden');
+              }
+            });
+
+            kindSelect.addEventListener('change', updatePhotoSectionVisibility);
+            updatePhotoSectionVisibility();
+          }
+        `}
+      </script>
+    </Layout>
+  );
+}

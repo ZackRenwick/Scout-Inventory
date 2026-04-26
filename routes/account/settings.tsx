@@ -123,6 +123,17 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
               {session.role}
             </span>
           </div>
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Want to report a bug or request a feature?
+            </p>
+            <a
+              href="/account/feedback"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              💡 Open Feedback Requests
+            </a>
+          </div>
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">

@@ -15,6 +15,7 @@ import type { Meal, MealPayload } from "../types/meals.ts";
 import type { FirstAidKit } from "../types/firstAid.ts";
 import type { FirstAidCatalogItem } from "../types/firstAid.ts";
 import type { FirstAidCheckState } from "../types/firstAid.ts";
+import type { FeedbackRequest } from "../types/feedback.ts";
 import type { RiskAssessment } from "../types/risk.ts";
 import type {
   BackupPhotoRecord,
@@ -81,6 +82,7 @@ const KEYS = {
   firstAidCatalog: ["first-aid", "catalog"] as const,
   firstAidChecks: ["first-aid", "checks"] as const,
   riskAssessments: ["risk-assessments", "records"] as const,
+  feedbackRequests: ["feedback", "requests"] as const,
 };
 
 // Index key helpers
@@ -264,6 +266,11 @@ let riskAssessmentsCache:
   | null = null;
 let riskAssessmentsInFlight: Promise<RiskAssessment[]> | null = null;
 
+let feedbackRequestsCache:
+  | { requests: FeedbackRequest[]; expiresAt: number }
+  | null = null;
+let feedbackRequestsInFlight: Promise<FeedbackRequest[]> | null = null;
+
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
@@ -337,6 +344,11 @@ function invalidateRiskAssessmentsCache(): void {
   riskAssessmentsInFlight = null;
 }
 
+function invalidateFeedbackRequestsCache(): void {
+  feedbackRequestsCache = null;
+  feedbackRequestsInFlight = null;
+}
+
 /**
  * Warm all KV caches concurrently. Returns a promise that resolves once every
  * cache has been populated. Awaiting this at startup ensures no request is
@@ -352,6 +364,7 @@ export function preloadCaches(): Promise<void> {
     getAllFirstAidKits().catch(() => {}),
     getAllFirstAidCatalogItems().catch(() => {}),
     getAllRiskAssessments().catch(() => {}),
+    getAllFeedbackRequests().catch(() => {}),
   ]).then(() => {});
 }
 
@@ -2461,6 +2474,103 @@ export async function getMealById(id: string): Promise<Meal | null> {
   return result.value ?? null;
 }
 
+// ===== FEEDBACK REQUESTS =====
+
+function sortFeedbackRequests(requests: FeedbackRequest[]): FeedbackRequest[] {
+  return requests.sort((a, b) => {
+    if (a.status === "pending" && b.status !== "pending") return -1;
+    if (a.status !== "pending" && b.status === "pending") return 1;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+}
+
+export async function getAllFeedbackRequests(): Promise<FeedbackRequest[]> {
+  if (feedbackRequestsCache && Date.now() < feedbackRequestsCache.expiresAt) {
+    return feedbackRequestsCache.requests;
+  }
+  if (!feedbackRequestsInFlight) {
+    feedbackRequestsInFlight = (async () => {
+      const db = await initKv();
+      const requests: FeedbackRequest[] = [];
+      for await (
+        const entry of db.list<FeedbackRequest>({ prefix: KEYS.feedbackRequests })
+      ) {
+        if (entry.value) requests.push(entry.value);
+      }
+      const sorted = sortFeedbackRequests(requests);
+      feedbackRequestsCache = {
+        requests: sorted,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      };
+      feedbackRequestsInFlight = null;
+      return sorted;
+    })();
+  }
+  if (feedbackRequestsCache) return feedbackRequestsCache.requests;
+  return await feedbackRequestsInFlight!;
+}
+
+export async function getFeedbackRequestById(
+  id: string,
+): Promise<FeedbackRequest | null> {
+  const db = await initKv();
+  const result = await db.get<FeedbackRequest>([...KEYS.feedbackRequests, id]);
+  return result.value ?? null;
+}
+
+export async function getFeedbackRequestsByUsername(
+  username: string,
+): Promise<FeedbackRequest[]> {
+  const all = await getAllFeedbackRequests();
+  return all.filter((request) => request.createdBy === username.toLowerCase());
+}
+
+export async function createFeedbackRequest(
+  payload: Pick<FeedbackRequest, "kind" | "title" | "description"> & { photoId?: string },
+  createdBy: string,
+): Promise<FeedbackRequest> {
+  const db = await initKv();
+  const request: FeedbackRequest = {
+    id: crypto.randomUUID(),
+    kind: payload.kind,
+    title: payload.title,
+    description: payload.description,
+    ...(payload.photoId && { photoId: payload.photoId }),
+    status: "pending",
+    createdBy: createdBy.toLowerCase(),
+    createdAt: new Date().toISOString(),
+    reviewedBy: null,
+    reviewedAt: null,
+    reviewReason: null,
+  };
+  await db.set([...KEYS.feedbackRequests, request.id], request);
+  invalidateFeedbackRequestsCache();
+  return request;
+}
+
+export async function reviewFeedbackRequest(
+  id: string,
+  status: "accepted" | "rejected",
+  reviewedBy: string,
+  reviewReason: string | null,
+): Promise<FeedbackRequest | null> {
+  const db = await initKv();
+  const existing = await getFeedbackRequestById(id);
+  if (!existing) return null;
+
+  const updated: FeedbackRequest = {
+    ...existing,
+    status,
+    reviewedBy: reviewedBy.toLowerCase(),
+    reviewedAt: new Date().toISOString(),
+    reviewReason,
+  };
+
+  await db.set([...KEYS.feedbackRequests, id], updated);
+  invalidateFeedbackRequestsCache();
+  return updated;
+}
+
 export async function createMeal(payload: MealPayload): Promise<Meal> {
   const db = await initKv();
   const id = crypto.randomUUID();
@@ -2693,6 +2803,9 @@ export async function replaceAllFromInventoryBackup(
   for await (const entry of db.list({ prefix: KEYS.meals })) {
     deleteKeys.push(entry.key);
   }
+  for await (const entry of db.list({ prefix: KEYS.feedbackRequests })) {
+    deleteKeys.push(entry.key);
+  }
 
   deleteKeys.push(KEYS.neckers as unknown as Deno.KvKey);
   deleteKeys.push(KEYS.neckersCreated as unknown as Deno.KvKey);
@@ -2752,6 +2865,9 @@ export async function replaceAllFromInventoryBackup(
   for (const meal of snapshot.meals) {
     writeOps.push(() => db.set([...KEYS.meals, meal.id], meal));
   }
+  for (const request of snapshot.feedbackRequests) {
+    writeOps.push(() => db.set([...KEYS.feedbackRequests, request.id], request));
+  }
 
   writeOps.push(() => db.set(KEYS.neckers, Math.max(0, snapshot.neckers.inStock)));
   writeOps.push(() => db.set(KEYS.neckersCreated, Math.max(0, snapshot.neckers.created)));
@@ -2773,6 +2889,7 @@ export async function replaceAllFromInventoryBackup(
   invalidateFirstAidCheckStateCaches();
   invalidateRiskAssessmentsCache();
   invalidateMealsCache();
+  invalidateFeedbackRequestsCache();
 
   await rebuildIndexes();
 }
