@@ -11,8 +11,34 @@ interface ActivityPageData {
   entries: ActivityEntry[];
   allEntries: ActivityEntry[];
   userFilter: string;
+  actionFilter: string;
   users: string[];
   session: Session;
+}
+
+const ACTION_CATEGORIES: { label: string; prefix: string }[] = [
+  { label: "Items", prefix: "item." },
+  { label: "Imports", prefix: "items." },
+  { label: "Camps", prefix: "camp" },
+  { label: "First Aid", prefix: "first_aid." },
+  { label: "Risk Assessments", prefix: "risk_assessment." },
+  { label: "Loans", prefix: "loan." },
+  { label: "Feedback", prefix: "feedback." },
+  { label: "Users", prefix: "user." },
+  { label: "Other", prefix: "" },
+];
+
+function matchesActionCategory(action: string, category: string): boolean {
+  if (!category) return true;
+  const cat = ACTION_CATEGORIES.find((c) => c.label === category);
+  if (!cat) return true;
+  if (cat.prefix === "") {
+    // "Other" — anything that doesn't match the other prefixes
+    return !ACTION_CATEGORIES.filter((c) => c.prefix).some((c) =>
+      action.startsWith(c.prefix)
+    );
+  }
+  return action.startsWith(cat.prefix);
 }
 
 export const handler: Handlers<ActivityPageData> = {
@@ -26,12 +52,25 @@ export const handler: Handlers<ActivityPageData> = {
     }
     const url = new URL(_req.url);
     const userFilter = url.searchParams.get("user")?.trim() ?? "";
+    const actionFilter = url.searchParams.get("action")?.trim() ?? "";
     const allEntries = await getRecentActivity(500);
     const users = [...new Set(allEntries.map((e) => e.username))].sort();
-    const entries = userFilter
-      ? allEntries.filter((e) => e.username === userFilter)
-      : allEntries.slice(0, 200);
-    return ctx.render({ entries, allEntries, userFilter, users, session });
+    const filtered = allEntries.filter((e) => {
+      if (userFilter && e.username !== userFilter) return false;
+      if (actionFilter && !matchesActionCategory(e.action, actionFilter)) {
+        return false;
+      }
+      return true;
+    });
+    const entries = filtered.slice(0, 200);
+    return ctx.render({
+      entries,
+      allEntries,
+      userFilter,
+      actionFilter,
+      users,
+      session,
+    });
   },
 };
 
@@ -64,7 +103,8 @@ function formatDate(ts: string): string {
 }
 
 export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
-  const { entries, userFilter, users, session } = data;
+  const { entries, userFilter, actionFilter, users, session } = data;
+  const hasFilter = !!(userFilter || actionFilter);
 
   return (
     <Layout
@@ -80,10 +120,10 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
               📋 Activity Log
             </h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {userFilter
+              {hasFilter
                 ? `${entries.length} event${
                   entries.length !== 1 ? "s" : ""
-                } for ${userFilter}`
+                } matching filters`
                 : `Last ${entries.length} events (90-day rolling window)`}
             </p>
           </div>
@@ -95,14 +135,17 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
           </a>
         </div>
 
-        {/* User filter */}
+        {/* Filters */}
         <div class="mb-6 flex items-center gap-3 flex-wrap">
-          <form method="get" class="flex items-center gap-2">
+          <form
+            method="get"
+            class="flex items-center gap-x-3 gap-y-2 flex-wrap"
+          >
             <label
               for="user-filter"
               class="text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              Filter by user:
+              User:
             </label>
             <select
               id="user-filter"
@@ -116,6 +159,28 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
                 </option>
               ))}
             </select>
+            <label
+              for="action-filter"
+              class="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Category:
+            </label>
+            <select
+              id="action-filter"
+              name="action"
+              class="text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="" selected={!actionFilter}>All categories</option>
+              {ACTION_CATEGORIES.map((c) => (
+                <option
+                  key={c.label}
+                  value={c.label}
+                  selected={c.label === actionFilter}
+                >
+                  {c.label}
+                </option>
+              ))}
+            </select>
             <button
               type="submit"
               class="text-sm px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium"
@@ -123,20 +188,20 @@ export default function ActivityPage({ data }: PageProps<ActivityPageData>) {
               Filter
             </button>
           </form>
-          {userFilter && (
+          {hasFilter && (
             <a
               href="/admin/activity"
               class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
             >
-              ✕ Clear filter
+              ✕ Clear filters
             </a>
           )}
         </div>
         {entries.length === 0
           ? (
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-10 text-center text-gray-400 dark:text-gray-500">
-              {userFilter
-                ? `No activity found for "${userFilter}".`
+              {hasFilter
+                ? "No activity found matching these filters."
                 : "No activity recorded yet."}
             </div>
           )

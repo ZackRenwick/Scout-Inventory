@@ -72,12 +72,20 @@ export default function InventoryPage({ data }: PageProps<InventoryPageData>) {
             Manage all inventory items
           </p>
           {canEdit && (
-            <a
-              href="/inventory/add"
-              class="px-4 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700"
-            >
-              ➕ Add Item
-            </a>
+            <div class="flex items-center gap-2">
+              <a
+                href="/inventory/bulk-move"
+                class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium rounded-md transition-colors"
+              >
+                📦 Bulk Move
+              </a>
+              <a
+                href="/inventory/add"
+                class="px-4 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700"
+              >
+                ➕ Add Item
+              </a>
+            </div>
           )}
         </div>
       </div>

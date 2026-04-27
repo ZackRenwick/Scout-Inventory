@@ -1,15 +1,71 @@
 // Mobile navigation menu toggle
 import { useSignal } from "@preact/signals";
+import { useEffect } from "preact/hooks";
 import ThemeToggle from "./ThemeToggle.tsx";
 import FeedbackPendingBadge from "./FeedbackPendingBadge.tsx";
+import ComplianceBadge from "./ComplianceBadge.tsx";
 
 interface MobileNavProps {
   username?: string;
   role?: "admin" | "manager" | "editor" | "explorer" | "viewer";
 }
 
+// Fetch compliance counts once; shared across the island.
+async function fetchComplianceCounts() {
+  try {
+    const res = await fetch("/api/compliance/counts", {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    if (!res.ok) return { firstAidDue: 0, riskDue: 0, maintenanceDue: 0 };
+    return await res.json() as {
+      firstAidDue: number;
+      riskDue: number;
+      maintenanceDue: number;
+    };
+  } catch {
+    return { firstAidDue: 0, riskDue: 0, maintenanceDue: 0 };
+  }
+}
+
+async function fetchFeedbackCount() {
+  try {
+    const res = await fetch("/api/feedback/pending-count", {
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    if (!res.ok) return 0;
+    const body = await res.json();
+    return typeof body?.pendingCount === "number" ? body.pendingCount : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default function MobileNav({ username, role }: MobileNavProps) {
   const open = useSignal(false);
+  const hamburgerCount = useSignal(0);
+
+  useEffect(() => {
+    if (!role || role === "explorer") return;
+    let cancelled = false;
+
+    const load = async () => {
+      const [compliance, feedback] = await Promise.all([
+        fetchComplianceCounts(),
+        role === "admin" ? fetchFeedbackCount() : Promise.resolve(0),
+      ]);
+      if (!cancelled) {
+        hamburgerCount.value =
+          compliance.firstAidDue + compliance.riskDue + feedback;
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div>
@@ -21,8 +77,10 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         aria-label="Toggle menu"
       >
         <span class="text-xl">{open.value ? "✕" : "☰"}</span>
-        {role === "admin" && (
-          <FeedbackPendingBadge className="absolute -top-1 -right-1 inline-flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 py-0.5 text-[9px] font-semibold leading-none text-white" />
+        {hamburgerCount.value > 0 && (
+          <span class="absolute -top-1 -right-1 inline-flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 py-0.5 text-[9px] font-semibold leading-none text-white">
+            {hamburgerCount.value}
+          </span>
         )}
       </button>
 
@@ -43,16 +101,18 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           </a>
         )}
         {role !== "explorer" && (
-          <a href="/first-aid" class="hover:text-purple-200 transition-colors">
+          <a href="/first-aid" class="hover:text-purple-200 transition-colors inline-flex items-center">
             First Aid
+            <ComplianceBadge type="first-aid" />
           </a>
         )}
         {role !== "explorer" && (
           <a
             href="/risk-assessments"
-            class="hover:text-purple-200 transition-colors"
+            class="hover:text-purple-200 transition-colors inline-flex items-center"
           >
             Risk Assessments
+            <ComplianceBadge type="risk" />
           </a>
         )}
         {(role === "admin" || role === "manager") && (
@@ -131,17 +191,19 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           {role !== "explorer" && (
             <a
               href="/first-aid"
-              class="block px-6 py-3 hover:bg-purple-800 transition-colors"
+              class="flex items-center gap-2 px-6 py-3 hover:bg-purple-800 transition-colors"
             >
-              🩹 First Aid
+              <span>🩹 First Aid</span>
+              <ComplianceBadge type="first-aid" className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white" />
             </a>
           )}
           {role !== "explorer" && (
             <a
               href="/risk-assessments"
-              class="block px-6 py-3 hover:bg-purple-800 transition-colors"
+              class="flex items-center gap-2 px-6 py-3 hover:bg-purple-800 transition-colors"
             >
-              📝 Risk Assessments
+              <span>📝 Risk Assessments</span>
+              <ComplianceBadge type="risk" className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white" />
             </a>
           )}
           {(role === "admin" || role === "manager") && (

@@ -17,8 +17,11 @@ import {
 } from "./lib/inventoryBackups.ts";
 import {
   checkAndNotifyExpiry,
+  checkAndNotifyFirstAidChecksDue,
   checkAndNotifyLowStock,
+  checkAndNotifyMaintenanceDue,
   checkAndNotifyOverdueLoans,
+  checkAndNotifyRiskAssessmentDue,
 } from "./lib/notifications.ts";
 import { initKv, preloadCaches } from "./db/kv.ts";
 
@@ -68,6 +71,15 @@ async function runNotifications(source: string) {
     ),
     checkAndNotifyOverdueLoans().catch((e) =>
       console.error(`[${sourceTag}] notify-overdue-loans failed:`, e)
+    ),
+    checkAndNotifyMaintenanceDue().catch((e) =>
+      console.error(`[${sourceTag}] notify-maintenance failed:`, e)
+    ),
+    checkAndNotifyRiskAssessmentDue().catch((e) =>
+      console.error(`[${sourceTag}] notify-risk-assessments failed:`, e)
+    ),
+    checkAndNotifyFirstAidChecksDue().catch((e) =>
+      console.error(`[${sourceTag}] notify-first-aid-checks failed:`, e)
     ),
   ]);
 }

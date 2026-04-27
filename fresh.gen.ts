@@ -27,6 +27,7 @@ import * as $api_camp_templates_id_ from "./routes/api/camp-templates/[id].ts";
 import * as $api_camp_templates_index from "./routes/api/camp-templates/index.ts";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
 import * as $api_camps_index from "./routes/api/camps/index.ts";
+import * as $api_compliance_counts from "./routes/api/compliance/counts.ts";
 import * as $api_easter_egg from "./routes/api/easter-egg.ts";
 import * as $api_feedback_photos from "./routes/api/feedback-photos.ts";
 import * as $api_feedback_photos_photoId_ from "./routes/api/feedback-photos/[photoId].ts";
@@ -36,6 +37,7 @@ import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_id_photo from "./routes/api/items/[id]/photo.ts";
 import * as $api_items_id_photos_photoId_ from "./routes/api/items/[id]/photos/[photoId].ts";
 import * as $api_items_id_photos_index from "./routes/api/items/[id]/photos/index.ts";
+import * as $api_items_bulk_location from "./routes/api/items/bulk-location.ts";
 import * as $api_items_index from "./routes/api/items/index.ts";
 import * as $api_joke from "./routes/api/joke.ts";
 import * as $api_loans_id_ from "./routes/api/loans/[id].ts";
@@ -64,6 +66,7 @@ import * as $inventory_id_maintenance from "./routes/inventory/[id]/maintenance.
 import * as $inventory_id_qr from "./routes/inventory/[id]/qr.tsx";
 import * as $inventory_id_scan from "./routes/inventory/[id]/scan.tsx";
 import * as $inventory_add from "./routes/inventory/add.tsx";
+import * as $inventory_bulk_move from "./routes/inventory/bulk-move.tsx";
 import * as $inventory_edit_id_ from "./routes/inventory/edit/[id].tsx";
 import * as $inventory_index from "./routes/inventory/index.tsx";
 import * as $loans_index from "./routes/loans/index.tsx";
@@ -79,10 +82,12 @@ import * as $risk_assessments_index from "./routes/risk-assessments/index.tsx";
 import * as $risk_assessments_print from "./routes/risk-assessments/print.tsx";
 import * as $BackupButtons from "./islands/BackupButtons.tsx";
 import * as $BulkImport from "./islands/BulkImport.tsx";
+import * as $BulkMoveItems from "./islands/BulkMoveItems.tsx";
 import * as $CampCalendar from "./islands/CampCalendar.tsx";
 import * as $CampChecklist from "./islands/CampChecklist.tsx";
 import * as $CampPlanForm from "./islands/CampPlanForm.tsx";
 import * as $CampPlanList from "./islands/CampPlanList.tsx";
+import * as $ComplianceBadge from "./islands/ComplianceBadge.tsx";
 import * as $ConfirmDeleteForm from "./islands/ConfirmDeleteForm.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $DbCleanup from "./islands/DbCleanup.tsx";
@@ -148,6 +153,7 @@ const manifest = {
     "./routes/api/camp-templates/index.ts": $api_camp_templates_index,
     "./routes/api/camps/[id].ts": $api_camps_id_,
     "./routes/api/camps/index.ts": $api_camps_index,
+    "./routes/api/compliance/counts.ts": $api_compliance_counts,
     "./routes/api/easter-egg.ts": $api_easter_egg,
     "./routes/api/feedback-photos.ts": $api_feedback_photos,
     "./routes/api/feedback-photos/[photoId].ts": $api_feedback_photos_photoId_,
@@ -158,6 +164,7 @@ const manifest = {
     "./routes/api/items/[id]/photos/[photoId].ts":
       $api_items_id_photos_photoId_,
     "./routes/api/items/[id]/photos/index.ts": $api_items_id_photos_index,
+    "./routes/api/items/bulk-location.ts": $api_items_bulk_location,
     "./routes/api/items/index.ts": $api_items_index,
     "./routes/api/joke.ts": $api_joke,
     "./routes/api/loans/[id].ts": $api_loans_id_,
@@ -186,6 +193,7 @@ const manifest = {
     "./routes/inventory/[id]/qr.tsx": $inventory_id_qr,
     "./routes/inventory/[id]/scan.tsx": $inventory_id_scan,
     "./routes/inventory/add.tsx": $inventory_add,
+    "./routes/inventory/bulk-move.tsx": $inventory_bulk_move,
     "./routes/inventory/edit/[id].tsx": $inventory_edit_id_,
     "./routes/inventory/index.tsx": $inventory_index,
     "./routes/loans/index.tsx": $loans_index,
@@ -203,10 +211,12 @@ const manifest = {
   islands: {
     "./islands/BackupButtons.tsx": $BackupButtons,
     "./islands/BulkImport.tsx": $BulkImport,
+    "./islands/BulkMoveItems.tsx": $BulkMoveItems,
     "./islands/CampCalendar.tsx": $CampCalendar,
     "./islands/CampChecklist.tsx": $CampChecklist,
     "./islands/CampPlanForm.tsx": $CampPlanForm,
     "./islands/CampPlanList.tsx": $CampPlanList,
+    "./islands/ComplianceBadge.tsx": $ComplianceBadge,
     "./islands/ConfirmDeleteForm.tsx": $ConfirmDeleteForm,
     "./islands/Counter.tsx": $Counter,
     "./islands/DbCleanup.tsx": $DbCleanup,

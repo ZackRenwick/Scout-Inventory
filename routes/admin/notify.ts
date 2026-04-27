@@ -4,8 +4,11 @@ import type { Session } from "../../lib/auth.ts";
 import { csrfFailed, csrfOk, forbidden } from "../../lib/auth.ts";
 import {
   checkAndNotifyExpiry,
+  checkAndNotifyFirstAidChecksDue,
   checkAndNotifyLowStock,
+  checkAndNotifyMaintenanceDue,
   checkAndNotifyOverdueLoans,
+  checkAndNotifyRiskAssessmentDue,
 } from "../../lib/notifications.ts";
 
 export const handler: Handlers = {
@@ -46,10 +49,37 @@ export const handler: Handlers = {
             "Overdue loans check complete — email sent if any loans are overdue.",
         });
       }
-      // No type — run all three
+      if (type === "maintenance") {
+        await checkAndNotifyMaintenanceDue();
+        return Response.json({
+          ok: true,
+          message:
+            "Maintenance check complete — email sent if any items are due for inspection.",
+        });
+      }
+      if (type === "risk-assessments") {
+        await checkAndNotifyRiskAssessmentDue();
+        return Response.json({
+          ok: true,
+          message:
+            "Risk assessment check complete — email sent if any assessments need annual review.",
+        });
+      }
+      if (type === "first-aid-checks") {
+        await checkAndNotifyFirstAidChecksDue();
+        return Response.json({
+          ok: true,
+          message:
+            "First aid check complete — email sent if any kits are overdue for checking.",
+        });
+      }
+      // No type — run all
       await checkAndNotifyLowStock();
       await checkAndNotifyExpiry();
       await checkAndNotifyOverdueLoans();
+      await checkAndNotifyMaintenanceDue();
+      await checkAndNotifyRiskAssessmentDue();
+      await checkAndNotifyFirstAidChecksDue();
       return Response.json({
         ok: true,
         message: "All checks complete — emails sent where thresholds are met.",

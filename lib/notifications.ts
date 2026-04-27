@@ -12,11 +12,15 @@
 
 import {
   getAllCheckOuts,
+  getAllFirstAidKitIds,
+  getAllFirstAidKits,
   getAllItems,
+  getAllRiskAssessments,
+  getFirstAidKitCheckStates,
   getFoodItemsSortedByExpiry,
   getNeckerCountOrNull,
 } from "../db/kv.ts";
-import { getDaysUntil } from "./date-utils.ts";
+import { getDaysUntil, isMonthlyDue, isYearlyDue } from "./date-utils.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
 
@@ -255,6 +259,175 @@ export async function checkAndNotifyOverdueLoans(): Promise<void> {
 
   await sendEmail(
     `📤 7th Whitburn Scouts: ${count} overdue loan${count !== 1 ? "s" : ""}`,
+    html,
+  );
+}
+
+/**
+ * Checks all inventory items for overdue or upcoming maintenance inspections
+ * and sends a summary email if any are due within 30 days (or already overdue).
+ */
+export async function checkAndNotifyMaintenanceDue(): Promise<void> {
+  const allItems = await getAllItems();
+  const alertItems = allItems
+    .filter((i) => i.nextInspectionDate != null)
+    .map((i) => ({
+      item: i,
+      days: getDaysUntil(i.nextInspectionDate as Date),
+    }))
+    .filter(({ days }) => days <= 30)
+    .sort((a, b) => a.days - b.days);
+
+  if (alertItems.length === 0) return;
+
+  const rows = alertItems.map(({ item, days }) => {
+    const statusText = days < 0
+      ? `OVERDUE by ${Math.abs(days)} day${Math.abs(days) !== 1 ? "s" : ""}`
+      : days === 0
+      ? "Due today"
+      : `Due in ${days} day${days !== 1 ? "s" : ""}`;
+    const statusColor = days < 0
+      ? "#dc2626"
+      : days <= 7
+      ? "#d97706"
+      : "#ca8a04";
+    const dateStr = (item.nextInspectionDate as Date).toISOString().slice(
+      0,
+      10,
+    );
+    return `<tr>
+      <td style="padding:6px 12px">${escHtml(item.name)}</td>
+      <td style="padding:6px 12px">${escHtml(item.category)}</td>
+      <td style="padding:6px 12px">${dateStr}</td>
+      <td style="padding:6px 12px;color:${statusColor};font-weight:600">${statusText}</td>
+    </tr>`;
+  }).join("\n");
+
+  const count = alertItems.length;
+  const html = `
+    <h2 style="color:#7c3aed">🔧 Maintenance Due — 7th Whitburn Scouts</h2>
+    <p>${count} item${
+    count !== 1 ? "s require" : " requires"
+  } inspection within the next 30 days (or is already overdue):</p>
+    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
+      <thead>
+        <tr style="background:#f9fafb">
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Item</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Category</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Due Date</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="color:#6b7280;font-size:13px;margin-top:16px">Sent by 7th Whitburn Scouts Inventory — <a href="https://7thwhitburnscoutsinventory.co.uk/inventory">view inventory</a>.</p>
+  `;
+
+  await sendEmail(
+    `🔧 7th Whitburn Scouts: ${count} maintenance inspection${
+      count !== 1 ? "s" : ""
+    } due`,
+    html,
+  );
+}
+
+/**
+ * Checks all risk assessments for overdue annual reviews and sends a summary
+ * email if any are due (no review in the past 365 days, or never reviewed).
+ */
+export async function checkAndNotifyRiskAssessmentDue(): Promise<void> {
+  const assessments = await getAllRiskAssessments();
+  const due = assessments.filter((a) => isYearlyDue(a.lastAnnualCheckAt));
+  if (due.length === 0) return;
+
+  const rows = due.map((a) => {
+    const lastReview = a.lastAnnualCheckAt
+      ? a.lastAnnualCheckAt.toISOString().slice(0, 10)
+      : "Never";
+    return `<tr>
+      <td style="padding:6px 12px">${escHtml(a.name)}</td>
+      <td style="padding:6px 12px">${lastReview}</td>
+    </tr>`;
+  }).join("\n");
+
+  const count = due.length;
+  const html = `
+    <h2 style="color:#7c3aed">⚠️ Risk Assessment Review Due — 7th Whitburn Scouts</h2>
+    <p>${count} risk assessment${
+    count !== 1 ? "s have" : " has"
+  } not been reviewed in the past year:</p>
+    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
+      <thead>
+        <tr style="background:#f9fafb">
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Assessment</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Last Annual Review</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="color:#6b7280;font-size:13px;margin-top:16px">Sent by 7th Whitburn Scouts Inventory — <a href="https://7thwhitburnscoutsinventory.co.uk/risk-assessments">review risk assessments</a>.</p>
+  `;
+
+  await sendEmail(
+    `⚠️ 7th Whitburn Scouts: ${count} risk assessment${
+      count !== 1 ? "s" : ""
+    } need annual review`,
+    html,
+  );
+}
+
+/**
+ * Checks first aid kit check states and sends a summary email if any kits
+ * have not been checked within the past calendar month.
+ */
+export async function checkAndNotifyFirstAidChecksDue(): Promise<void> {
+  const [kitIds, kitStates, kits] = await Promise.all([
+    getAllFirstAidKitIds(),
+    getFirstAidKitCheckStates(),
+    getAllFirstAidKits(),
+  ]);
+
+  const kitNameMap = Object.fromEntries(kits.map((k) => [k.id, k.name]));
+
+  const dueKits = kitIds.filter((id) =>
+    isMonthlyDue(kitStates[id]?.lastCheckedAt)
+  );
+
+  if (dueKits.length === 0) return;
+
+  const rows = dueKits.map((id) => {
+    const lastChecked = kitStates[id]?.lastCheckedAt;
+    const lastCheckedStr = lastChecked
+      ? lastChecked.toISOString().slice(0, 10)
+      : "Never";
+    return `<tr>
+      <td style="padding:6px 12px">${escHtml(kitNameMap[id] ?? id)}</td>
+      <td style="padding:6px 12px">${lastCheckedStr}</td>
+    </tr>`;
+  }).join("\n");
+
+  const count = dueKits.length;
+  const html = `
+    <h2 style="color:#7c3aed">🩺 First Aid Kit Check Due — 7th Whitburn Scouts</h2>
+    <p>${count} first aid kit${
+    count !== 1 ? "s have" : " has"
+  } not been checked in the past month:</p>
+    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
+      <thead>
+        <tr style="background:#f9fafb">
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Kit</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Last Checked</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="color:#6b7280;font-size:13px;margin-top:16px">Sent by 7th Whitburn Scouts Inventory — <a href="https://7thwhitburnscoutsinventory.co.uk/first-aid/check">check first aid kits</a>.</p>
+  `;
+
+  await sendEmail(
+    `🩺 7th Whitburn Scouts: ${count} first aid kit${
+      count !== 1 ? "s" : ""
+    } need checking`,
     html,
   );
 }
