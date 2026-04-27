@@ -321,10 +321,9 @@ scout-inventory/
 
 The app is deployed to Deno Deploy via GitHub. Push to `main` to trigger a deploy.
 
-When using GitHub automatic deploys, Deno Deploy pulls repository contents directly.
-The `deploy:preview` and `deploy:prod` tasks below use the new `deno deploy` CLI with explicit `--ignore` flags.
+Visual regression baselines (`tests/visual/baselines/`) are **gitignored** and never committed, so they never inflate the deploy artifact. Run `deno task test:visual:update` locally to regenerate them.
 
-To keep deployment artifacts lean when deploying via the CLI, this repo excludes local-only assets (`tests/**`, `tests/visual/baselines/**`, `_fresh/**`, `node_modules/**`, `.git/**`, Playwright outputs). Use:
+To deploy manually via the CLI (with explicit file exclusions): 
 
 ```bash
 deno task deploy:preview

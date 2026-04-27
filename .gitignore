@@ -12,6 +12,7 @@ node_modules/
 playwright-report/
 test-results/
 tests/visual/diffs/
+tests/visual/baselines/
 
 # macOS metadata
 .DS_Store
