@@ -15,6 +15,8 @@
     "start": "deno run -A --unstable-kv --watch=static/,routes/ dev.ts",
     "build": "deno run -A dev.ts build",
     "preview": "deno run -A --unstable-kv main.ts",
+    "deploy:preview": "deployctl deploy --entrypoint=main.ts --exclude=./tests --exclude=./_fresh --exclude=./node_modules --exclude=./playwright-report --exclude=./test-results",
+    "deploy:prod": "deployctl deploy --prod --entrypoint=main.ts --exclude=./tests --exclude=./_fresh --exclude=./node_modules --exclude=./playwright-report --exclude=./test-results",
     "update": "deno run -A -r https://fresh.deno.dev/update .",
     "seed": "deno run -A --unstable-kv db/seed.ts",
     "migrate:photos-r2": "deno run -A --unstable-kv scripts/migrate_photos_to_r2.ts",
@@ -24,6 +26,19 @@
     "stamp:production": "echo 'export const APP_MODE: \"production\" | \"upgrade\" = \"production\";' > lib/mode.ts",
     "mode:upgrade": "deno task brand:upgrade && deno task stamp:upgrade && echo 'Mode set to: upgrade'",
     "mode:production": "deno task brand:production && deno task stamp:production && echo 'Mode set to: production'"
+  },
+  "deploy": {
+    "entrypoint": "main.ts",
+    "exclude": [
+      "./tests",
+      "./tests/**",
+      "./_fresh",
+      "./_fresh/**",
+      "./node_modules",
+      "./node_modules/**",
+      "./playwright-report",
+      "./test-results"
+    ]
   },
   "lint": { "rules": { "tags": ["fresh", "recommended"] } },
   "exclude": ["**/_fresh/*"],
