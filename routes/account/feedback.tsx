@@ -9,6 +9,7 @@ import type { Session } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 import { isR2Configured } from "../../lib/r2Photos.ts";
 import FeedbackFormClient from "../../islands/FeedbackFormClient.tsx";
+import FeedbackScreenshot from "../../islands/FeedbackScreenshot.tsx";
 
 interface FeedbackPageData {
   session: Session;
@@ -253,11 +254,9 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
                     <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{request.description}</p>
                     {request.photoId && (
                       <div class="mt-4">
-                        <img
+                        <FeedbackScreenshot
                           src={getFeedbackPhotoUrl(request.photoId)}
-                          alt="Screenshot"
-                          class="max-w-md rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm object-contain"
-                          style="max-height: 400px"
+                          alt={`Screenshot for ${request.title}`}
                         />
                       </div>
                     )}
