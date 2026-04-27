@@ -41,9 +41,16 @@ async function renderPage(
 }
 
 export const handler: Handlers<FeedbackPageData> = {
-  async GET(_req, ctx) {
+  async GET(req, ctx) {
     const session = ctx.state.session as Session;
-    return ctx.render(await renderPage(session));
+    const submitted = new URL(req.url).searchParams.has("submitted");
+    return ctx.render(
+      await renderPage(session, {
+        message: submitted
+          ? "Your request has been submitted for admin review."
+          : undefined,
+      }),
+    );
   },
 
   async POST(req, ctx) {
@@ -62,7 +69,9 @@ export const handler: Handlers<FeedbackPageData> = {
     const kind = (form.get("kind") as FeedbackKind | null) ?? "feature";
     const title = String(form.get("title") ?? "").trim();
     const description = String(form.get("description") ?? "").trim();
-    const photoId = kind === "bug" ? (String(form.get("photoId") ?? "").trim() || undefined) : undefined;
+    const photoId = kind === "bug"
+      ? (String(form.get("photoId") ?? "").trim() || undefined)
+      : undefined;
 
     try {
       if (!["feature", "bug"].includes(kind)) {
@@ -87,12 +96,10 @@ export const handler: Handlers<FeedbackPageData> = {
         details: created.kind,
       });
 
-      return ctx.render(
-        await renderPage(session, {
-          message: "Your request has been submitted for admin review.",
-          form: { kind: "feature", title: "", description: "", photoId: undefined },
-        }),
-      );
+      const headers = new Headers({
+        location: "/account/feedback?submitted=1",
+      });
+      return new Response(null, { status: 303, headers });
     } catch (err) {
       return ctx.render(
         await renderPage(session, {
@@ -133,19 +140,31 @@ function getFeedbackPhotoUrl(photoId: string): string {
 }
 
 export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
-  const { session, csrfToken, requests, r2Configured, message, error, form } = data;
+  const { session, csrfToken, requests, r2Configured, message, error, form } =
+    data;
 
   return (
-    <Layout title="Feature Requests & Bug Reports" username={session.username} role={session.role}>
+    <Layout
+      title="Feature Requests & Bug Reports"
+      username={session.username}
+      role={session.role}
+    >
       <div class="max-w-4xl space-y-6">
         <div>
           <p class="text-gray-600 dark:text-gray-400">
-            Submit an improvement idea or bug report. Admins can accept, complete, or reject it, and reviewed requests include notes.
+            Submit an improvement idea or bug report. Admins can accept,
+            complete, or reject it, and reviewed requests include notes.
+          </p>
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            Flow: submitted <span class="mx-1">→</span> reviewed{" "}
+            <span class="mx-1">→</span> completed or rejected.
           </p>
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">Submit New Request</h2>
+          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">
+            Submit New Request
+          </h2>
 
           {message && (
             <div class="mb-4 p-3 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
@@ -161,7 +180,9 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
           <form id="feedback-form" method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value={csrfToken} />
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Type
+              </label>
               <select
                 name="kind"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
@@ -172,7 +193,9 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Title
+              </label>
               <input
                 type="text"
                 name="title"
@@ -184,7 +207,9 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Details</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Details
+              </label>
               <textarea
                 name="description"
                 required
@@ -192,24 +217,43 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
                 maxLength={4000}
                 rows={6}
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
-              >{form?.description ?? ""}</textarea>
+              >
+                {form?.description ?? ""}
+              </textarea>
             </div>
 
             {/* Photo upload — bug reports only, if R2 is configured */}
             {r2Configured && (
-              <div id="photo-section" style="display: none;" class="border-t pt-4">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">📸 Screenshot (optional)</label>
+              <div
+                id="photo-section"
+                style="display: none;"
+                class="border-t pt-4"
+              >
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  📸 Screenshot (optional)
+                </label>
                 <input
                   type="file"
                   id="photo-input"
                   accept="image/*"
                   class="block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:px-3 file:py-2 file:bg-purple-100 dark:file:bg-purple-900/40 file:text-purple-700 dark:file:text-purple-300 file:border-0 file:rounded-md file:text-sm file:font-medium cursor-pointer"
                 />
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">JPEG, PNG, or WebP • max 10MB</p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  JPEG, PNG, or WebP • max 10MB
+                </p>
                 <div id="photo-preview" class="mt-3 hidden">
-                  <img id="preview-img" alt="Preview" class="max-w-xs rounded-lg border border-purple-300 dark:border-purple-700 shadow-sm object-contain" style="max-height: 240px" />
+                  <img
+                    id="preview-img"
+                    alt="Preview"
+                    class="max-w-xs rounded-lg border border-purple-300 dark:border-purple-700 shadow-sm object-contain"
+                    style="max-height: 240px"
+                  />
                   <div class="flex gap-2 mt-2">
-                    <span id="upload-status" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                    <span
+                      id="upload-status"
+                      class="text-xs text-gray-500 dark:text-gray-400"
+                    >
+                    </span>
                     <button
                       type="button"
                       id="clear-photo-btn"
@@ -219,7 +263,12 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
                     </button>
                   </div>
                 </div>
-                <input type="hidden" name="photoId" id="photo-id-input" value={form?.photoId ?? ""} />
+                <input
+                  type="hidden"
+                  name="photoId"
+                  id="photo-id-input"
+                  value={form?.photoId ?? ""}
+                />
               </div>
             )}
 
@@ -233,25 +282,37 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">Your Submitted Requests</h2>
+          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">
+            Your Submitted Requests
+          </h2>
           {requests.length === 0
             ? (
-              <p class="text-sm text-gray-500 dark:text-gray-400">You have not submitted any requests yet.</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                You have not submitted any requests yet.
+              </p>
             )
             : (
               <div class="space-y-4">
                 {requests.map((request) => (
                   <article class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                     <div class="flex flex-wrap items-center gap-2 mb-2">
-                      <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{request.title}</span>
-                      <span class={`text-xs px-2 py-0.5 rounded-full font-medium ${statusClasses(request.status)}`}>
+                      <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {request.title}
+                      </span>
+                      <span
+                        class={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          statusClasses(request.status)
+                        }`}
+                      >
                         {statusLabel(request.status)}
                       </span>
                       <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                         {request.kind}
                       </span>
                     </div>
-                    <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{request.description}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                      {request.description}
+                    </p>
                     {request.photoId && (
                       <div class="mt-4">
                         <FeedbackScreenshot
@@ -266,10 +327,13 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
                     {request.reviewedAt && (
                       <div class="mt-3 rounded-md bg-gray-50 dark:bg-gray-900/40 p-3">
                         <p class="text-xs text-gray-500 dark:text-gray-400">
-                          Reviewed by {request.reviewedBy} on {new Date(request.reviewedAt).toLocaleString()}
+                          Reviewed by {request.reviewedBy} on{" "}
+                          {new Date(request.reviewedAt).toLocaleString()}
                         </p>
                         {request.reviewReason && (
-                          <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{request.reviewReason}</p>
+                          <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">
+                            {request.reviewReason}
+                          </p>
                         )}
                       </div>
                     )}

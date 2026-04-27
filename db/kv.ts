@@ -505,11 +505,21 @@ export async function deleteItem(id: string): Promise<boolean> {
   }
 
   const db = await initKv();
-  const photoRecords = await Promise.all((existing.photoIds ?? []).map(async (photoId) => {
-    const result = await db.get<StoredPhotoRecord>(["inventory", "photos", photoId]);
-    return result.value;
-  }));
-  const legacyPhoto = await db.get<StoredPhotoRecord>(["inventory", "photos", id]);
+  const photoRecords = await Promise.all(
+    (existing.photoIds ?? []).map(async (photoId) => {
+      const result = await db.get<StoredPhotoRecord>([
+        "inventory",
+        "photos",
+        photoId,
+      ]);
+      return result.value;
+    }),
+  );
+  const legacyPhoto = await db.get<StoredPhotoRecord>([
+    "inventory",
+    "photos",
+    id,
+  ]);
 
   const currentStats = await getComputedStats();
   const newStats = applyItemToStats(currentStats, existing, -1);
@@ -532,7 +542,10 @@ export async function deleteItem(id: string): Promise<boolean> {
     try {
       await deletePhotoObject(record.objectKey);
     } catch (error) {
-      console.error("[photos] failed to delete R2 object during item delete", error);
+      console.error(
+        "[photos] failed to delete R2 object during item delete",
+        error,
+      );
     }
   }
 
@@ -540,7 +553,10 @@ export async function deleteItem(id: string): Promise<boolean> {
     try {
       await deletePhotoObject(legacyPhoto.value.objectKey);
     } catch (error) {
-      console.error("[photos] failed to delete legacy R2 object during item delete", error);
+      console.error(
+        "[photos] failed to delete legacy R2 object during item delete",
+        error,
+      );
     }
   }
 
@@ -562,9 +578,15 @@ export async function searchItems(query: string): Promise<InventoryItem[]> {
 // ===== ITEM PHOTO OPERATIONS =====
 
 /** Fetch one photo by its own UUID (new multi-photo scheme). */
-export async function getItemPhotoById(photoId: string): Promise<StoredPhotoRecord | null> {
+export async function getItemPhotoById(
+  photoId: string,
+): Promise<StoredPhotoRecord | null> {
   const db = await initKv();
-  const result = await db.get<StoredPhotoRecord>(["inventory", "photos", photoId]);
+  const result = await db.get<StoredPhotoRecord>([
+    "inventory",
+    "photos",
+    photoId,
+  ]);
   return result.value ?? null;
 }
 
@@ -572,16 +594,28 @@ export async function getItemPhotoById(photoId: string): Promise<StoredPhotoReco
  * Legacy single-photo lookup — keyed by item id.
  * Only present on items that had `hasPhoto: true` before the multi-photo migration.
  */
-export async function getItemPhoto(itemId: string): Promise<StoredPhotoRecord | null> {
+export async function getItemPhoto(
+  itemId: string,
+): Promise<StoredPhotoRecord | null> {
   const db = await initKv();
-  const result = await db.get<StoredPhotoRecord>(["inventory", "photos", itemId]);
+  const result = await db.get<StoredPhotoRecord>([
+    "inventory",
+    "photos",
+    itemId,
+  ]);
   return result.value ?? null;
 }
 
-export async function getAllItemPhotoMetadataRecords(): Promise<BackupPhotoRecord[]> {
+export async function getAllItemPhotoMetadataRecords(): Promise<
+  BackupPhotoRecord[]
+> {
   const db = await initKv();
   const records: BackupPhotoRecord[] = [];
-  for await (const entry of db.list<StoredPhotoRecord>({ prefix: ["inventory", "photos"] })) {
+  for await (
+    const entry of db.list<StoredPhotoRecord>({
+      prefix: ["inventory", "photos"],
+    })
+  ) {
     const photoId = String(entry.key[entry.key.length - 1]);
     if (isLegacyPhotoRecord(entry.value)) continue;
     const meta = entry.value as ItemPhotoMeta;
@@ -615,12 +649,15 @@ export async function addItemPhoto(
       // secondary indexes, so we bypass updateItem's stat recalculation entirely.
       await db.atomic()
         .set(["inventory", "photos", photoId], photoMeta)
-        .set([...KEYS.items, itemId], serializeItem({
-          ...item,
-          photoIds: newPhotoIds,
-          hasPhoto: true,
-          lastUpdated: new Date(),
-        }))
+        .set(
+          [...KEYS.items, itemId],
+          serializeItem({
+            ...item,
+            photoIds: newPhotoIds,
+            hasPhoto: true,
+            lastUpdated: new Date(),
+          }),
+        )
         .commit();
       invalidateItemsCache();
     } else {
@@ -644,7 +681,11 @@ export async function removeItemPhotoById(
   photoId: string,
 ): Promise<void> {
   const db = await initKv();
-  const photoResult = await db.get<StoredPhotoRecord>(["inventory", "photos", photoId]);
+  const photoResult = await db.get<StoredPhotoRecord>([
+    "inventory",
+    "photos",
+    photoId,
+  ]);
   const item = await getItemById(itemId);
   if (item) {
     const remaining = (item.photoIds ?? []).filter((p) => p !== photoId);
@@ -652,12 +693,15 @@ export async function removeItemPhotoById(
     // secondary indexes, so we bypass updateItem's stat recalculation.
     await db.atomic()
       .delete(["inventory", "photos", photoId])
-      .set([...KEYS.items, itemId], serializeItem({
-        ...item,
-        photoIds: remaining,
-        hasPhoto: remaining.length > 0,
-        lastUpdated: new Date(),
-      }))
+      .set(
+        [...KEYS.items, itemId],
+        serializeItem({
+          ...item,
+          photoIds: remaining,
+          hasPhoto: remaining.length > 0,
+          lastUpdated: new Date(),
+        }),
+      )
       .commit();
     invalidateItemsCache();
   } else {
@@ -686,11 +730,14 @@ export async function reorderItemPhotos(
   const safe = orderedPhotoIds.filter((p) => current.has(p));
   // photoIds reorder doesn't affect stats or secondary indexes — write directly.
   const db = await initKv();
-  await db.set([...KEYS.items, itemId], serializeItem({
-    ...item,
-    photoIds: safe,
-    lastUpdated: new Date(),
-  }));
+  await db.set(
+    [...KEYS.items, itemId],
+    serializeItem({
+      ...item,
+      photoIds: safe,
+      lastUpdated: new Date(),
+    }),
+  );
   invalidateItemsCache();
 }
 
@@ -864,7 +911,10 @@ function applyQuantityDeltaToStats(
       },
     },
     lowStockItems: stats.lowStockItems,
-    activeLoansCount: Math.max(0, (stats.activeLoansCount ?? 0) + loanCountDelta),
+    activeLoansCount: Math.max(
+      0,
+      (stats.activeLoansCount ?? 0) + loanCountDelta,
+    ),
   };
   const threshold = item.minThreshold;
   if (oldQty > threshold && newQty <= threshold) next.lowStockItems += 1;
@@ -883,12 +933,18 @@ export async function createCheckOut(checkout: CheckOut): Promise<CheckOut> {
   if (item) {
     const newQty = item.quantity - checkout.quantity;
     const newStats = applyQuantityDeltaToStats(
-      currentStats, item, -checkout.quantity, 1,
+      currentStats,
+      item,
+      -checkout.quantity,
+      1,
     );
     // Single atomic: checkout record + item quantity + stats
     await db.atomic()
       .set([...KEYS.checkouts, checkout.id], serializeCheckOut(checkout))
-      .set([...KEYS.items, item.id], serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }))
+      .set(
+        [...KEYS.items, item.id],
+        serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }),
+      )
       .set(KEYS.computedStats, newStats)
       .commit();
   } else {
@@ -926,12 +982,18 @@ export async function returnCheckOut(id: string): Promise<CheckOut | null> {
   if (item) {
     const newQty = item.quantity + existing.quantity;
     const newStats = applyQuantityDeltaToStats(
-      currentStats, item, +existing.quantity, -1,
+      currentStats,
+      item,
+      +existing.quantity,
+      -1,
     );
     // Single atomic: checkout record + item quantity + stats
     await db.atomic()
       .set([...KEYS.checkouts, id], serializeCheckOut(updated))
-      .set([...KEYS.items, item.id], serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }))
+      .set(
+        [...KEYS.items, item.id],
+        serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }),
+      )
       .set(KEYS.computedStats, newStats)
       .commit();
   } else {
@@ -980,12 +1042,18 @@ export async function deleteCheckOut(id: string): Promise<boolean> {
     if (item) {
       const newQty = item.quantity + existing.quantity;
       const newStats = applyQuantityDeltaToStats(
-        currentStats, item, +existing.quantity, -1,
+        currentStats,
+        item,
+        +existing.quantity,
+        -1,
       );
       // Single atomic: delete checkout + restore item quantity + stats
       await db.atomic()
         .delete([...KEYS.checkouts, id])
-        .set([...KEYS.items, item.id], serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }))
+        .set(
+          [...KEYS.items, item.id],
+          serializeItem({ ...item, quantity: newQty, lastUpdated: new Date() }),
+        )
         .set(KEYS.computedStats, newStats)
         .commit();
     } else {
@@ -1486,7 +1554,9 @@ function deserializeItem(data: any): InventoryItem {
     item.nextInspectionDate = new Date(data.nextInspectionDate);
   }
   if (Array.isArray(data.maintenanceHistory)) {
-    item.maintenanceHistory = data.maintenanceHistory.map((entry: Record<string, unknown>) => ({
+    item.maintenanceHistory = data.maintenanceHistory.map((
+      entry: Record<string, unknown>,
+    ) => ({
       ...entry,
       date: new Date(entry.date as string),
     }));
@@ -2500,7 +2570,9 @@ export async function getAllFeedbackRequests(): Promise<FeedbackRequest[]> {
       const db = await initKv();
       const requests: FeedbackRequest[] = [];
       for await (
-        const entry of db.list<FeedbackRequest>({ prefix: KEYS.feedbackRequests })
+        const entry of db.list<FeedbackRequest>({
+          prefix: KEYS.feedbackRequests,
+        })
       ) {
         if (entry.value) requests.push(entry.value);
       }
@@ -2533,7 +2605,9 @@ export async function getFeedbackRequestsByUsername(
 }
 
 export async function createFeedbackRequest(
-  payload: Pick<FeedbackRequest, "kind" | "title" | "description"> & { photoId?: string },
+  payload: Pick<FeedbackRequest, "kind" | "title" | "description"> & {
+    photoId?: string;
+  },
   createdBy: string,
 ): Promise<FeedbackRequest> {
   const db = await initKv();
@@ -2564,6 +2638,21 @@ export async function reviewFeedbackRequest(
   const db = await initKv();
   const existing = await getFeedbackRequestById(id);
   if (!existing) return null;
+
+  const allowedTransitions: Record<
+    FeedbackRequest["status"],
+    FeedbackRequest["status"][]
+  > = {
+    pending: ["accepted", "rejected"],
+    accepted: ["completed", "rejected"],
+    completed: [],
+    rejected: [],
+  };
+  if (!allowedTransitions[existing.status].includes(status)) {
+    throw new Error(
+      `Cannot move request from ${existing.status} to ${status}.`,
+    );
+  }
 
   const updated: FeedbackRequest = {
     ...existing,
@@ -2829,58 +2918,92 @@ export async function replaceAllFromInventoryBackup(
     writeOps.push(() => db.set([...KEYS.items, item.id], serializeItem(item)));
   }
   for (const photo of snapshot.photoRecords) {
-    writeOps.push(() => db.set(["inventory", "photos", photo.photoId], {
-      contentType: photo.contentType,
-      objectKey: photo.objectKey,
-      byteLength: photo.byteLength,
-    } satisfies ItemPhotoMeta));
+    writeOps.push(() =>
+      db.set(
+        ["inventory", "photos", photo.photoId],
+        {
+          contentType: photo.contentType,
+          objectKey: photo.objectKey,
+          byteLength: photo.byteLength,
+        } satisfies ItemPhotoMeta,
+      )
+    );
   }
   for (const checkout of snapshot.checkOuts) {
-    writeOps.push(() => db.set([...KEYS.checkouts, checkout.id], serializeCheckOut(checkout)));
+    writeOps.push(() =>
+      db.set([...KEYS.checkouts, checkout.id], serializeCheckOut(checkout))
+    );
   }
   for (const plan of snapshot.campPlans) {
-    writeOps.push(() => db.set([...KEYS.camps, plan.id], serializeCampPlan(plan)));
+    writeOps.push(() =>
+      db.set([...KEYS.camps, plan.id], serializeCampPlan(plan))
+    );
   }
   for (const template of snapshot.campTemplates) {
-    writeOps.push(() => db.set([...KEYS.templates, template.id], serializeCampTemplate(template)));
+    writeOps.push(() =>
+      db.set([...KEYS.templates, template.id], serializeCampTemplate(template))
+    );
   }
   for (const kit of snapshot.firstAidKits) {
-    writeOps.push(() => db.set([...KEYS.firstAidKits, kit.id], serializeFirstAidKit(kit)));
+    writeOps.push(() =>
+      db.set([...KEYS.firstAidKits, kit.id], serializeFirstAidKit(kit))
+    );
   }
   for (const item of snapshot.firstAidCatalog) {
     writeOps.push(() => db.set([...KEYS.firstAidCatalog, item.id], item));
   }
   const overallFirstAidCheck = snapshot.firstAidChecks.overall;
   if (overallFirstAidCheck !== null) {
-    writeOps.push(() => db.set(
-      [...KEYS.firstAidChecks, "overall"],
-      serializeFirstAidCheckState(overallFirstAidCheck),
-    ));
+    writeOps.push(() =>
+      db.set(
+        [...KEYS.firstAidChecks, "overall"],
+        serializeFirstAidCheckState(overallFirstAidCheck),
+      )
+    );
   }
   for (const [kitId, state] of Object.entries(snapshot.firstAidChecks.kits)) {
-    writeOps.push(() => db.set(
-      [...KEYS.firstAidChecks, "kits", kitId],
-      serializeFirstAidCheckState(state),
-    ));
+    writeOps.push(() =>
+      db.set(
+        [...KEYS.firstAidChecks, "kits", kitId],
+        serializeFirstAidCheckState(state),
+      )
+    );
   }
   for (const assessment of snapshot.riskAssessments) {
-    writeOps.push(() => db.set(
-      [...KEYS.riskAssessments, assessment.id],
-      serializeRiskAssessment(assessment),
-    ));
+    writeOps.push(() =>
+      db.set(
+        [...KEYS.riskAssessments, assessment.id],
+        serializeRiskAssessment(assessment),
+      )
+    );
   }
   for (const meal of snapshot.meals) {
     writeOps.push(() => db.set([...KEYS.meals, meal.id], meal));
   }
   for (const request of snapshot.feedbackRequests) {
-    writeOps.push(() => db.set([...KEYS.feedbackRequests, request.id], request));
+    writeOps.push(() =>
+      db.set([...KEYS.feedbackRequests, request.id], request)
+    );
   }
 
-  writeOps.push(() => db.set(KEYS.neckers, Math.max(0, snapshot.neckers.inStock)));
-  writeOps.push(() => db.set(KEYS.neckersCreated, Math.max(0, snapshot.neckers.created)));
-  writeOps.push(() => db.set(KEYS.neckersTotalMade, Math.max(0, snapshot.neckers.totalMade)));
-  writeOps.push(() => db.set(KEYS.adultNeckersCreated, Math.max(0, snapshot.neckers.adultCreated)));
-  writeOps.push(() => db.set(KEYS.adultNeckersTotalMade, Math.max(0, snapshot.neckers.adultTotalMade)));
+  writeOps.push(() =>
+    db.set(KEYS.neckers, Math.max(0, snapshot.neckers.inStock))
+  );
+  writeOps.push(() =>
+    db.set(KEYS.neckersCreated, Math.max(0, snapshot.neckers.created))
+  );
+  writeOps.push(() =>
+    db.set(KEYS.neckersTotalMade, Math.max(0, snapshot.neckers.totalMade))
+  );
+  writeOps.push(() =>
+    db.set(KEYS.adultNeckersCreated, Math.max(0, snapshot.neckers.adultCreated))
+  );
+  writeOps.push(() =>
+    db.set(
+      KEYS.adultNeckersTotalMade,
+      Math.max(0, snapshot.neckers.adultTotalMade),
+    )
+  );
 
   for (let i = 0; i < writeOps.length; i += BATCH_SIZE) {
     const chunk = writeOps.slice(i, i + BATCH_SIZE);
