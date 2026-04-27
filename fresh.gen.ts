@@ -116,6 +116,7 @@ import * as $TemplateAppendForm from "./islands/TemplateAppendForm.tsx";
 import * as $TemplateBuilder from "./islands/TemplateBuilder.tsx";
 import * as $TemplateBulkImport from "./islands/TemplateBulkImport.tsx";
 import * as $ThemeToggle from "./islands/ThemeToggle.tsx";
+import * as $UserDirectory from "./islands/UserDirectory.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
 const manifest = {
@@ -237,6 +238,7 @@ const manifest = {
     "./islands/TemplateBuilder.tsx": $TemplateBuilder,
     "./islands/TemplateBulkImport.tsx": $TemplateBulkImport,
     "./islands/ThemeToggle.tsx": $ThemeToggle,
+    "./islands/UserDirectory.tsx": $UserDirectory,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;
