@@ -13,6 +13,8 @@ playwright-report/
 test-results/
 tests/visual/diffs/
 tests/visual/baselines/
+tests/visual/actuals/
+tests/visual/report.html
 
 # macOS metadata
 .DS_Store

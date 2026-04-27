@@ -68,6 +68,8 @@ export interface ActivityEntry {
 
 const LOG_PREFIX = ["activity", "log"] as const;
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+const ACTIVITY_LOG_ENABLED =
+  Deno.env.get("ACTIVITY_LOG_ENABLED")?.toLowerCase() !== "false";
 
 let _kv: Deno.Kv | null = null;
 let _kvInFlight: Promise<Deno.Kv> | null = null;
@@ -96,6 +98,9 @@ function invertedEpoch(): string {
 export async function logActivity(
   entry: Omit<ActivityEntry, "id" | "timestamp">,
 ): Promise<void> {
+  if (!ACTIVITY_LOG_ENABLED) {
+    return;
+  }
   try {
     const kv = await getKv();
     const id = crypto.randomUUID();

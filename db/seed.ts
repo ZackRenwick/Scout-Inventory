@@ -1,7 +1,8 @@
 // Seed data for development and testing
-import type { InventoryItem } from "../types/inventory.ts";
+import type { CampPlan, InventoryItem } from "../types/inventory.ts";
 import type { MealPayload } from "../types/meals.ts";
-import { createItem, createMeal, rebuildIndexes } from "./kv.ts";
+import { createCampPlan, createCampTemplate, createItem, createMeal, rebuildIndexes } from "./kv.ts";
+import { logActivity } from "../lib/activityLog.ts";
 
 const CAMP_STORE = "camp-store" as const;
 
@@ -13,6 +14,14 @@ const FOOD_IDS = {
   freezeDried:"seed-food-freezedried-001",
   apples:     "seed-food-apples-001",
   hotChoc:    "seed-food-hotchoc-001",
+} as const;
+
+const GEAR_IDS = {
+  patrolTent: "seed-gear-patrol-tent-001",
+  stove2Burner: "seed-gear-stove-001",
+  bowSaw: "seed-gear-bowsaw-001",
+  toolKit: "seed-gear-toolkit-001",
+  rounders: "seed-gear-rounders-001",
 } as const;
 
 export async function seedDatabase() {
@@ -37,7 +46,7 @@ export async function seedDatabase() {
       notes: "Waterproof, includes rainfly",
     },
     {
-      id: crypto.randomUUID(),
+      id: GEAR_IDS.patrolTent,
       name: "Patrol Scout Tent 8-Person",
       category: "tent",
       space: CAMP_STORE,
@@ -73,7 +82,7 @@ export async function seedDatabase() {
     
     // Cooking Equipment
     {
-      id: crypto.randomUUID(),
+      id: GEAR_IDS.stove2Burner,
       name: "Camp Stove - 2 Burner",
       category: "cooking",
       space: CAMP_STORE,
@@ -153,7 +162,7 @@ export async function seedDatabase() {
       notes: "Sharpened each season",
     },
     {
-      id: crypto.randomUUID(),
+      id: GEAR_IDS.bowSaw,
       name: "Folding Bow Saw",
       category: "camping-tools",
       space: CAMP_STORE,
@@ -190,7 +199,7 @@ export async function seedDatabase() {
 
     // Games (loft)
     {
-      id: crypto.randomUUID(),
+      id: GEAR_IDS.rounders,
       name: "Rounders Set",
       category: "games",
       space: "scout-post-loft",
@@ -208,7 +217,7 @@ export async function seedDatabase() {
 
     // Box / Kit
     {
-      id: crypto.randomUUID(),
+      id: GEAR_IDS.toolKit,
       name: "Patrol Tool Kit Box",
       category: "kit",
       space: CAMP_STORE,
@@ -414,6 +423,181 @@ export async function seedDatabase() {
   }
 
   console.log(`\n${sampleMeals.length} meals seeded!`);
+
+  // ===== CAMP TEMPLATES =====
+  console.log("\nSeeding camp templates...");
+  const createdBy = "seed.admin";
+
+  const weekendTemplate = await createCampTemplate(
+    "Weekend Patrol Camp",
+    [
+      {
+        itemId: GEAR_IDS.patrolTent,
+        itemName: "Patrol Scout Tent 8-Person",
+        itemCategory: "tent",
+        itemLocation: "Metal Shelf 1 - Slot 2",
+        quantityPlanned: 1,
+      },
+      {
+        itemId: GEAR_IDS.stove2Burner,
+        itemName: "Camp Stove - 2 Burner",
+        itemCategory: "cooking",
+        itemLocation: "Plastic Shelf 1 - Level 2",
+        quantityPlanned: 1,
+      },
+      {
+        itemId: FOOD_IDS.beans,
+        itemName: "Canned Beans - Variety Pack",
+        itemCategory: "food",
+        itemLocation: "Plastic Shelf 3 - Level 1",
+        quantityPlanned: 8,
+      },
+      {
+        itemId: FOOD_IDS.oatmeal,
+        itemName: "Instant Oatmeal Packets",
+        itemCategory: "food",
+        itemLocation: "Plastic Shelf 3 - Level 2",
+        quantityPlanned: 16,
+      },
+    ],
+    createdBy,
+    "Default list for short patrol weekends.",
+  );
+
+  const gamesNightTemplate = await createCampTemplate(
+    "Campfire Activity Night",
+    [
+      {
+        itemId: GEAR_IDS.rounders,
+        itemName: "Rounders Set",
+        itemCategory: "games",
+        itemLocation: "Loft Shelf 2",
+        quantityPlanned: 1,
+      },
+      {
+        itemId: GEAR_IDS.toolKit,
+        itemName: "Patrol Tool Kit Box",
+        itemCategory: "kit",
+        itemLocation: "Red Box",
+        quantityPlanned: 1,
+        notes: "Carry spare duct tape for shelter repairs.",
+      },
+    ],
+    createdBy,
+    "Optional activity and contingency equipment.",
+  );
+
+  console.log(`✓ Added template: ${weekendTemplate.name}`);
+  console.log(`✓ Added template: ${gamesNightTemplate.name}`);
+
+  // ===== CAMP PLANS =====
+  console.log("\nSeeding camp plans...");
+  const now = new Date();
+  const upcomingCampDate = new Date(now.getFullYear(), now.getMonth() + 1, 14);
+  const upcomingCampEnd = new Date(now.getFullYear(), now.getMonth() + 1, 16);
+  const activeCampDate = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 2));
+  const activeCampEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  const samplePlans: CampPlan[] = [
+    {
+      id: crypto.randomUUID(),
+      name: "Spring Patrol Weekend",
+      campDate: upcomingCampDate,
+      endDate: upcomingCampEnd,
+      location: "Glenmore Campsite",
+      notes: "Use template then add food top-up after headcount confirmation.",
+      status: "planning",
+      createdBy,
+      createdAt: now,
+      lastUpdated: now,
+      items: [
+        {
+          itemId: GEAR_IDS.patrolTent,
+          itemName: "Patrol Scout Tent 8-Person",
+          itemCategory: "tent",
+          itemLocation: "Metal Shelf 1 - Slot 2",
+          quantityPlanned: 1,
+          packedStatus: false,
+          returnedStatus: false,
+        },
+        {
+          itemId: GEAR_IDS.stove2Burner,
+          itemName: "Camp Stove - 2 Burner",
+          itemCategory: "cooking",
+          itemLocation: "Plastic Shelf 1 - Level 2",
+          quantityPlanned: 1,
+          packedStatus: false,
+          returnedStatus: false,
+        },
+      ],
+    },
+    {
+      id: crypto.randomUUID(),
+      name: "District Skills Camp",
+      campDate: activeCampDate,
+      endDate: activeCampEnd,
+      location: "Lochside Field",
+      notes: "Active plan with mixed packed state for workflow testing.",
+      status: "active",
+      createdBy,
+      createdAt: now,
+      lastUpdated: now,
+      items: [
+        {
+          itemId: GEAR_IDS.toolKit,
+          itemName: "Patrol Tool Kit Box",
+          itemCategory: "kit",
+          itemLocation: "Red Box",
+          quantityPlanned: 1,
+          packedStatus: true,
+          returnedStatus: false,
+        },
+        {
+          itemId: GEAR_IDS.bowSaw,
+          itemName: "Folding Bow Saw",
+          itemCategory: "camping-tools",
+          itemLocation: "Axe/Saw Hanging Space",
+          quantityPlanned: 2,
+          packedStatus: true,
+          returnedStatus: false,
+          notes: "One spare blade packed.",
+        },
+      ],
+    },
+  ];
+
+  for (const plan of samplePlans) {
+    const created = await createCampPlan(plan);
+    console.log(`✓ Added camp plan: ${created.name}`);
+  }
+
+  // ===== ACTIVITY LOG =====
+  console.log("\nSeeding activity log...");
+  const activitySeed = [
+    {
+      username: createdBy,
+      action: "camp.created" as const,
+      resource: "Spring Patrol Weekend",
+      details: "Created from seeded baseline flow",
+    },
+    {
+      username: createdBy,
+      action: "camp.updated" as const,
+      resource: "District Skills Camp",
+      details: "Status changed to active with partial packing",
+    },
+    {
+      username: createdBy,
+      action: "items.imported" as const,
+      resource: "Seed Dataset",
+      details: `${sampleItems.length} inventory items imported by seed script`,
+    },
+  ];
+
+  for (const entry of activitySeed) {
+    await logActivity(entry);
+  }
+  console.log(`✓ Added ${activitySeed.length} activity entries`);
 }
 
 // Run this file directly to seed the database

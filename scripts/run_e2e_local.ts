@@ -1,3 +1,4 @@
+import { normalizeLocalData } from "./normalize_local_data.ts";
 const repoRoot = new URL("../", import.meta.url).pathname;
 
 const port = Deno.env.get("E2E_PORT")?.trim() || "8787";
@@ -27,23 +28,26 @@ async function waitForServer(url: string, timeoutMs = 30_000): Promise<void> {
 
 const envBase = Deno.env.toObject();
 
-const server = new Deno.Command("deno", {
-  cwd: repoRoot,
-  args: ["run", "-A", "--unstable-kv", "main.ts"],
-  env: {
-    ...envBase,
-    PORT: new URL(baseUrl).port || port,
-    ADMIN_USERNAME: username,
-    ADMIN_PASSWORD: password,
-    DEV_BYPASS: "false",
-  },
-  stdout: "inherit",
-  stderr: "inherit",
-}).spawn();
-
 let exitCode = 1;
+let server: Deno.ChildProcess | null = null;
 
 try {
+  await normalizeLocalData();
+
+  server = new Deno.Command("deno", {
+    cwd: repoRoot,
+    args: ["run", "-A", "--unstable-kv", "main.ts"],
+    env: {
+      ...envBase,
+      PORT: new URL(baseUrl).port || port,
+      ADMIN_USERNAME: username,
+      ADMIN_PASSWORD: password,
+      DEV_BYPASS: "false",
+    },
+    stdout: "inherit",
+    stderr: "inherit",
+  }).spawn();
+
   await waitForServer(baseUrl);
 
   const e2eFiles = [
@@ -73,8 +77,10 @@ try {
     exitCode = 0;
   }
 } finally {
-  server.kill("SIGTERM");
-  await server.status;
+  if (server) {
+    server.kill("SIGTERM");
+    await server.status;
+  }
 }
 
 Deno.exit(exitCode);
