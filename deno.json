@@ -3,7 +3,7 @@
   "tasks": {
     "check": "deno fmt --check && deno lint && deno check **/*.ts && deno check **/*.tsx && deno task check:visual-baselines",
     "check:visual-baselines": "deno run -A scripts/check_visual_baseline_leaks.ts",
-    "pre-commit": "deno task check:visual-baselines",
+    "pre-commit": "deno task check:visual-baselines && deno task test:e2e:local",
     "test:e2e": "deno test -A tests/e2e/main_flows_e2e_test.ts && deno test -A tests/e2e/mutating_flows_e2e_test.ts",
     "test:e2e:local": "deno run -A --unstable-kv scripts/run_e2e_local.ts",
     "test": "deno test -A",

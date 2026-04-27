@@ -96,7 +96,15 @@ Deno.test({
     try {
       await login(page);
 
-      await page.request.post(new URL("/api/logout", baseUrl).toString());
+      const logoutStatus = await page.evaluate(async (url) => {
+        const res = await fetch(url, {
+          method: "POST",
+          credentials: "include",
+          redirect: "follow",
+        });
+        return res.status;
+      }, new URL("/api/logout", baseUrl).toString());
+      assert(logoutStatus >= 200 && logoutStatus < 400, `Unexpected logout status: ${logoutStatus}`);
 
       await page.goto(new URL("/inventory", baseUrl).toString(), {
         waitUntil: "networkidle",

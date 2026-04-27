@@ -183,7 +183,7 @@ deno task build      # Build for production
 deno task preview    # Preview production build
 deno task check      # Type check, lint, and format check
 deno task check:visual-baselines # Ensure visual baselines are not referenced by runtime code/assets
-deno task pre-commit # Run pre-commit safeguards locally
+deno task pre-commit # Run visual baseline + local E2E safeguards
 deno task test:e2e   # Run E2E smoke tests against an already-running app
 deno task test:e2e:local # Start local app, run E2E smoke tests, then stop app
 deno task migrate:photos-r2      # Migrate legacy KV photo blobs into R2
