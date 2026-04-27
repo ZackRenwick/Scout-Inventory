@@ -9,11 +9,15 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 async function login(page: import("npm:playwright").Page): Promise<void> {
-  await page.goto(new URL("/login", baseUrl).toString(), { waitUntil: "networkidle" });
+  await page.goto(new URL("/login", baseUrl).toString(), {
+    waitUntil: "networkidle",
+  });
   await page.fill('input[name="username"]', username);
   await page.fill('input[name="password"]', password);
   await Promise.all([
-    page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15_000 }),
+    page.waitForURL((url) => !url.pathname.startsWith("/login"), {
+      timeout: 15_000,
+    }),
     page.click('button[type="submit"]'),
   ]);
 }
@@ -24,11 +28,14 @@ function isoDateAfter(daysFromToday: number): string {
   return d.toISOString().split("T")[0];
 }
 
-async function getCsrfToken(page: import("npm:playwright").Page): Promise<string> {
+async function getCsrfToken(
+  page: import("npm:playwright").Page,
+): Promise<string> {
   await page.goto(new URL("/admin/admin-panel", baseUrl).toString(), {
     waitUntil: "networkidle",
   });
-  const token = await page.locator('input[name="csrf_token"]').first().inputValue();
+  const token = await page.locator('input[name="csrf_token"]').first()
+    .inputValue();
   assert(token && token.length > 0, "Expected CSRF token on admin panel");
   return token;
 }
@@ -74,7 +81,10 @@ Deno.test({
           },
         },
       );
-      assert(createRes.status() === 201, `Expected create 201, got ${createRes.status()}`);
+      assert(
+        createRes.status() === 201,
+        `Expected create 201, got ${createRes.status()}`,
+      );
       const created = await createRes.json() as { id: string; name: string };
       assert(created.id, "Expected created item id");
 
@@ -91,10 +101,18 @@ Deno.test({
       );
       assert(updateRes.ok(), `Expected update OK, got ${updateRes.status()}`);
 
-      const updatedRes = await page.request.get(new URL(`/api/items/${created.id}`, baseUrl).toString());
-      assert(updatedRes.ok(), `Expected item API OK after edit, got ${updatedRes.status()}`);
+      const updatedRes = await page.request.get(
+        new URL(`/api/items/${created.id}`, baseUrl).toString(),
+      );
+      assert(
+        updatedRes.ok(),
+        `Expected item API OK after edit, got ${updatedRes.status()}`,
+      );
       const updated = await updatedRes.json() as { name: string };
-      assert(updated.name === updatedName, `Expected updated name ${updatedName}, got ${updated.name}`);
+      assert(
+        updated.name === updatedName,
+        `Expected updated name ${updatedName}, got ${updated.name}`,
+      );
 
       // Create and return loan through API.
       const createLoanRes = await page.request.post(
@@ -112,7 +130,10 @@ Deno.test({
           },
         },
       );
-      assert(createLoanRes.status() === 201, `Expected loan create 201, got ${createLoanRes.status()}`);
+      assert(
+        createLoanRes.status() === 201,
+        `Expected loan create 201, got ${createLoanRes.status()}`,
+      );
       const createdLoan = await createLoanRes.json() as { id: string };
       assert(createdLoan.id, "Expected created loan id");
 
@@ -122,7 +143,10 @@ Deno.test({
           headers: { "X-CSRF-Token": csrfToken },
         },
       );
-      assert(returnLoanRes.ok(), `Expected loan return OK, got ${returnLoanRes.status()}`);
+      assert(
+        returnLoanRes.ok(),
+        `Expected loan return OK, got ${returnLoanRes.status()}`,
+      );
 
       // Delete item and verify it is gone.
       const deleteRes = await page.request.delete(
@@ -136,7 +160,10 @@ Deno.test({
       const deletedRes = await page.request.get(
         new URL(`/api/items/${created.id}`, baseUrl).toString(),
       );
-      assert(deletedRes.status() === 404, `Expected deleted item to return 404, got ${deletedRes.status()}`);
+      assert(
+        deletedRes.status() === 404,
+        `Expected deleted item to return 404, got ${deletedRes.status()}`,
+      );
     } finally {
       await context.close();
       await browser.close();

@@ -2,8 +2,13 @@
 // PUT    /api/meals/:id  — update a meal (admin only)
 // DELETE /api/meals/:id  — delete a meal (admin only)
 import { Handlers } from "$fresh/server.ts";
-import { getMealById, updateMeal, deleteMeal } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import { deleteMeal, getMealById, updateMeal } from "../../../db/kv.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 import type { MealPayload } from "../../../types/meals.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 
@@ -28,13 +33,17 @@ export const handler: Handlers = {
         return Response.json({ error: "Name is required" }, { status: 400 });
       }
       if (!Array.isArray(body.ingredients) || body.ingredients.length === 0) {
-        return Response.json({ error: "At least one ingredient is required" }, { status: 400 });
+        return Response.json({ error: "At least one ingredient is required" }, {
+          status: 400,
+        });
       }
       const badIngredient = body.ingredients.some(
         (ing: Partial<{ name: string }>) => !ing.name?.trim(),
       );
       if (badIngredient) {
-        return Response.json({ error: "Each ingredient must have a name" }, { status: 400 });
+        return Response.json({ error: "Each ingredient must have a name" }, {
+          status: 400,
+        });
       }
 
       const updated = await updateMeal(ctx.params.id, {
@@ -42,7 +51,9 @@ export const handler: Handlers = {
         description: body.description?.trim() || undefined,
         ingredients: body.ingredients,
       });
-      if (!updated) return Response.json({ error: "Not found" }, { status: 404 });
+      if (!updated) {
+        return Response.json({ error: "Not found" }, { status: 404 });
+      }
 
       await logActivity({
         username: session.username,

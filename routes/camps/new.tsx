@@ -12,7 +12,10 @@ export const handler: Handlers<NewCampPageData> = {
   GET(_req, ctx) {
     const session = ctx.state.session as Session;
     if (session.role === "viewer") {
-      return new Response(null, { status: 302, headers: { location: "/camps" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/camps" },
+      });
     }
     return ctx.render({ session });
   },
@@ -20,7 +23,11 @@ export const handler: Handlers<NewCampPageData> = {
 
 export default function NewCampPage({ data }: PageProps<NewCampPageData>) {
   return (
-    <Layout title="" username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title=""
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="flex flex-col items-center">
         <div class="w-full max-w-2xl mb-6 text-center">
           <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-1">

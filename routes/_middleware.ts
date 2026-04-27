@@ -1,6 +1,12 @@
 // Root middleware — protects all routes except /login and public assets
 import { FreshContext } from "$fresh/server.ts";
-import { getSessionCookie, getSession, extendSession, makeSessionCookie, type Session } from "../lib/auth.ts";
+import {
+  extendSession,
+  getSession,
+  getSessionCookie,
+  makeSessionCookie,
+  type Session,
+} from "../lib/auth.ts";
 import { preloadCaches } from "../db/kv.ts";
 
 // Routes that don't require authentication
@@ -91,7 +97,10 @@ export async function handler(req: Request, ctx: FreshContext) {
       res.headers.set("Cache-Control", "public, max-age=0, must-revalidate");
     } else if (path.startsWith("/static/")) {
       // Other static assets — cache for 1 day, revalidate.
-      res.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+      res.headers.set(
+        "Cache-Control",
+        "public, max-age=86400, stale-while-revalidate=604800",
+      );
     }
     applySecurityHeaders(res.headers);
     return res;
@@ -112,7 +121,9 @@ export async function handler(req: Request, ctx: FreshContext) {
 
   // Validate session
   const sessionId = getSessionCookie(req);
-  const session: Session | null = sessionId ? await getSession(sessionId) : null;
+  const session: Session | null = sessionId
+    ? await getSession(sessionId)
+    : null;
 
   if (!session) {
     const loginUrl = `/login?redirect=${encodeURIComponent(path)}`;

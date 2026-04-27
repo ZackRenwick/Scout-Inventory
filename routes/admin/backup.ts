@@ -21,7 +21,8 @@ export const handler: Handlers = {
         username: session.username,
         action: "inventory.backup_exported",
         resource: result.objectKey,
-        details: `manual backup · ${result.itemCount} items · ${result.byteLength} bytes`,
+        details:
+          `manual backup · ${result.itemCount} items · ${result.byteLength} bytes`,
       });
       return Response.json({
         ok: true,

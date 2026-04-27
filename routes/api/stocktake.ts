@@ -1,7 +1,7 @@
 // POST /api/stocktake — apply a batch of quantity/condition corrections from a stock-take
 import { Handlers } from "$fresh/server.ts";
 import { getItemById, updateItem } from "../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../lib/auth.ts";
+import { csrfFailed, csrfOk, forbidden, type Session } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 
 const VALID_CONDITIONS = new Set(["excellent", "good", "fair", "needs-repair"]);
@@ -15,7 +15,9 @@ interface StocktakeUpdate {
 export const handler: Handlers = {
   async POST(req, ctx) {
     const session = ctx.state.session as Session | undefined;
-    if (!session || (session.role !== "admin" && session.role !== "manager")) return forbidden();
+    if (!session || (session.role !== "admin" && session.role !== "manager")) {
+      return forbidden();
+    }
     if (!csrfOk(req, session)) return csrfFailed();
 
     let body: { updates: StocktakeUpdate[] };
@@ -35,7 +37,10 @@ export const handler: Handlers = {
 
     await Promise.all(
       updates.map(async ({ id, quantity, condition }) => {
-        if (typeof quantity !== "number" || quantity < 0 || !Number.isInteger(quantity)) {
+        if (
+          typeof quantity !== "number" || quantity < 0 ||
+          !Number.isInteger(quantity)
+        ) {
           errors.push(`Invalid quantity for item ${id}`);
           return;
         }
@@ -46,7 +51,10 @@ export const handler: Handlers = {
         try {
           const patch: Record<string, unknown> = { quantity };
           if (condition) patch.condition = condition;
-          const result = await updateItem(id, patch as Parameters<typeof updateItem>[1]);
+          const result = await updateItem(
+            id,
+            patch as Parameters<typeof updateItem>[1],
+          );
           if (result) applied++;
           else errors.push(`Item ${id} not found`);
         } catch (e) {
@@ -58,7 +66,13 @@ export const handler: Handlers = {
     await logActivity({
       username: session.username,
       action: "stocktake.completed",
-      details: `Stock-take applied ${applied} correction${applied !== 1 ? "s" : ""}${errors.length > 0 ? ` (${errors.length} error${errors.length !== 1 ? "s" : ""})` : ""}`,
+      details: `Stock-take applied ${applied} correction${
+        applied !== 1 ? "s" : ""
+      }${
+        errors.length > 0
+          ? ` (${errors.length} error${errors.length !== 1 ? "s" : ""})`
+          : ""
+      }`,
     });
 
     return Response.json({ applied, errors });

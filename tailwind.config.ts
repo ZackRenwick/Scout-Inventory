@@ -21,8 +21,12 @@ export default {
     "dark:bg-gray-800",
     "dark:border-gray-700",
     // Border accents used dynamically in CategoryCard
-    "border-t-blue-500", "border-t-green-500", "border-t-yellow-500",
-    "border-t-red-500",  "border-t-purple-500", "border-t-indigo-500",
+    "border-t-blue-500",
+    "border-t-green-500",
+    "border-t-yellow-500",
+    "border-t-red-500",
+    "border-t-purple-500",
+    "border-t-indigo-500",
     "border-t-orange-500",
     // Guardrail: keep common color utility families available even when
     // class scanning misses a change during dev/PWA iterations.

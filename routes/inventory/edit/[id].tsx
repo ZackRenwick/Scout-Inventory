@@ -15,12 +15,15 @@ interface EditItemData {
 export const handler: Handlers<EditItemData> = {
   async GET(_req, ctx) {
     const { id } = ctx.params;
-    
+
     try {
       const session = ctx.state.session as Session;
       // Viewers cannot edit items
       if (session.role === "viewer") {
-        return new Response(null, { status: 302, headers: { location: `/inventory/${id}` } });
+        return new Response(null, {
+          status: 302,
+          headers: { location: `/inventory/${id}` },
+        });
       }
 
       const item = await getItemById(id);
@@ -38,27 +41,47 @@ export const handler: Handlers<EditItemData> = {
 export default function EditItemPage({ data }: PageProps<EditItemData>) {
   if (!data.item) {
     return (
-      <Layout title="Item Not Found" username={data.session?.username} role={data.session?.role}>
+      <Layout
+        title="Item Not Found"
+        username={data.session?.username}
+        role={data.session?.role}
+      >
         <div class="bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg p-8 text-center">
           <p class="text-red-700 dark:text-red-300 text-lg">Item not found</p>
-          <a href="/inventory" class="mt-4 inline-block text-red-600 dark:text-red-400 hover:text-red-800 underline">
+          <a
+            href="/inventory"
+            class="mt-4 inline-block text-red-600 dark:text-red-400 hover:text-red-800 underline"
+          >
             ← Back to Inventory
           </a>
         </div>
       </Layout>
     );
   }
-  
+
   return (
-    <Layout title="" username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title=""
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="flex flex-col items-center">
         <div class="w-full max-w-2xl mb-6 text-center">
-          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-1">Edit: {data.item.name}</h2>
-          <a href={`/inventory/${data.item.id}`} class="text-purple-600 dark:text-purple-400 hover:text-purple-800 text-sm">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-purple-100 mb-1">
+            Edit: {data.item.name}
+          </h2>
+          <a
+            href={`/inventory/${data.item.id}`}
+            class="text-purple-600 dark:text-purple-400 hover:text-purple-800 text-sm"
+          >
             ← Back to Item Details
           </a>
         </div>
-        <ItemForm initialData={data.item} isEdit csrfToken={data.session?.csrfToken} />
+        <ItemForm
+          initialData={data.item}
+          isEdit
+          csrfToken={data.session?.csrfToken}
+        />
         <PhotoUpload
           itemId={data.item.id}
           photoIds={data.item.photoIds ?? []}

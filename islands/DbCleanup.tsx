@@ -26,7 +26,11 @@ export default function DbCleanup({ csrfToken }: Props) {
         headers: { "X-CSRF-Token": csrfToken },
       });
       const json = await res.json();
-      setResult({ ok: res.ok, message: res.ok ? json.message : (json.error ?? "An error occurred."), ...json });
+      setResult({
+        ok: res.ok,
+        message: res.ok ? json.message : (json.error ?? "An error occurred."),
+        ...json,
+      });
     } catch {
       setResult({ ok: false, message: "Request failed." });
     } finally {
@@ -45,7 +49,13 @@ export default function DbCleanup({ csrfToken }: Props) {
         {loading ? "⏳ Cleaning…" : "🧹 Run Cleanup"}
       </button>
       {result && (
-        <div class={`mt-3 text-sm ${result.ok ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+        <div
+          class={`mt-3 text-sm ${
+            result.ok
+              ? "text-green-700 dark:text-green-400"
+              : "text-red-700 dark:text-red-400"
+          }`}
+        >
           <p>{result.ok ? "✅" : "❌"} {result.message}</p>
         </div>
       )}

@@ -113,7 +113,9 @@ function detectMimeType(bytes: Uint8Array): string | null {
   return null;
 }
 
-function parsePngDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+function parsePngDimensions(
+  bytes: Uint8Array,
+): { width: number; height: number } | null {
   if (bytes.length < 24) return null;
   if (ascii(bytes, 12, 4) !== "IHDR") return null;
 
@@ -125,7 +127,9 @@ function parsePngDimensions(bytes: Uint8Array): { width: number; height: number 
   return { width, height };
 }
 
-function parseJpegDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+function parseJpegDimensions(
+  bytes: Uint8Array,
+): { width: number; height: number } | null {
   if (bytes.length < 4) return null;
   if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
 
@@ -161,9 +165,13 @@ function parseJpegDimensions(bytes: Uint8Array): { width: number; height: number
   return null;
 }
 
-function parseWebpDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+function parseWebpDimensions(
+  bytes: Uint8Array,
+): { width: number; height: number } | null {
   if (bytes.length < 20) return null;
-  if (ascii(bytes, 0, 4) !== "RIFF" || ascii(bytes, 8, 4) !== "WEBP") return null;
+  if (ascii(bytes, 0, 4) !== "RIFF" || ascii(bytes, 8, 4) !== "WEBP") {
+    return null;
+  }
 
   let offset = 12;
   while (offset + 8 <= bytes.length) {
@@ -218,7 +226,10 @@ function parseWebpDimensions(bytes: Uint8Array): { width: number; height: number
   return null;
 }
 
-function parseDimensions(mimeType: string, bytes: Uint8Array): { width: number; height: number } | null {
+function parseDimensions(
+  mimeType: string,
+  bytes: Uint8Array,
+): { width: number; height: number } | null {
   if (mimeType === JPEG_MIME) return parseJpegDimensions(bytes);
   if (mimeType === PNG_MIME) return parsePngDimensions(bytes);
   if (mimeType === WEBP_MIME) return parseWebpDimensions(bytes);
@@ -230,7 +241,8 @@ export function validateUploadedImage(
   bytes: Uint8Array,
   policy: UploadImagePolicy = DEFAULT_UPLOAD_IMAGE_POLICY,
 ): UploadImageValidationResult | UploadImageValidationError {
-  const normalizedMimeType = String(declaredMimeType ?? "").trim().toLowerCase();
+  const normalizedMimeType = String(declaredMimeType ?? "").trim()
+    .toLowerCase();
   if (!policy.allowedMimeTypes.has(normalizedMimeType)) {
     return {
       status: 415,
@@ -279,14 +291,16 @@ export function validateUploadedImage(
   if (width < policy.minWidth || height < policy.minHeight) {
     return {
       status: 422,
-      error: `Image dimensions too small. Minimum is ${policy.minWidth}x${policy.minHeight}px`,
+      error:
+        `Image dimensions too small. Minimum is ${policy.minWidth}x${policy.minHeight}px`,
     };
   }
 
   if (width > policy.maxWidth || height > policy.maxHeight) {
     return {
       status: 422,
-      error: `Image dimensions too large. Maximum is ${policy.maxWidth}x${policy.maxHeight}px`,
+      error:
+        `Image dimensions too large. Maximum is ${policy.maxWidth}x${policy.maxHeight}px`,
     };
   }
 

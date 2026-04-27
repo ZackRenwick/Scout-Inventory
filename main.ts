@@ -15,7 +15,11 @@ import {
   getWeeklyInventoryBackupSchedule,
   isWeeklyInventoryBackupEnabled,
 } from "./lib/inventoryBackups.ts";
-import { checkAndNotifyLowStock, checkAndNotifyExpiry, checkAndNotifyOverdueLoans } from "./lib/notifications.ts";
+import {
+  checkAndNotifyExpiry,
+  checkAndNotifyLowStock,
+  checkAndNotifyOverdueLoans,
+} from "./lib/notifications.ts";
 import { initKv, preloadCaches } from "./db/kv.ts";
 
 // Warm all KV caches and ensure the admin account exist concurrently before
@@ -56,9 +60,15 @@ async function runNotifications(source: string) {
   }
   console.log(`[${sourceTag}] Claimed notification run — sending checks.`);
   await Promise.all([
-    checkAndNotifyLowStock().catch((e) => console.error(`[${sourceTag}] notify-low-stock failed:`, e)),
-    checkAndNotifyExpiry().catch((e) => console.error(`[${sourceTag}] notify-expiry failed:`, e)),
-    checkAndNotifyOverdueLoans().catch((e) => console.error(`[${sourceTag}] notify-overdue-loans failed:`, e)),
+    checkAndNotifyLowStock().catch((e) =>
+      console.error(`[${sourceTag}] notify-low-stock failed:`, e)
+    ),
+    checkAndNotifyExpiry().catch((e) =>
+      console.error(`[${sourceTag}] notify-expiry failed:`, e)
+    ),
+    checkAndNotifyOverdueLoans().catch((e) =>
+      console.error(`[${sourceTag}] notify-overdue-loans failed:`, e)
+    ),
   ]);
 }
 
@@ -84,7 +94,9 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
     Deno.cron("inventory-weekly-backup", "0 3 * * 7", async () => {
       try {
         const result = await createInventoryBackup("cron");
-        console.log(`[backup] Stored weekly inventory backup: ${result.objectKey} (${result.byteLength} bytes)`);
+        console.log(
+          `[backup] Stored weekly inventory backup: ${result.objectKey} (${result.byteLength} bytes)`,
+        );
       } catch (error) {
         console.error("[backup] Weekly inventory backup failed:", error);
       }
@@ -100,7 +112,8 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
   const utcMin = now.getUTCMinutes();
   const minuteOfDay = utcHour * 60 + utcMin;
   const isNotificationDay = dayOfWeek === 3 || dayOfWeek === 5;
-  const inCatchUpWindow = minuteOfDay >= 8 * 60 + 30 && minuteOfDay < 9 * 60 + 30;
+  const inCatchUpWindow = minuteOfDay >= 8 * 60 + 30 &&
+    minuteOfDay < 9 * 60 + 30;
   if (isNotificationDay && inCatchUpWindow) {
     runNotifications("startup-catchup");
   }

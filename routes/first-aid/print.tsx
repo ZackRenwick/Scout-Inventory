@@ -19,14 +19,17 @@ export const handler: Handlers<FirstAidPrintData> = {
   },
 };
 
-export default function FirstAidPrintPage({ data }: PageProps<FirstAidPrintData>) {
+export default function FirstAidPrintPage(
+  { data }: PageProps<FirstAidPrintData>,
+) {
   return (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>First Aid Kit Inserts</title>
-        <style>{`
+        <style>
+          {`
           :root { color-scheme: light; }
           * { box-sizing: border-box; }
           body { font-family: Arial, Helvetica, sans-serif; color: #111827; margin: 0; }
@@ -48,30 +51,44 @@ export default function FirstAidPrintPage({ data }: PageProps<FirstAidPrintData>
             .sheet { border: none; border-radius: 0; padding: 0; margin: 0 0 8mm; }
             .sheet + .sheet { page-break-before: always; }
           }
-        `}</style>
+        `}
+        </style>
       </head>
       <body>
         <div class="page">
           <div class="toolbar">
             <button class="btn" type="button" id="printBtn">Print</button>
-            <a href="/first-aid" style="font-size: 13px; color: #374151;">Back to First Aid</a>
+            <a href="/first-aid" style="font-size: 13px; color: #374151;">
+              Back to First Aid
+            </a>
           </div>
 
-          {data.kits.length === 0 ? (
-            <p>No first-aid kits available.</p>
-          ) : (
+          {data.kits.length === 0 ? <p>No first-aid kits available.</p> : (
             data.kits.map((kit) => {
-              const sorted = [...kit.entries].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+              const sorted = [...kit.entries].sort((a, b) =>
+                a.name.localeCompare(b.name, undefined, { numeric: true })
+              );
               return (
                 <section class="sheet" key={kit.id}>
                   <h2>{kit.name}</h2>
-                  <p class="meta">Restock target list from app data. Last updated: {kit.lastUpdated.toLocaleDateString()}</p>
+                  <p class="meta">
+                    Restock target list from app data. Last updated:{" "}
+                    {kit.lastUpdated.toLocaleDateString()}
+                  </p>
 
                   <div class="fills">
-                    <div>Checked by: <span class="line"></span></div>
-                    <div>Date: <span class="line"></span></div>
-                    <div>Event / Camp: <span class="line"></span></div>
-                    <div>Reorder needed: <span class="line"></span></div>
+                    <div>
+                      Checked by: <span class="line"></span>
+                    </div>
+                    <div>
+                      Date: <span class="line"></span>
+                    </div>
+                    <div>
+                      Event / Camp: <span class="line"></span>
+                    </div>
+                    <div>
+                      Reorder needed: <span class="line"></span>
+                    </div>
                   </div>
 
                   <table>
@@ -99,7 +116,8 @@ export default function FirstAidPrintPage({ data }: PageProps<FirstAidPrintData>
         </div>
         <script
           dangerouslySetInnerHTML={{
-            __html: "document.getElementById('printBtn')?.addEventListener('click',()=>window.print());",
+            __html:
+              "document.getElementById('printBtn')?.addEventListener('click',()=>window.print());",
           }}
         />
       </body>

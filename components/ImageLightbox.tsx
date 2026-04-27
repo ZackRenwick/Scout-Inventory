@@ -29,7 +29,8 @@ export default function ImageLightbox({
   buttonClass,
   imageClass,
   imageStyle,
-  dialogImageClass = "max-w-[92vw] max-h-[88vh] object-contain rounded-lg shadow-2xl",
+  dialogImageClass =
+    "max-w-[92vw] max-h-[88vh] object-contain rounded-lg shadow-2xl",
   showCounter = true,
 }: ImageLightboxProps) {
   const lightboxIdx = useSignal<number | null>(null);
@@ -45,7 +46,8 @@ export default function ImageLightbox({
   };
 
   const prev = () => {
-    lightboxIdx.value = (lightboxIdx.value! - 1 + images.length) % images.length;
+    lightboxIdx.value = (lightboxIdx.value! - 1 + images.length) %
+      images.length;
   };
 
   const next = () => {

@@ -5,7 +5,10 @@ export default function FeedbackFormClient() {
     const kindSelect = document.querySelector('select[name="kind"]');
     const photoSection = document.getElementById("photo-section");
 
-    if (!(kindSelect instanceof HTMLSelectElement) || !(photoSection instanceof HTMLElement)) {
+    if (
+      !(kindSelect instanceof HTMLSelectElement) ||
+      !(photoSection instanceof HTMLElement)
+    ) {
       return;
     }
 
@@ -32,7 +35,9 @@ export default function FeedbackFormClient() {
     let pendingFile: File | null = null;
 
     const updatePhotoSectionVisibility = () => {
-      photoSection.style.display = kindSelect.value === "bug" ? "block" : "none";
+      photoSection.style.display = kindSelect.value === "bug"
+        ? "block"
+        : "none";
       if (kindSelect.value !== "bug") {
         photoPreview.classList.add("hidden");
         photoInput.value = "";
@@ -126,12 +131,11 @@ export default function FeedbackFormClient() {
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          const errorMessage =
-            body && typeof body.error === "string"
-              ? body.error
-              : (res.status === 405
-                ? "Upload endpoint temporarily unavailable. Please refresh the app and try again."
-                : "Upload failed with status " + res.status);
+          const errorMessage = body && typeof body.error === "string"
+            ? body.error
+            : (res.status === 405
+              ? "Upload endpoint temporarily unavailable. Please refresh the app and try again."
+              : "Upload failed with status " + res.status);
           throw new Error(errorMessage);
         }
 

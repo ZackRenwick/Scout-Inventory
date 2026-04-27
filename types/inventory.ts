@@ -1,18 +1,49 @@
 // Base inventory item interface
-export type ItemCategory = "tent" | "cooking" | "food" | "camping-tools" | "games" | "kit" | "fuel" | "kilt";
+export type ItemCategory =
+  | "tent"
+  | "cooking"
+  | "food"
+  | "camping-tools"
+  | "games"
+  | "kit"
+  | "fuel"
+  | "kilt";
 
-export const CATEGORY_META: Record<ItemCategory, { emoji: string; label: string; searchLabel: string }> = {
+export const CATEGORY_META: Record<
+  ItemCategory,
+  { emoji: string; label: string; searchLabel: string }
+> = {
   tent: { emoji: "⛺", label: "Tents", searchLabel: "tents" },
-  cooking: { emoji: "🥘", label: "Cooking Equipment", searchLabel: "cooking equipment" },
+  cooking: {
+    emoji: "🥘",
+    label: "Cooking Equipment",
+    searchLabel: "cooking equipment",
+  },
   food: { emoji: "🥫", label: "Food", searchLabel: "food" },
   fuel: { emoji: "🛢️", label: "Fuel", searchLabel: "fuel gas" },
-  "camping-tools": { emoji: "🧰", label: "Camping Tools", searchLabel: "camping tools" },
+  "camping-tools": {
+    emoji: "🧰",
+    label: "Camping Tools",
+    searchLabel: "camping tools",
+  },
   games: { emoji: "⚽", label: "Games Equipment", searchLabel: "games" },
   kit: { emoji: "📦", label: "Box / Kit", searchLabel: "box kit" },
-  kilt: { emoji: "🏴\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F", label: "Kilts", searchLabel: "kilt highland dress sporran" },
+  kilt: {
+    emoji:
+      "🏴\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",
+    label: "Kilts",
+    searchLabel: "kilt highland dress sporran",
+  },
 };
 
-export const CAMP_STORE_CATEGORIES: ItemCategory[] = ["tent", "cooking", "food", "camping-tools", "kit", "kilt"];
+export const CAMP_STORE_CATEGORIES: ItemCategory[] = [
+  "tent",
+  "cooking",
+  "food",
+  "camping-tools",
+  "kit",
+  "kilt",
+];
 export const LOFT_CATEGORIES: ItemCategory[] = ["games", "kit"];
 export const GAS_STORAGE_CATEGORIES: ItemCategory[] = ["fuel"];
 
@@ -21,40 +52,89 @@ export function getCategoryEmoji(category: string): string {
 }
 
 export function getCategoryLabel(category: string): string {
-  return CATEGORY_META[category as ItemCategory]?.label ?? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return CATEGORY_META[category as ItemCategory]?.label ??
+    category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function getCategorySearchLabel(category: string): string {
-  return CATEGORY_META[category as ItemCategory]?.searchLabel ?? category.replace(/-/g, " ");
+  return CATEGORY_META[category as ItemCategory]?.searchLabel ??
+    category.replace(/-/g, " ");
 }
 
 export type ItemSpace = "camp-store" | "scout-post-loft" | "gas-storage-box";
 
 export type ItemLocation =
-  | "Plastic Shelf 1 - Level 1" | "Plastic Shelf 1 - Level 2" | "Plastic Shelf 1 - Level 3" | "Plastic Shelf 1 - Level 4"
-  | "Plastic Shelf 2 - Level 1" | "Plastic Shelf 2 - Level 2" | "Plastic Shelf 2 - Level 3" | "Plastic Shelf 2 - Level 4" | "On Top of Plastic Shelf 2"
-  | "Plastic Shelf 3 - Level 1" | "Plastic Shelf 3 - Level 2" | "Plastic Shelf 3 - Level 3" | "Plastic Shelf 3 - Level 4" | "On Top of Plastic Shelf 3"
-  | "Wooden Shelf 1" | "Wooden Shelf 2" | "Wooden Shelf 3"
-  | "Metal Shelf 1 - Slot 1" | "Metal Shelf 1 - Slot 2" | "Metal Shelf 1 - Slot 3" | "Metal Shelf 1 - Slot 4"
-  | "Metal Shelf 2 - Slot 1" | "Metal Shelf 2 - Slot 2" | "Metal Shelf 2 - Slot 3" | "Metal Shelf 2 - Slot 4"
-  | "Metal Shelf 3 - Slot 1" | "Metal Shelf 3 - Slot 2" | "Metal Shelf 3 - Slot 3" | "Metal Shelf 3 - Slot 4"
-  | "Metal Shelf 4 - Slot 1" | "Metal Shelf 4 - Slot 2" | "Metal Shelf 4 - Slot 3" | "Metal Shelf 4 - Slot 4"
-  | "Filing Cabinet - Drawer 1" | "Filing Cabinet - Drawer 2" | "Filing Cabinet - Drawer 3" | "Filing Cabinet - Drawer 4"
-  | "Blue Box" | "Red Box" | "Green Box" | "Yellow Box"
-  | "Kestrels Box" | "Eagles Box"
+  | "Plastic Shelf 1 - Level 1"
+  | "Plastic Shelf 1 - Level 2"
+  | "Plastic Shelf 1 - Level 3"
+  | "Plastic Shelf 1 - Level 4"
+  | "Plastic Shelf 2 - Level 1"
+  | "Plastic Shelf 2 - Level 2"
+  | "Plastic Shelf 2 - Level 3"
+  | "Plastic Shelf 2 - Level 4"
+  | "On Top of Plastic Shelf 2"
+  | "Plastic Shelf 3 - Level 1"
+  | "Plastic Shelf 3 - Level 2"
+  | "Plastic Shelf 3 - Level 3"
+  | "Plastic Shelf 3 - Level 4"
+  | "On Top of Plastic Shelf 3"
+  | "Wooden Shelf 1"
+  | "Wooden Shelf 2"
+  | "Wooden Shelf 3"
+  | "Metal Shelf 1 - Slot 1"
+  | "Metal Shelf 1 - Slot 2"
+  | "Metal Shelf 1 - Slot 3"
+  | "Metal Shelf 1 - Slot 4"
+  | "Metal Shelf 2 - Slot 1"
+  | "Metal Shelf 2 - Slot 2"
+  | "Metal Shelf 2 - Slot 3"
+  | "Metal Shelf 2 - Slot 4"
+  | "Metal Shelf 3 - Slot 1"
+  | "Metal Shelf 3 - Slot 2"
+  | "Metal Shelf 3 - Slot 3"
+  | "Metal Shelf 3 - Slot 4"
+  | "Metal Shelf 4 - Slot 1"
+  | "Metal Shelf 4 - Slot 2"
+  | "Metal Shelf 4 - Slot 3"
+  | "Metal Shelf 4 - Slot 4"
+  | "Filing Cabinet - Drawer 1"
+  | "Filing Cabinet - Drawer 2"
+  | "Filing Cabinet - Drawer 3"
+  | "Filing Cabinet - Drawer 4"
+  | "Blue Box"
+  | "Red Box"
+  | "Green Box"
+  | "Yellow Box"
+  | "Kestrels Box"
+  | "Eagles Box"
   | "Cubby Hole"
   | "Axe/Saw Hanging Space"
-  | "On Top of Red Box" | "On Top of Green Box"
-  | "Loft Shelf 1" | "Loft Shelf 2" | "Loft Shelf 3" | "Loft Shelf 4"
+  | "On Top of Red Box"
+  | "On Top of Green Box"
+  | "Loft Shelf 1"
+  | "Loft Shelf 2"
+  | "Loft Shelf 3"
+  | "Loft Shelf 4"
   | "Gas Storage Box";
 
 export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
     group: "Plastic Shelves",
     options: [
-      "Plastic Shelf 1 - Level 1", "Plastic Shelf 1 - Level 2", "Plastic Shelf 1 - Level 3", "Plastic Shelf 1 - Level 4",
-      "Plastic Shelf 2 - Level 1", "Plastic Shelf 2 - Level 2", "Plastic Shelf 2 - Level 3", "Plastic Shelf 2 - Level 4", "On Top of Plastic Shelf 2",
-      "Plastic Shelf 3 - Level 1", "Plastic Shelf 3 - Level 2", "Plastic Shelf 3 - Level 3", "Plastic Shelf 3 - Level 4", "On Top of Plastic Shelf 3",
+      "Plastic Shelf 1 - Level 1",
+      "Plastic Shelf 1 - Level 2",
+      "Plastic Shelf 1 - Level 3",
+      "Plastic Shelf 1 - Level 4",
+      "Plastic Shelf 2 - Level 1",
+      "Plastic Shelf 2 - Level 2",
+      "Plastic Shelf 2 - Level 3",
+      "Plastic Shelf 2 - Level 4",
+      "On Top of Plastic Shelf 2",
+      "Plastic Shelf 3 - Level 1",
+      "Plastic Shelf 3 - Level 2",
+      "Plastic Shelf 3 - Level 3",
+      "Plastic Shelf 3 - Level 4",
+      "On Top of Plastic Shelf 3",
     ],
   },
   {
@@ -64,25 +144,52 @@ export const ITEM_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
     group: "Metal Shelves",
     options: [
-      "Metal Shelf 1 - Slot 1", "Metal Shelf 1 - Slot 2", "Metal Shelf 1 - Slot 3", "Metal Shelf 1 - Slot 4",
-      "Metal Shelf 2 - Slot 1", "Metal Shelf 2 - Slot 2", "Metal Shelf 2 - Slot 3", "Metal Shelf 2 - Slot 4",
-      "Metal Shelf 3 - Slot 1", "Metal Shelf 3 - Slot 2", "Metal Shelf 3 - Slot 3", "Metal Shelf 3 - Slot 4",
-      "Metal Shelf 4 - Slot 1", "Metal Shelf 4 - Slot 2", "Metal Shelf 4 - Slot 3", "Metal Shelf 4 - Slot 4",
+      "Metal Shelf 1 - Slot 1",
+      "Metal Shelf 1 - Slot 2",
+      "Metal Shelf 1 - Slot 3",
+      "Metal Shelf 1 - Slot 4",
+      "Metal Shelf 2 - Slot 1",
+      "Metal Shelf 2 - Slot 2",
+      "Metal Shelf 2 - Slot 3",
+      "Metal Shelf 2 - Slot 4",
+      "Metal Shelf 3 - Slot 1",
+      "Metal Shelf 3 - Slot 2",
+      "Metal Shelf 3 - Slot 3",
+      "Metal Shelf 3 - Slot 4",
+      "Metal Shelf 4 - Slot 1",
+      "Metal Shelf 4 - Slot 2",
+      "Metal Shelf 4 - Slot 3",
+      "Metal Shelf 4 - Slot 4",
     ],
   },
   {
     group: "Filing Cabinet",
     options: [
-      "Filing Cabinet - Drawer 1", "Filing Cabinet - Drawer 2", "Filing Cabinet - Drawer 3", "Filing Cabinet - Drawer 4",
+      "Filing Cabinet - Drawer 1",
+      "Filing Cabinet - Drawer 2",
+      "Filing Cabinet - Drawer 3",
+      "Filing Cabinet - Drawer 4",
     ],
   },
   {
     group: "Boxes",
-    options: ["Blue Box", "Red Box", "Green Box", "Yellow Box", "Kestrels Box", "Eagles Box"],
+    options: [
+      "Blue Box",
+      "Red Box",
+      "Green Box",
+      "Yellow Box",
+      "Kestrels Box",
+      "Eagles Box",
+    ],
   },
   {
     group: "Other",
-    options: ["Axe/Saw Hanging Space", "On Top of Red Box", "On Top of Green Box", "Cubby Hole"],
+    options: [
+      "Axe/Saw Hanging Space",
+      "On Top of Red Box",
+      "On Top of Green Box",
+      "Cubby Hole",
+    ],
   },
 ];
 
@@ -90,12 +197,18 @@ export const LOFT_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
   {
     group: "Loft Shelves",
     options: [
-      "Loft Shelf 1", "Loft Shelf 2", "Loft Shelf 3", "Loft Shelf 4",
+      "Loft Shelf 1",
+      "Loft Shelf 2",
+      "Loft Shelf 3",
+      "Loft Shelf 4",
     ],
   },
 ];
 
-export const GAS_STORAGE_LOCATIONS: { group: string; options: ItemLocation[] }[] = [
+export const GAS_STORAGE_LOCATIONS: {
+  group: string;
+  options: ItemLocation[];
+}[] = [
   {
     group: "Gas Storage",
     options: ["Gas Storage Box"],
@@ -165,7 +278,15 @@ export interface BoxContentItem {
 // Cooking equipment properties
 export interface CookingEquipment extends BaseInventoryItem {
   category: "cooking";
-  equipmentType: "stove" | "pots" | "pans" | "utensils" | "cooler" | "water-container" | "box" | "other";
+  equipmentType:
+    | "stove"
+    | "pots"
+    | "pans"
+    | "utensils"
+    | "cooler"
+    | "water-container"
+    | "box"
+    | "other";
   material?: string;
   fuelType?: string; // For stoves
   capacity?: string; // For pots, coolers, etc.
@@ -197,7 +318,15 @@ export interface FoodItem extends BaseInventoryItem {
 // Camping tools properties
 export interface CampingToolItem extends BaseInventoryItem {
   category: "camping-tools";
-  toolType: "axe" | "saw" | "knife" | "shovel" | "rope" | "hammer" | "multi-tool" | "other";
+  toolType:
+    | "axe"
+    | "saw"
+    | "knife"
+    | "shovel"
+    | "rope"
+    | "hammer"
+    | "multi-tool"
+    | "other";
   condition: "excellent" | "good" | "fair" | "needs-repair";
   material?: string;
   brand?: string;
@@ -207,7 +336,14 @@ export interface CampingToolItem extends BaseInventoryItem {
 // Kit / Box properties — a self-contained collection of items stored together
 export interface KitItem extends BaseInventoryItem {
   category: "kit";
-  kitType: "cooking-kit" | "first-aid" | "tool-kit" | "craft-kit" | "emergency" | "general" | "other";
+  kitType:
+    | "cooking-kit"
+    | "first-aid"
+    | "tool-kit"
+    | "craft-kit"
+    | "emergency"
+    | "general"
+    | "other";
   condition: "excellent" | "good" | "fair" | "needs-repair";
   contents?: BoxContentItem[];
   brand?: string;
@@ -218,7 +354,14 @@ export interface KitItem extends BaseInventoryItem {
 // Games equipment properties
 export interface GamesItem extends BaseInventoryItem {
   category: "games";
-  gameType: "board-game" | "card-game" | "outdoor-game" | "sports" | "puzzle" | "box" | "other";
+  gameType:
+    | "board-game"
+    | "card-game"
+    | "outdoor-game"
+    | "sports"
+    | "puzzle"
+    | "box"
+    | "other";
   condition: "excellent" | "good" | "fair" | "needs-repair";
   playerCount?: string;
   yearPurchased?: number;
@@ -240,14 +383,24 @@ export interface KiltOutfitItem extends BaseInventoryItem {
 }
 
 // Union type for all inventory items
-export type InventoryItem = TentItem | CookingEquipment | FoodItem | CampingToolItem | GamesItem | KitItem | FuelItem | KiltOutfitItem;
+export type InventoryItem =
+  | TentItem
+  | CookingEquipment
+  | FoodItem
+  | CampingToolItem
+  | GamesItem
+  | KitItem
+  | FuelItem
+  | KiltOutfitItem;
 
 // Helper type guards
 export function isTentItem(item: InventoryItem): item is TentItem {
   return item.category === "tent";
 }
 
-export function isCookingEquipment(item: InventoryItem): item is CookingEquipment {
+export function isCookingEquipment(
+  item: InventoryItem,
+): item is CookingEquipment {
   return item.category === "cooking";
 }
 
@@ -259,7 +412,9 @@ export function isFuelItem(item: InventoryItem): item is FuelItem {
   return item.category === "fuel";
 }
 
-export function isCampingToolItem(item: InventoryItem): item is CampingToolItem {
+export function isCampingToolItem(
+  item: InventoryItem,
+): item is CampingToolItem {
   return item.category === "camping-tools";
 }
 
@@ -276,12 +431,18 @@ export function isKiltOutfitItem(item: InventoryItem): item is KiltOutfitItem {
 }
 
 // Expiry status for food items
-export type ExpiryStatus = "expired" | "expiring-soon" | "expiring-warning" | "fresh";
+export type ExpiryStatus =
+  | "expired"
+  | "expiring-soon"
+  | "expiring-warning"
+  | "fresh";
 
 export function getExpiryStatus(expiryDate: Date): ExpiryStatus {
   const now = new Date();
-  const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+  const daysUntilExpiry = Math.floor(
+    (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
   if (daysUntilExpiry < 0) return "expired";
   if (daysUntilExpiry <= 7) return "expiring-soon";
   if (daysUntilExpiry <= 30) return "expiring-warning";
@@ -316,7 +477,12 @@ export interface CampPlanItem {
   contents?: BoxContentItem[];
 }
 
-export type CampPlanStatus = "planning" | "packing" | "active" | "returning" | "completed";
+export type CampPlanStatus =
+  | "planning"
+  | "packing"
+  | "active"
+  | "returning"
+  | "completed";
 
 export interface CampPlan {
   id: string;

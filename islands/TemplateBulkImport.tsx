@@ -7,8 +7,16 @@ interface Props {
 
 type Status =
   | { type: "success"; imported: number }
-  | { type: "partial"; imported: number; errors: { row: number; name?: string; error: string }[] }
-  | { type: "error"; message: string; errors?: { row: number; name?: string; error: string }[] }
+  | {
+    type: "partial";
+    imported: number;
+    errors: { row: number; name?: string; error: string }[];
+  }
+  | {
+    type: "error";
+    message: string;
+    errors?: { row: number; name?: string; error: string }[];
+  }
   | { type: "network" }
   | null;
 
@@ -29,15 +37,26 @@ export default function TemplateBulkImport({ csrfToken }: Props) {
 
     try {
       const fd = new FormData(formRef.current!);
-      const res = await fetch("/admin/import-templates", { method: "POST", body: fd });
+      const res = await fetch("/admin/import-templates", {
+        method: "POST",
+        body: fd,
+      });
       const json = await res.json();
       if (res.status === 201 || res.ok) {
         setStatus({ type: "success", imported: json.imported });
         formRef.current?.reset();
       } else if (res.status === 207) {
-        setStatus({ type: "partial", imported: json.imported, errors: json.errors });
+        setStatus({
+          type: "partial",
+          imported: json.imported,
+          errors: json.errors,
+        });
       } else {
-        setStatus({ type: "error", message: json.error ?? "Import failed.", errors: json.errors });
+        setStatus({
+          type: "error",
+          message: json.error ?? "Import failed.",
+          errors: json.errors,
+        });
       }
     } catch {
       setStatus({ type: "network" });
@@ -72,15 +91,23 @@ export default function TemplateBulkImport({ csrfToken }: Props) {
         <div class="mt-3 text-sm">
           {status.type === "success" && (
             <p class="text-green-700 dark:text-green-400">
-              ✅ Imported <strong>{status.imported}</strong> template{status.imported !== 1 ? "s" : ""} successfully.
+              ✅ Imported <strong>{status.imported}</strong>{" "}
+              template{status.imported !== 1 ? "s" : ""} successfully.
             </p>
           )}
           {status.type === "partial" && (
             <div class="text-orange-700 dark:text-orange-400">
-              <p>⚠️ Imported <strong>{status.imported}</strong> templates, but <strong>{status.errors.length}</strong> failed:</p>
+              <p>
+                ⚠️ Imported <strong>{status.imported}</strong> templates, but
+                {" "}
+                <strong>{status.errors.length}</strong> failed:
+              </p>
               <ul class="mt-1 list-disc list-inside">
                 {status.errors.map((e) => (
-                  <li key={e.row}>Row {e.row}{e.name ? ` (${e.name})` : ""}: {e.error}</li>
+                  <li key={e.row}>
+                    Row {e.row}
+                    {e.name ? ` (${e.name})` : ""}: {e.error}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -91,14 +118,19 @@ export default function TemplateBulkImport({ csrfToken }: Props) {
               {status.errors && (
                 <ul class="mt-1 list-disc list-inside">
                   {status.errors.map((e) => (
-                    <li key={e.row}>Row {e.row}{e.name ? ` (${e.name})` : ""}: {e.error}</li>
+                    <li key={e.row}>
+                      Row {e.row}
+                      {e.name ? ` (${e.name})` : ""}: {e.error}
+                    </li>
                   ))}
                 </ul>
               )}
             </div>
           )}
           {status.type === "network" && (
-            <p class="text-red-700 dark:text-red-400">❌ Request failed. Check your network connection.</p>
+            <p class="text-red-700 dark:text-red-400">
+              ❌ Request failed. Check your network connection.
+            </p>
           )}
         </div>
       )}

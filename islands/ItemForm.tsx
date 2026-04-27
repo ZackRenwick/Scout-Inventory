@@ -7,9 +7,9 @@ import {
   getCategoryEmoji,
   getCategoryLabel,
   ITEM_LOCATIONS,
+  type ItemCategory,
   LOFT_CATEGORIES,
   LOFT_LOCATIONS,
-  type ItemCategory,
 } from "../types/inventory.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
@@ -53,9 +53,18 @@ interface ItemFormProps {
   csrfToken?: string;
 }
 
-export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }: ItemFormProps) {
-  const initialSpace = initialData?.space ?? (initialData?.category === "games" ? "scout-post-loft" : initialData?.category === "fuel" ? "gas-storage-box" : "camp-store");
-  const space = useSignal<"camp-store" | "scout-post-loft" | "gas-storage-box">(initialSpace);
+export default function ItemForm(
+  { initialData, isEdit = false, csrfToken = "" }: ItemFormProps,
+) {
+  const initialSpace = initialData?.space ??
+    (initialData?.category === "games"
+      ? "scout-post-loft"
+      : initialData?.category === "fuel"
+      ? "gas-storage-box"
+      : "camp-store");
+  const space = useSignal<"camp-store" | "scout-post-loft" | "gas-storage-box">(
+    initialSpace,
+  );
   const category = useSignal<ItemCategory>(initialData?.category ?? "tent");
   const submitting = useSignal(false);
   const error = useSignal("");
@@ -63,12 +72,18 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
   const initialContents = Array.isArray(initialData?.contents)
     ? initialData.contents
     : [];
-  const boxContents = useSignal<{ name: string; quantity: number }[]>(initialContents);
-  const equipmentType = useSignal<string>(initialData?.equipmentType ?? "stove");
+  const boxContents = useSignal<{ name: string; quantity: number }[]>(
+    initialContents,
+  );
+  const equipmentType = useSignal<string>(
+    initialData?.equipmentType ?? "stove",
+  );
   const gameType = useSignal<string>(initialData?.gameType ?? "board-game");
   const kiltComponents = useSignal<string[]>(initialData?.kiltComponents ?? []);
 
-  const getLocationsForSpace = (spaceValue: "camp-store" | "scout-post-loft" | "gas-storage-box") => {
+  const getLocationsForSpace = (
+    spaceValue: "camp-store" | "scout-post-loft" | "gas-storage-box",
+  ) => {
     if (spaceValue === "scout-post-loft") return LOFT_LOCATIONS;
     if (spaceValue === "gas-storage-box") return GAS_STORAGE_LOCATIONS;
     return ITEM_LOCATIONS;
@@ -86,17 +101,17 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
     : initialLocationList[0].group;
   const locationGroup = useSignal<string>(initialGroup);
   const locationValue = useSignal<string>(
-    initialLocation ?? initialLocationList[0].options[0]
+    initialLocation ?? initialLocationList[0].options[0],
   );
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     submitting.value = true;
     error.value = "";
-    
+
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
-    
+
     const data: Record<string, unknown> = {
       name: formData.get("name"),
       category: category.value,
@@ -106,7 +121,7 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       location: formData.get("location"),
       notes: (formData.get("notes") as string).trim() || null,
     };
-    
+
     // Category-specific fields
     if (category.value === "tent") {
       data.tentType = formData.get("tentType");
@@ -114,78 +129,105 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       data.size = formData.get("size");
       data.setupInstructions = formData.get("setupInstructions") || undefined;
       data.condition = formData.get("condition");
-      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.quantityNeedsRepair =
+        parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.brand = formData.get("brand") || undefined;
-      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.yearPurchased = formData.get("yearPurchased")
+        ? parseInt(formData.get("yearPurchased") as string)
+        : undefined;
     } else if (category.value === "cooking") {
       data.equipmentType = formData.get("equipmentType");
       data.material = formData.get("material") || undefined;
       data.fuelType = formData.get("fuelType") || undefined;
       data.capacity = formData.get("capacityField") || undefined;
       data.condition = formData.get("condition");
-      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.quantityNeedsRepair =
+        parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.contents = boxContents.value.filter((c) => c.name.trim());
     } else if (category.value === "camping-tools") {
       data.toolType = formData.get("toolType");
       data.condition = formData.get("condition");
-      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.quantityNeedsRepair =
+        parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.material = formData.get("material") || undefined;
       data.brand = formData.get("brand") || undefined;
-      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.yearPurchased = formData.get("yearPurchased")
+        ? parseInt(formData.get("yearPurchased") as string)
+        : undefined;
     } else if (category.value === "games") {
       data.gameType = formData.get("gameType");
       data.condition = formData.get("condition");
-      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.quantityNeedsRepair =
+        parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.playerCount = formData.get("playerCount") || undefined;
-      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.yearPurchased = formData.get("yearPurchased")
+        ? parseInt(formData.get("yearPurchased") as string)
+        : undefined;
       data.contents = boxContents.value.filter((c) => c.name.trim());
     } else if (category.value === "kit") {
       data.kitType = formData.get("kitType");
       data.condition = formData.get("condition");
-      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.quantityNeedsRepair =
+        parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.brand = formData.get("brand") || undefined;
-      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.yearPurchased = formData.get("yearPurchased")
+        ? parseInt(formData.get("yearPurchased") as string)
+        : undefined;
       data.contents = boxContents.value.filter((c) => c.name.trim());
     } else if (category.value === "food") {
       data.foodType = formData.get("foodType");
       data.expiryDate = formData.get("expiryDate");
-      data.storageRequirements = formData.get("storageRequirements") || undefined;
+      data.storageRequirements = formData.get("storageRequirements") ||
+        undefined;
       data.weight = formData.get("weight") || undefined;
-      data.servings = formData.get("servings") ? parseInt(formData.get("servings") as string) : undefined;
-      
+      data.servings = formData.get("servings")
+        ? parseInt(formData.get("servings") as string)
+        : undefined;
+
       const allergens = formData.get("allergens") as string;
       if (allergens) {
-        data.allergens = allergens.split(",").map(a => a.trim());
+        data.allergens = allergens.split(",").map((a) => a.trim());
       }
     } else if (category.value === "fuel") {
       data.fuelType = formData.get("fuelType");
       data.condition = formData.get("condition");
-      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.quantityNeedsRepair =
+        parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.brand = formData.get("brand") || undefined;
-      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.yearPurchased = formData.get("yearPurchased")
+        ? parseInt(formData.get("yearPurchased") as string)
+        : undefined;
     } else if (category.value === "kilt") {
       data.condition = formData.get("condition");
-      data.quantityNeedsRepair = parseInt(formData.get("quantityNeedsRepair") as string) || 0;
+      data.quantityNeedsRepair =
+        parseInt(formData.get("quantityNeedsRepair") as string) || 0;
       data.kiltComponents = kiltComponents.value;
       data.size = formData.get("size") || undefined;
       data.brand = formData.get("brand") || undefined;
-      data.yearPurchased = formData.get("yearPurchased") ? parseInt(formData.get("yearPurchased") as string) : undefined;
+      data.yearPurchased = formData.get("yearPurchased")
+        ? parseInt(formData.get("yearPurchased") as string)
+        : undefined;
     }
-    
+
     try {
       const url = isEdit && initialData?.id
         ? `/api/items/${initialData.id}`
         : "/api/items";
       const method = isEdit ? "PUT" : "POST";
-      
+
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
         body: JSON.stringify(data),
       });
-      
+
       if (response.ok) {
-        success.value = isEdit ? "Item updated successfully!" : "Item added successfully!";
+        success.value = isEdit
+          ? "Item updated successfully!"
+          : "Item added successfully!";
         setTimeout(() => {
           globalThis.location.href = "/inventory";
         }, 1200);
@@ -199,20 +241,28 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       submitting.value = false;
     }
   };
-  
-  const inputClass = "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500";
-  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2";
+
+  const inputClass =
+    "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500";
+  const labelClass =
+    "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2";
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
+  const yearOptions = Array.from(
+    { length: currentYear - 1899 },
+    (_, i) => currentYear - i,
+  );
 
   return (
-    <form onSubmit={handleSubmit} class="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 w-full max-w-2xl">
+    <form
+      onSubmit={handleSubmit}
+      class="bg-white dark:bg-gray-900 rounded-lg shadow p-4 sm:p-6 w-full max-w-2xl"
+    >
       {error.value && (
         <div class="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded">
           {error.value}
         </div>
       )}
-      
+
       {/* Space Selection */}
       <div class="mb-4">
         <label class={labelClass}>Space *</label>
@@ -223,11 +273,20 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               name="spaceRadio"
               value="camp-store"
               checked={space.value === "camp-store"}
-              onChange={() => { space.value = "camp-store"; if (!isEdit) { category.value = "tent"; locationGroup.value = ITEM_LOCATIONS[0].group; locationValue.value = ITEM_LOCATIONS[0].options[0]; } }}
+              onChange={() => {
+                space.value = "camp-store";
+                if (!isEdit) {
+                  category.value = "tent";
+                  locationGroup.value = ITEM_LOCATIONS[0].group;
+                  locationValue.value = ITEM_LOCATIONS[0].options[0];
+                }
+              }}
               disabled={isEdit}
               class="text-purple-600"
             />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🏪 Camp Store</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              🏪 Camp Store
+            </span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -235,11 +294,20 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               name="spaceRadio"
               value="scout-post-loft"
               checked={space.value === "scout-post-loft"}
-              onChange={() => { space.value = "scout-post-loft"; if (!isEdit) { category.value = "games"; locationGroup.value = LOFT_LOCATIONS[0].group; locationValue.value = LOFT_LOCATIONS[0].options[0]; } }}
+              onChange={() => {
+                space.value = "scout-post-loft";
+                if (!isEdit) {
+                  category.value = "games";
+                  locationGroup.value = LOFT_LOCATIONS[0].group;
+                  locationValue.value = LOFT_LOCATIONS[0].options[0];
+                }
+              }}
               disabled={isEdit}
               class="text-purple-600"
             />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🏠 Scout Post Loft</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              🏠 Scout Post Loft
+            </span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -247,11 +315,20 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               name="spaceRadio"
               value="gas-storage-box"
               checked={space.value === "gas-storage-box"}
-              onChange={() => { space.value = "gas-storage-box"; if (!isEdit) { category.value = "fuel"; locationGroup.value = GAS_STORAGE_LOCATIONS[0].group; locationValue.value = GAS_STORAGE_LOCATIONS[0].options[0]; } }}
+              onChange={() => {
+                space.value = "gas-storage-box";
+                if (!isEdit) {
+                  category.value = "fuel";
+                  locationGroup.value = GAS_STORAGE_LOCATIONS[0].group;
+                  locationValue.value = GAS_STORAGE_LOCATIONS[0].options[0];
+                }
+              }}
               disabled={isEdit}
               class="text-purple-600"
             />
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">🛢️ Gas Storage Box</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              🛢️ Gas Storage Box
+            </span>
           </label>
         </div>
       </div>
@@ -264,43 +341,60 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
         <select
           value={category.value}
           onChange={(e) => {
-            category.value = (e.target as HTMLSelectElement).value as ItemCategory;
+            category.value = (e.target as HTMLSelectElement)
+              .value as ItemCategory;
           }}
           disabled={isEdit}
           class={inputClass}
           required
         >
-          {space.value === "scout-post-loft" ? (
-            <>
-              {LOFT_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
-              ))}
-            </>
-          ) : space.value === "gas-storage-box" ? (
-            <>
-              {GAS_STORAGE_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
-              ))}
-            </>
-          ) : (
-            <>
-              {CAMP_STORE_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{getCategoryEmoji(cat)} {getCategoryLabel(cat)}</option>
-              ))}
-            </>
-          )}
+          {space.value === "scout-post-loft"
+            ? (
+              <>
+                {LOFT_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {getCategoryEmoji(cat)} {getCategoryLabel(cat)}
+                  </option>
+                ))}
+              </>
+            )
+            : space.value === "gas-storage-box"
+            ? (
+              <>
+                {GAS_STORAGE_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {getCategoryEmoji(cat)} {getCategoryLabel(cat)}
+                  </option>
+                ))}
+              </>
+            )
+            : (
+              <>
+                {CAMP_STORE_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {getCategoryEmoji(cat)} {getCategoryLabel(cat)}
+                  </option>
+                ))}
+              </>
+            )}
         </select>
       </div>
-      
+
       {/* Common Fields */}
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div>
           <label class={labelClass}>
             Item Name *
           </label>
-          <input type="text" name="name" defaultValue={initialData?.name} required class={inputClass} />
+          <input
+            type="text"
+            name="name"
+            defaultValue={initialData?.name}
+            required
+            class={inputClass}
+          />
         </div>
-        
+
         <div class="sm:col-span-2">
           <label class={labelClass}>Location *</label>
           <div class="flex gap-2">
@@ -312,12 +406,20 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
                 const group = (e.target as HTMLSelectElement).value;
                 locationGroup.value = group;
                 const locs = getLocationsForSpace(space.value);
-                const firstOption = locs.find((g) => g.group === group)?.options[0] ?? locs[0].options[0];
+                const firstOption =
+                  locs.find((g) => g.group === group)?.options[0] ??
+                    locs[0].options[0];
                 locationValue.value = firstOption;
               }}
             >
               {getLocationsForSpace(space.value).map(({ group }) => (
-                <option key={group} value={group} selected={group === locationGroup.value}>{group}</option>
+                <option
+                  key={group}
+                  value={group}
+                  selected={group === locationGroup.value}
+                >
+                  {group}
+                </option>
               ))}
             </select>
             {/* Step 2: pick the specific slot within that category */}
@@ -326,53 +428,124 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
               required
               class={inputClass}
               value={locationValue.value}
-              onChange={(e) => { locationValue.value = (e.target as HTMLSelectElement).value; }}
+              onChange={(e) => {
+                locationValue.value = (e.target as HTMLSelectElement).value;
+              }}
             >
-              {getLocationsForSpace(space.value).find((g) => g.group === locationGroup.value)?.options.map((loc) => (
-                <option key={loc} value={loc} selected={loc === locationValue.value}>{loc}</option>
+              {getLocationsForSpace(space.value).find((g) =>
+                g.group === locationGroup.value
+              )?.options.map((loc) => (
+                <option
+                  key={loc}
+                  value={loc}
+                  selected={loc === locationValue.value}
+                >
+                  {loc}
+                </option>
               ))}
             </select>
           </div>
         </div>
-        
+
         <div>
           <label class={labelClass}>
             Quantity *
           </label>
-          <input type="number" name="quantity" defaultValue={String(initialData?.quantity ?? 1)} min="0" inputMode="numeric" required class={inputClass} />
+          <input
+            type="number"
+            name="quantity"
+            defaultValue={String(initialData?.quantity ?? 1)}
+            min="0"
+            inputMode="numeric"
+            required
+            class={inputClass}
+          />
         </div>
-        
+
         <div>
           <label class={labelClass}>
             Minimum Threshold *
           </label>
-          <input type="number" name="minThreshold" defaultValue={String(initialData?.minThreshold ?? 0)} min="0" required class={inputClass} />
+          <input
+            type="number"
+            name="minThreshold"
+            defaultValue={String(initialData?.minThreshold ?? 0)}
+            min="0"
+            required
+            class={inputClass}
+          />
         </div>
       </div>
-      
+
       {/* Tent-specific fields */}
       {category.value === "tent" && (
         <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Tent Details</h3>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Tent Details
+          </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Type *</label>
               <select name="tentType" required class={inputClass}>
-                <option value="dome" selected={initialData?.tentType === "dome"}>Dome</option>
-                <option value="tunnel" selected={initialData?.tentType === "tunnel"}>Tunnel</option>
-                <option value="patrol" selected={initialData?.tentType === "patrol"}>Patrol</option>
-                <option value="ridge" selected={initialData?.tentType === "ridge"}>Ridge</option>
-                <option value="bell" selected={initialData?.tentType === "bell"}>Bell</option>
-                <option value="other" selected={initialData?.tentType === "other"}>Other</option>
+                <option
+                  value="dome"
+                  selected={initialData?.tentType === "dome"}
+                >
+                  Dome
+                </option>
+                <option
+                  value="tunnel"
+                  selected={initialData?.tentType === "tunnel"}
+                >
+                  Tunnel
+                </option>
+                <option
+                  value="patrol"
+                  selected={initialData?.tentType === "patrol"}
+                >
+                  Patrol
+                </option>
+                <option
+                  value="ridge"
+                  selected={initialData?.tentType === "ridge"}
+                >
+                  Ridge
+                </option>
+                <option
+                  value="bell"
+                  selected={initialData?.tentType === "bell"}
+                >
+                  Bell
+                </option>
+                <option
+                  value="other"
+                  selected={initialData?.tentType === "other"}
+                >
+                  Other
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Capacity (people) *</label>
-              <input type="number" name="capacity" defaultValue={String(initialData?.capacity ?? "")} required min="1" class={inputClass} />
+              <input
+                type="number"
+                name="capacity"
+                defaultValue={String(initialData?.capacity ?? "")}
+                required
+                min="1"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Size Description *</label>
-              <input type="text" name="size" defaultValue={initialData?.size} required placeholder="e.g., 4-person" class={inputClass} />
+              <input
+                type="text"
+                name="size"
+                defaultValue={initialData?.size}
+                required
+                placeholder="e.g., 4-person"
+                class={inputClass}
+              />
             </div>
             <div class="sm:col-span-2">
               <label class={labelClass}>Setup Instructions</label>
@@ -387,134 +560,287 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
             <div>
               <label class={labelClass}>Condition *</label>
               <select name="condition" required class={inputClass}>
-                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
-                <option value="good" selected={initialData?.condition === "good"}>Good</option>
-                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
-                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+                <option
+                  value="excellent"
+                  selected={initialData?.condition === "excellent"}
+                >
+                  Excellent
+                </option>
+                <option
+                  value="good"
+                  selected={initialData?.condition === "good"}
+                >
+                  Good
+                </option>
+                <option
+                  value="fair"
+                  selected={initialData?.condition === "fair"}
+                >
+                  Fair
+                </option>
+                <option
+                  value="needs-repair"
+                  selected={initialData?.condition === "needs-repair"}
+                >
+                  Needs Repair
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+              <input
+                type="number"
+                name="quantityNeedsRepair"
+                defaultValue={String(initialData?.quantityNeedsRepair ?? 0)}
+                min={0}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
-              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+              <input
+                type="text"
+                name="brand"
+                defaultValue={initialData?.brand}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
+              <select
+                name="yearPurchased"
+                defaultValue={String(initialData?.yearPurchased ?? "")}
+                class={inputClass}
+              >
                 <option value="">— select year —</option>
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Cooking-specific fields */}
       {category.value === "cooking" && (
         <div class="mb-6 p-4 bg-orange-50 dark:bg-orange-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Cooking Equipment Details</h3>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Cooking Equipment Details
+          </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Equipment Type *</label>
-              <select name="equipmentType" required class={inputClass} onChange={(e) => { equipmentType.value = (e.target as HTMLSelectElement).value; }} value={equipmentType.value}>
-                <option value="stove" selected={initialData?.equipmentType === "stove"}>Stove</option>
-                <option value="pots" selected={initialData?.equipmentType === "pots"}>Pots</option>
-                <option value="pans" selected={initialData?.equipmentType === "pans"}>Pans</option>
-                <option value="utensils" selected={initialData?.equipmentType === "utensils"}>Utensils</option>
-                <option value="cooler" selected={initialData?.equipmentType === "cooler"}>Cooler</option>
-                <option value="water-container" selected={initialData?.equipmentType === "water-container"}>Water Container</option>
-                <option value="box" selected={initialData?.equipmentType === "box"}>Box / Kit</option>
-                <option value="other" selected={initialData?.equipmentType === "other"}>Other</option>
+              <select
+                name="equipmentType"
+                required
+                class={inputClass}
+                onChange={(e) => {
+                  equipmentType.value = (e.target as HTMLSelectElement).value;
+                }}
+                value={equipmentType.value}
+              >
+                <option
+                  value="stove"
+                  selected={initialData?.equipmentType === "stove"}
+                >
+                  Stove
+                </option>
+                <option
+                  value="pots"
+                  selected={initialData?.equipmentType === "pots"}
+                >
+                  Pots
+                </option>
+                <option
+                  value="pans"
+                  selected={initialData?.equipmentType === "pans"}
+                >
+                  Pans
+                </option>
+                <option
+                  value="utensils"
+                  selected={initialData?.equipmentType === "utensils"}
+                >
+                  Utensils
+                </option>
+                <option
+                  value="cooler"
+                  selected={initialData?.equipmentType === "cooler"}
+                >
+                  Cooler
+                </option>
+                <option
+                  value="water-container"
+                  selected={initialData?.equipmentType === "water-container"}
+                >
+                  Water Container
+                </option>
+                <option
+                  value="box"
+                  selected={initialData?.equipmentType === "box"}
+                >
+                  Box / Kit
+                </option>
+                <option
+                  value="other"
+                  selected={initialData?.equipmentType === "other"}
+                >
+                  Other
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
               <select name="condition" required class={inputClass}>
-                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
-                <option value="good" selected={initialData?.condition === "good"}>Good</option>
-                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
-                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+                <option
+                  value="excellent"
+                  selected={initialData?.condition === "excellent"}
+                >
+                  Excellent
+                </option>
+                <option
+                  value="good"
+                  selected={initialData?.condition === "good"}
+                >
+                  Good
+                </option>
+                <option
+                  value="fair"
+                  selected={initialData?.condition === "fair"}
+                >
+                  Fair
+                </option>
+                <option
+                  value="needs-repair"
+                  selected={initialData?.condition === "needs-repair"}
+                >
+                  Needs Repair
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+              <input
+                type="number"
+                name="quantityNeedsRepair"
+                defaultValue={String(initialData?.quantityNeedsRepair ?? 0)}
+                min={0}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Material</label>
-              <input type="text" name="material" defaultValue={initialData?.material} placeholder="e.g., stainless steel" class={inputClass} />
+              <input
+                type="text"
+                name="material"
+                defaultValue={initialData?.material}
+                placeholder="e.g., stainless steel"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Fuel Type</label>
-              <input type="text" name="fuelType" defaultValue={initialData?.fuelType} placeholder="For stoves" class={inputClass} />
+              <input
+                type="text"
+                name="fuelType"
+                defaultValue={initialData?.fuelType}
+                placeholder="For stoves"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Capacity</label>
-              <input type="text" name="capacityField" defaultValue={initialData?.capacity === undefined ? "" : String(initialData.capacity)} placeholder="e.g., 5L, 48 quart" class={inputClass} />
+              <input
+                type="text"
+                name="capacityField"
+                defaultValue={initialData?.capacity === undefined
+                  ? ""
+                  : String(initialData.capacity)}
+                placeholder="e.g., 5L, 48 quart"
+                class={inputClass}
+              />
             </div>
           </div>
 
           {/* Box contents editor — only for Box / Kit type */}
           {equipmentType.value === "box" && (
-          <div class="mt-4 pt-4 border-t border-orange-200 dark:border-orange-800">
-            <div class="flex items-center justify-between mb-3">
-              <div>
-                <h4 class="font-semibold text-gray-700 dark:text-gray-200">Box Contents</h4>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track the individual items inside this box or kit (e.g. 4 knives, 3 wooden spoons)</p>
+            <div class="mt-4 pt-4 border-t border-orange-200 dark:border-orange-800">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h4 class="font-semibold text-gray-700 dark:text-gray-200">
+                    Box Contents
+                  </h4>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Track the individual items inside this box or kit (e.g. 4
+                    knives, 3 wooden spoons)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    boxContents.value = [...boxContents.value, {
+                      name: "",
+                      quantity: 1,
+                    }];
+                  }}
+                  class="shrink-0 text-sm px-3 py-1.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded hover:bg-orange-200 dark:hover:bg-orange-800/60 font-medium"
+                >
+                  + Add item
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => { boxContents.value = [...boxContents.value, { name: "", quantity: 1 }]; }}
-                class="shrink-0 text-sm px-3 py-1.5 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 rounded hover:bg-orange-200 dark:hover:bg-orange-800/60 font-medium"
-              >
-                + Add item
-              </button>
-            </div>
-            {boxContents.value.length === 0 ? (
-              <p class="text-sm text-gray-400 dark:text-gray-500 italic">No contents recorded yet.</p>
-            ) : (
-              <div class="space-y-2">
-                {boxContents.value.map((row, i) => (
-                  <div key={i} class="flex gap-2 items-center">
-                    <NumberInput
-                      value={row.quantity}
-                      min={1}
-                      onChange={(n) => {
-                        const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], quantity: n };
-                        boxContents.value = copy;
-                      }}
-                      class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Item name (e.g. Wooden spoon)"
-                      value={row.name}
-                      onInput={(e) => {
-                        const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], name: (e.target as HTMLInputElement).value };
-                        boxContents.value = copy;
-                      }}
-                      class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { boxContents.value = boxContents.value.filter((_, j) => j !== i); }}
-                      class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
-                      title="Remove"
-                    >
-                      ×
-                    </button>
+              {boxContents.value.length === 0
+                ? (
+                  <p class="text-sm text-gray-400 dark:text-gray-500 italic">
+                    No contents recorded yet.
+                  </p>
+                )
+                : (
+                  <div class="space-y-2">
+                    {boxContents.value.map((row, i) => (
+                      <div key={i} class="flex gap-2 items-center">
+                        <NumberInput
+                          value={row.quantity}
+                          min={1}
+                          onChange={(n) => {
+                            const copy = [...boxContents.value];
+                            copy[i] = { ...copy[i], quantity: n };
+                            boxContents.value = copy;
+                          }}
+                          class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Item name (e.g. Wooden spoon)"
+                          value={row.name}
+                          onInput={(e) => {
+                            const copy = [...boxContents.value];
+                            copy[i] = {
+                              ...copy[i],
+                              name: (e.target as HTMLInputElement).value,
+                            };
+                            boxContents.value = copy;
+                          }}
+                          class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            boxContents.value = boxContents.value.filter((
+                              _,
+                              j,
+                            ) =>
+                              j !== i
+                            );
+                          }}
+                          class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                )}
+            </div>
           )}
         </div>
       )}
@@ -522,89 +848,209 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       {/* Fuel-specific fields */}
       {category.value === "fuel" && (
         <div class="mb-6 p-4 bg-orange-50 dark:bg-orange-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Fuel Details</h3>
-          <p class="text-sm text-orange-800 dark:text-orange-300 mb-3">Use this category for butane canisters, methylated spirits, and BBQ gas cylinders.</p>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Fuel Details
+          </h3>
+          <p class="text-sm text-orange-800 dark:text-orange-300 mb-3">
+            Use this category for butane canisters, methylated spirits, and BBQ
+            gas cylinders.
+          </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Fuel Type *</label>
-              <input type="text" name="fuelType" defaultValue={initialData?.fuelType} placeholder="e.g., butane canister, methylated spirit, propane" required class={inputClass} />
+              <input
+                type="text"
+                name="fuelType"
+                defaultValue={initialData?.fuelType}
+                placeholder="e.g., butane canister, methylated spirit, propane"
+                required
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
               <select name="condition" required class={inputClass}>
-                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
-                <option value="good" selected={initialData?.condition === "good"}>Good</option>
-                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
-                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+                <option
+                  value="excellent"
+                  selected={initialData?.condition === "excellent"}
+                >
+                  Excellent
+                </option>
+                <option
+                  value="good"
+                  selected={initialData?.condition === "good"}
+                >
+                  Good
+                </option>
+                <option
+                  value="fair"
+                  selected={initialData?.condition === "fair"}
+                >
+                  Fair
+                </option>
+                <option
+                  value="needs-repair"
+                  selected={initialData?.condition === "needs-repair"}
+                >
+                  Needs Repair
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+              <input
+                type="number"
+                name="quantityNeedsRepair"
+                defaultValue={String(initialData?.quantityNeedsRepair ?? 0)}
+                min={0}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
-              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+              <input
+                type="text"
+                name="brand"
+                defaultValue={initialData?.brand}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
+              <select
+                name="yearPurchased"
+                defaultValue={String(initialData?.yearPurchased ?? "")}
+                class={inputClass}
+              >
                 <option value="">— select year —</option>
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Camping Tools-specific fields */}
       {category.value === "camping-tools" && (
         <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Camping Tool Details</h3>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Camping Tool Details
+          </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Tool Type *</label>
               <select name="toolType" required class={inputClass}>
-                <option value="axe" selected={initialData?.toolType === "axe"}>Axe</option>
-                <option value="saw" selected={initialData?.toolType === "saw"}>Saw</option>
-                <option value="knife" selected={initialData?.toolType === "knife"}>Knife</option>
-                <option value="shovel" selected={initialData?.toolType === "shovel"}>Shovel</option>
-                <option value="rope" selected={initialData?.toolType === "rope"}>Rope</option>
-                <option value="hammer" selected={initialData?.toolType === "hammer"}>Hammer</option>
-                <option value="multi-tool" selected={initialData?.toolType === "multi-tool"}>Multi-tool</option>
-                <option value="other" selected={initialData?.toolType === "other"}>Other</option>
+                <option value="axe" selected={initialData?.toolType === "axe"}>
+                  Axe
+                </option>
+                <option value="saw" selected={initialData?.toolType === "saw"}>
+                  Saw
+                </option>
+                <option
+                  value="knife"
+                  selected={initialData?.toolType === "knife"}
+                >
+                  Knife
+                </option>
+                <option
+                  value="shovel"
+                  selected={initialData?.toolType === "shovel"}
+                >
+                  Shovel
+                </option>
+                <option
+                  value="rope"
+                  selected={initialData?.toolType === "rope"}
+                >
+                  Rope
+                </option>
+                <option
+                  value="hammer"
+                  selected={initialData?.toolType === "hammer"}
+                >
+                  Hammer
+                </option>
+                <option
+                  value="multi-tool"
+                  selected={initialData?.toolType === "multi-tool"}
+                >
+                  Multi-tool
+                </option>
+                <option
+                  value="other"
+                  selected={initialData?.toolType === "other"}
+                >
+                  Other
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
               <select name="condition" required class={inputClass}>
-                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
-                <option value="good" selected={initialData?.condition === "good"}>Good</option>
-                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
-                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+                <option
+                  value="excellent"
+                  selected={initialData?.condition === "excellent"}
+                >
+                  Excellent
+                </option>
+                <option
+                  value="good"
+                  selected={initialData?.condition === "good"}
+                >
+                  Good
+                </option>
+                <option
+                  value="fair"
+                  selected={initialData?.condition === "fair"}
+                >
+                  Fair
+                </option>
+                <option
+                  value="needs-repair"
+                  selected={initialData?.condition === "needs-repair"}
+                >
+                  Needs Repair
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+              <input
+                type="number"
+                name="quantityNeedsRepair"
+                defaultValue={String(initialData?.quantityNeedsRepair ?? 0)}
+                min={0}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Material</label>
-              <input type="text" name="material" defaultValue={initialData?.material} placeholder="e.g., carbon steel" class={inputClass} />
+              <input
+                type="text"
+                name="material"
+                defaultValue={initialData?.material}
+                placeholder="e.g., carbon steel"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
-              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+              <input
+                type="text"
+                name="brand"
+                defaultValue={initialData?.brand}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
+              <select
+                name="yearPurchased"
+                defaultValue={String(initialData?.yearPurchased ?? "")}
+                class={inputClass}
+              >
                 <option value="">— select year —</option>
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
@@ -614,148 +1060,331 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       {/* Food-specific fields */}
       {category.value === "food" && (
         <div class="mb-6 p-4 bg-green-50 dark:bg-green-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Food Details</h3>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Food Details
+          </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Food Type *</label>
               <select name="foodType" required class={inputClass}>
-                <option value="canned" selected={initialData?.foodType === "canned"}>Canned</option>
-                <option value="jarred" selected={initialData?.foodType === "jarred"}>Jarred</option>
-                <option value="dried" selected={initialData?.foodType === "dried"}>Dried</option>
-                <option value="packaged" selected={initialData?.foodType === "packaged"}>Packaged</option>
-                <option value="fresh" selected={initialData?.foodType === "fresh"}>Fresh</option>
-                <option value="frozen" selected={initialData?.foodType === "frozen"}>Frozen</option>
+                <option
+                  value="canned"
+                  selected={initialData?.foodType === "canned"}
+                >
+                  Canned
+                </option>
+                <option
+                  value="jarred"
+                  selected={initialData?.foodType === "jarred"}
+                >
+                  Jarred
+                </option>
+                <option
+                  value="dried"
+                  selected={initialData?.foodType === "dried"}
+                >
+                  Dried
+                </option>
+                <option
+                  value="packaged"
+                  selected={initialData?.foodType === "packaged"}
+                >
+                  Packaged
+                </option>
+                <option
+                  value="fresh"
+                  selected={initialData?.foodType === "fresh"}
+                >
+                  Fresh
+                </option>
+                <option
+                  value="frozen"
+                  selected={initialData?.foodType === "frozen"}
+                >
+                  Frozen
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Expiry Date *</label>
-              <input type="date" name="expiryDate" defaultValue={initialData?.expiryDate ? new Date(initialData.expiryDate).toISOString().split('T')[0] : ''} required class={inputClass} />
+              <input
+                type="date"
+                name="expiryDate"
+                defaultValue={initialData?.expiryDate
+                  ? new Date(initialData.expiryDate).toISOString().split("T")[0]
+                  : ""}
+                required
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Storage Requirements</label>
               <select name="storageRequirements" class={inputClass}>
-                <option value="" selected={!initialData?.storageRequirements}>Not specified</option>
-                <option value="frozen" selected={initialData?.storageRequirements === "frozen"}>Frozen</option>
-                <option value="refrigerated" selected={initialData?.storageRequirements === "refrigerated"}>Refrigerated</option>
-                <option value="cool-dry" selected={initialData?.storageRequirements === "cool-dry"}>Cool & Dry</option>
-                <option value="room-temp" selected={initialData?.storageRequirements === "room-temp"}>Room Temperature</option>
+                <option value="" selected={!initialData?.storageRequirements}>
+                  Not specified
+                </option>
+                <option
+                  value="frozen"
+                  selected={initialData?.storageRequirements === "frozen"}
+                >
+                  Frozen
+                </option>
+                <option
+                  value="refrigerated"
+                  selected={initialData?.storageRequirements === "refrigerated"}
+                >
+                  Refrigerated
+                </option>
+                <option
+                  value="cool-dry"
+                  selected={initialData?.storageRequirements === "cool-dry"}
+                >
+                  Cool & Dry
+                </option>
+                <option
+                  value="room-temp"
+                  selected={initialData?.storageRequirements === "room-temp"}
+                >
+                  Room Temperature
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Weight</label>
-              <input type="text" name="weight" defaultValue={initialData?.weight} placeholder="e.g., 15oz" class={inputClass} />
+              <input
+                type="text"
+                name="weight"
+                defaultValue={initialData?.weight}
+                placeholder="e.g., 15oz"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Servings</label>
-              <input type="number" name="servings" defaultValue={initialData?.servings === undefined ? "" : String(initialData.servings)} min="1" class={inputClass} />
+              <input
+                type="number"
+                name="servings"
+                defaultValue={initialData?.servings === undefined
+                  ? ""
+                  : String(initialData.servings)}
+                min="1"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Allergens</label>
-              <input type="text" name="allergens" defaultValue={initialData?.allergens?.join(", ")} placeholder="Comma-separated" class={inputClass} />
+              <input
+                type="text"
+                name="allergens"
+                defaultValue={initialData?.allergens?.join(", ")}
+                placeholder="Comma-separated"
+                class={inputClass}
+              />
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Games-specific fields */}
       {category.value === "games" && (
         <div class="mb-6 p-4 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Games Details</h3>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Games Details
+          </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Game Type *</label>
-              <select name="gameType" required class={inputClass} onChange={(e) => { gameType.value = (e.target as HTMLSelectElement).value; }}>
-                <option value="board-game" selected={initialData?.gameType === "board-game"}>Board Game</option>
-                <option value="card-game" selected={initialData?.gameType === "card-game"}>Card Game</option>
-                <option value="outdoor-game" selected={initialData?.gameType === "outdoor-game"}>Outdoor Game</option>
-                <option value="sports" selected={initialData?.gameType === "sports"}>Sports Equipment</option>
-                <option value="puzzle" selected={initialData?.gameType === "puzzle"}>Puzzle</option>
-                <option value="box" selected={initialData?.gameType === "box"}>Box / Kit</option>
-                <option value="other" selected={initialData?.gameType === "other"}>Other</option>
+              <select
+                name="gameType"
+                required
+                class={inputClass}
+                onChange={(e) => {
+                  gameType.value = (e.target as HTMLSelectElement).value;
+                }}
+              >
+                <option
+                  value="board-game"
+                  selected={initialData?.gameType === "board-game"}
+                >
+                  Board Game
+                </option>
+                <option
+                  value="card-game"
+                  selected={initialData?.gameType === "card-game"}
+                >
+                  Card Game
+                </option>
+                <option
+                  value="outdoor-game"
+                  selected={initialData?.gameType === "outdoor-game"}
+                >
+                  Outdoor Game
+                </option>
+                <option
+                  value="sports"
+                  selected={initialData?.gameType === "sports"}
+                >
+                  Sports Equipment
+                </option>
+                <option
+                  value="puzzle"
+                  selected={initialData?.gameType === "puzzle"}
+                >
+                  Puzzle
+                </option>
+                <option value="box" selected={initialData?.gameType === "box"}>
+                  Box / Kit
+                </option>
+                <option
+                  value="other"
+                  selected={initialData?.gameType === "other"}
+                >
+                  Other
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
               <select name="condition" required class={inputClass}>
-                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
-                <option value="good" selected={initialData?.condition === "good"}>Good</option>
-                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
-                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+                <option
+                  value="excellent"
+                  selected={initialData?.condition === "excellent"}
+                >
+                  Excellent
+                </option>
+                <option
+                  value="good"
+                  selected={initialData?.condition === "good"}
+                >
+                  Good
+                </option>
+                <option
+                  value="fair"
+                  selected={initialData?.condition === "fair"}
+                >
+                  Fair
+                </option>
+                <option
+                  value="needs-repair"
+                  selected={initialData?.condition === "needs-repair"}
+                >
+                  Needs Repair
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+              <input
+                type="number"
+                name="quantityNeedsRepair"
+                defaultValue={String(initialData?.quantityNeedsRepair ?? 0)}
+                min={0}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Player Count</label>
-              <input type="text" name="playerCount" defaultValue={initialData?.playerCount} placeholder="e.g. 2-4" class={inputClass} />
+              <input
+                type="text"
+                name="playerCount"
+                defaultValue={initialData?.playerCount}
+                placeholder="e.g. 2-4"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
+              <select
+                name="yearPurchased"
+                defaultValue={String(initialData?.yearPurchased ?? "")}
+                class={inputClass}
+              >
                 <option value="">— select year —</option>
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
 
           {/* Box contents editor — only for Box / Kit game type */}
           {gameType.value === "box" && (
-          <div class="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-800">
-            <div class="flex items-center justify-between mb-3">
-              <div>
-                <h4 class="font-semibold text-gray-700 dark:text-gray-200">Box Contents</h4>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track the individual items inside this box or kit (e.g. 4 skittles, 2 bats)</p>
+            <div class="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-800">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h4 class="font-semibold text-gray-700 dark:text-gray-200">
+                    Box Contents
+                  </h4>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Track the individual items inside this box or kit (e.g. 4
+                    skittles, 2 bats)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    boxContents.value = [...boxContents.value, {
+                      name: "",
+                      quantity: 1,
+                    }];
+                  }}
+                  class="shrink-0 text-sm px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800/60 font-medium"
+                >
+                  + Add item
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => { boxContents.value = [...boxContents.value, { name: "", quantity: 1 }]; }}
-                class="shrink-0 text-sm px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800/60 font-medium"
-              >
-                + Add item
-              </button>
-            </div>
-            {boxContents.value.length === 0 ? (
-              <p class="text-sm text-gray-400 dark:text-gray-500 italic">No contents recorded yet.</p>
-            ) : (
-              <div class="space-y-2">
-                {boxContents.value.map((row, i) => (
-                  <div key={i} class="flex gap-2 items-center">
-                    <NumberInput
-                      value={row.quantity}
-                      min={1}
-                      onChange={(n) => {
-                        const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], quantity: n };
-                        boxContents.value = copy;
-                      }}
-                      class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Item name (e.g. Bat)"
-                      value={row.name}
-                      onInput={(e) => {
-                        const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], name: (e.target as HTMLInputElement).value };
-                        boxContents.value = copy;
-                      }}
-                      class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { boxContents.value = boxContents.value.filter((_, j) => j !== i); }}
-                      class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
-                      title="Remove"
-                    >×</button>
+              {boxContents.value.length === 0
+                ? (
+                  <p class="text-sm text-gray-400 dark:text-gray-500 italic">
+                    No contents recorded yet.
+                  </p>
+                )
+                : (
+                  <div class="space-y-2">
+                    {boxContents.value.map((row, i) => (
+                      <div key={i} class="flex gap-2 items-center">
+                        <NumberInput
+                          value={row.quantity}
+                          min={1}
+                          onChange={(n) => {
+                            const copy = [...boxContents.value];
+                            copy[i] = { ...copy[i], quantity: n };
+                            boxContents.value = copy;
+                          }}
+                          class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Item name (e.g. Bat)"
+                          value={row.name}
+                          onInput={(e) => {
+                            const copy = [...boxContents.value];
+                            copy[i] = {
+                              ...copy[i],
+                              name: (e.target as HTMLInputElement).value,
+                            };
+                            boxContents.value = copy;
+                          }}
+                          class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            boxContents.value = boxContents.value.filter((
+                              _,
+                              j,
+                            ) =>
+                              j !== i
+                            );
+                          }}
+                          class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                )}
+            </div>
           )}
         </div>
       )}
@@ -763,44 +1392,114 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       {/* Kit / Box-specific fields */}
       {category.value === "kit" && (
         <div class="mb-6 p-4 bg-amber-50 dark:bg-amber-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Box / Kit Details</h3>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Box / Kit Details
+          </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class={labelClass}>Kit Type *</label>
               <select name="kitType" required class={inputClass}>
-                <option value="general" selected={initialData?.kitType === "general"}>General</option>
-                <option value="cooking-kit" selected={initialData?.kitType === "cooking-kit"}>Cooking Kit</option>
-                <option value="first-aid" selected={initialData?.kitType === "first-aid"}>First Aid</option>
-                <option value="tool-kit" selected={initialData?.kitType === "tool-kit"}>Tool Kit</option>
-                <option value="craft-kit" selected={initialData?.kitType === "craft-kit"}>Craft Kit</option>
-                <option value="emergency" selected={initialData?.kitType === "emergency"}>Emergency Kit</option>
-                <option value="other" selected={initialData?.kitType === "other"}>Other</option>
+                <option
+                  value="general"
+                  selected={initialData?.kitType === "general"}
+                >
+                  General
+                </option>
+                <option
+                  value="cooking-kit"
+                  selected={initialData?.kitType === "cooking-kit"}
+                >
+                  Cooking Kit
+                </option>
+                <option
+                  value="first-aid"
+                  selected={initialData?.kitType === "first-aid"}
+                >
+                  First Aid
+                </option>
+                <option
+                  value="tool-kit"
+                  selected={initialData?.kitType === "tool-kit"}
+                >
+                  Tool Kit
+                </option>
+                <option
+                  value="craft-kit"
+                  selected={initialData?.kitType === "craft-kit"}
+                >
+                  Craft Kit
+                </option>
+                <option
+                  value="emergency"
+                  selected={initialData?.kitType === "emergency"}
+                >
+                  Emergency Kit
+                </option>
+                <option
+                  value="other"
+                  selected={initialData?.kitType === "other"}
+                >
+                  Other
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
               <select name="condition" required class={inputClass}>
-                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
-                <option value="good" selected={initialData?.condition === "good"}>Good</option>
-                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
-                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+                <option
+                  value="excellent"
+                  selected={initialData?.condition === "excellent"}
+                >
+                  Excellent
+                </option>
+                <option
+                  value="good"
+                  selected={initialData?.condition === "good"}
+                >
+                  Good
+                </option>
+                <option
+                  value="fair"
+                  selected={initialData?.condition === "fair"}
+                >
+                  Fair
+                </option>
+                <option
+                  value="needs-repair"
+                  selected={initialData?.condition === "needs-repair"}
+                >
+                  Needs Repair
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+              <input
+                type="number"
+                name="quantityNeedsRepair"
+                defaultValue={String(initialData?.quantityNeedsRepair ?? 0)}
+                min={0}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
-              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+              <input
+                type="text"
+                name="brand"
+                defaultValue={initialData?.brand}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
+              <select
+                name="yearPurchased"
+                defaultValue={String(initialData?.yearPurchased ?? "")}
+                class={inputClass}
+              >
                 <option value="">— select year —</option>
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
@@ -809,54 +1508,76 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           <div class="mt-4 pt-4 border-t border-amber-200 dark:border-amber-800">
             <div class="flex items-center justify-between mb-3">
               <div>
-                <h4 class="font-semibold text-gray-700 dark:text-gray-200">Contents</h4>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Track the individual items inside this box or kit</p>
+                <h4 class="font-semibold text-gray-700 dark:text-gray-200">
+                  Contents
+                </h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Track the individual items inside this box or kit
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => { boxContents.value = [...boxContents.value, { name: "", quantity: 1 }]; }}
+                onClick={() => {
+                  boxContents.value = [...boxContents.value, {
+                    name: "",
+                    quantity: 1,
+                  }];
+                }}
                 class="shrink-0 text-sm px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded hover:bg-amber-200 dark:hover:bg-amber-800/60 font-medium"
               >
                 + Add item
               </button>
             </div>
-            {boxContents.value.length === 0 ? (
-              <p class="text-sm text-gray-400 dark:text-gray-500 italic">No contents recorded yet.</p>
-            ) : (
-              <div class="space-y-2">
-                {boxContents.value.map((row, i) => (
-                  <div key={i} class="flex gap-2 items-center">
-                    <NumberInput
-                      value={row.quantity}
-                      min={1}
-                      onChange={(n) => {
-                        const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], quantity: n };
-                        boxContents.value = copy;
-                      }}
-                      class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Item name (e.g. First aid manual)"
-                      value={row.name}
-                      onInput={(e) => {
-                        const copy = [...boxContents.value];
-                        copy[i] = { ...copy[i], name: (e.target as HTMLInputElement).value };
-                        boxContents.value = copy;
-                      }}
-                      class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { boxContents.value = boxContents.value.filter((_, j) => j !== i); }}
-                      class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
-                      title="Remove"
-                    >×</button>
-                  </div>
-                ))}
-              </div>
-            )}
+            {boxContents.value.length === 0
+              ? (
+                <p class="text-sm text-gray-400 dark:text-gray-500 italic">
+                  No contents recorded yet.
+                </p>
+              )
+              : (
+                <div class="space-y-2">
+                  {boxContents.value.map((row, i) => (
+                    <div key={i} class="flex gap-2 items-center">
+                      <NumberInput
+                        value={row.quantity}
+                        min={1}
+                        onChange={(n) => {
+                          const copy = [...boxContents.value];
+                          copy[i] = { ...copy[i], quantity: n };
+                          boxContents.value = copy;
+                        }}
+                        class="w-20 shrink-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Item name (e.g. First aid manual)"
+                        value={row.name}
+                        onInput={(e) => {
+                          const copy = [...boxContents.value];
+                          copy[i] = {
+                            ...copy[i],
+                            name: (e.target as HTMLInputElement).value,
+                          };
+                          boxContents.value = copy;
+                        }}
+                        class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md focus:ring-2 focus:ring-purple-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          boxContents.value = boxContents.value.filter((_, j) =>
+                            j !== i
+                          );
+                        }}
+                        class="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-2 py-1 text-lg leading-none"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
           </div>
         </div>
       )}
@@ -864,72 +1585,139 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
       {/* Kilt-specific fields */}
       {category.value === "kilt" && (
         <div class="mb-6 p-4 bg-purple-50 dark:bg-purple-950/40 rounded-lg">
-          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">Kilt Outfit Details</h3>
+          <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Kilt Outfit Details
+          </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="sm:col-span-2">
               <label class={labelClass}>Components Included</label>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Check each piece that is present in this outfit</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Check each piece that is present in this outfit
+              </p>
               <div class="flex flex-wrap gap-3">
-                {(["kilt", "sporran", "socks", "flashes"] as const).map((component) => {
-                  const labels: Record<string, string> = { kilt: "Kilt", sporran: "Sporran", socks: "Socks", flashes: "Flashes" };
-                  const checked = kiltComponents.value.includes(component);
-                  return (
-                    <label key={component} class={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 cursor-pointer select-none transition-colors ${
-                      checked
-                        ? "border-purple-500 bg-purple-100 dark:bg-purple-800/60 text-purple-800 dark:text-purple-200"
-                        : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
-                    }`}>
-                      <input
-                        type="checkbox"
-                        class="sr-only"
-                        checked={checked}
-                        onChange={() => {
-                          if (checked) {
-                            kiltComponents.value = kiltComponents.value.filter((c) => c !== component);
-                          } else {
-                            kiltComponents.value = [...kiltComponents.value, component];
-                          }
-                        }}
-                      />
-                      <span class={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                        checked ? "border-purple-600 bg-purple-600" : "border-gray-400 dark:border-gray-500"
-                      }`}>
-                        {checked && <span class="text-white text-xs leading-none">✓</span>}
-                      </span>
-                      <span class="font-medium text-sm">{labels[component]}</span>
-                    </label>
-                  );
-                })}
+                {(["kilt", "sporran", "socks", "flashes"] as const).map(
+                  (component) => {
+                    const labels: Record<string, string> = {
+                      kilt: "Kilt",
+                      sporran: "Sporran",
+                      socks: "Socks",
+                      flashes: "Flashes",
+                    };
+                    const checked = kiltComponents.value.includes(component);
+                    return (
+                      <label
+                        key={component}
+                        class={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 cursor-pointer select-none transition-colors ${
+                          checked
+                            ? "border-purple-500 bg-purple-100 dark:bg-purple-800/60 text-purple-800 dark:text-purple-200"
+                            : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          class="sr-only"
+                          checked={checked}
+                          onChange={() => {
+                            if (checked) {
+                              kiltComponents.value = kiltComponents.value
+                                .filter((c) => c !== component);
+                            } else {
+                              kiltComponents.value = [
+                                ...kiltComponents.value,
+                                component,
+                              ];
+                            }
+                          }}
+                        />
+                        <span
+                          class={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
+                            checked
+                              ? "border-purple-600 bg-purple-600"
+                              : "border-gray-400 dark:border-gray-500"
+                          }`}
+                        >
+                          {checked && (
+                            <span class="text-white text-xs leading-none">
+                              ✓
+                            </span>
+                          )}
+                        </span>
+                        <span class="font-medium text-sm">
+                          {labels[component]}
+                        </span>
+                      </label>
+                    );
+                  },
+                )}
               </div>
             </div>
             <div>
               <label class={labelClass}>Condition *</label>
               <select name="condition" required class={inputClass}>
-                <option value="excellent" selected={initialData?.condition === "excellent"}>Excellent</option>
-                <option value="good" selected={initialData?.condition === "good"}>Good</option>
-                <option value="fair" selected={initialData?.condition === "fair"}>Fair</option>
-                <option value="needs-repair" selected={initialData?.condition === "needs-repair"}>Needs Repair</option>
+                <option
+                  value="excellent"
+                  selected={initialData?.condition === "excellent"}
+                >
+                  Excellent
+                </option>
+                <option
+                  value="good"
+                  selected={initialData?.condition === "good"}
+                >
+                  Good
+                </option>
+                <option
+                  value="fair"
+                  selected={initialData?.condition === "fair"}
+                >
+                  Fair
+                </option>
+                <option
+                  value="needs-repair"
+                  selected={initialData?.condition === "needs-repair"}
+                >
+                  Needs Repair
+                </option>
               </select>
             </div>
             <div>
               <label class={labelClass}>Units needing repair</label>
-              <input type="number" name="quantityNeedsRepair" defaultValue={String(initialData?.quantityNeedsRepair ?? 0)} min={0} class={inputClass} />
+              <input
+                type="number"
+                name="quantityNeedsRepair"
+                defaultValue={String(initialData?.quantityNeedsRepair ?? 0)}
+                min={0}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Size</label>
-              <input type="text" name="size" defaultValue={initialData?.size} placeholder="e.g. 32&quot; waist, Age 12–14" class={inputClass} />
+              <input
+                type="text"
+                name="size"
+                defaultValue={initialData?.size}
+                placeholder="e.g. 32&quot; waist, Age 12–14"
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Brand</label>
-              <input type="text" name="brand" defaultValue={initialData?.brand} class={inputClass} />
+              <input
+                type="text"
+                name="brand"
+                defaultValue={initialData?.brand}
+                class={inputClass}
+              />
             </div>
             <div>
               <label class={labelClass}>Year Purchased</label>
-              <select name="yearPurchased" defaultValue={String(initialData?.yearPurchased ?? "")} class={inputClass}>
+              <select
+                name="yearPurchased"
+                defaultValue={String(initialData?.yearPurchased ?? "")}
+                class={inputClass}
+              >
                 <option value="">— select year —</option>
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+                {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
@@ -945,12 +1733,17 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           rows={3}
           class={inputClass}
           placeholder="Additional notes or comments..."
-        >{initialData?.notes ?? ""}</textarea>
+        >
+          {initialData?.notes ?? ""}
+        </textarea>
       </div>
-      
+
       {/* Submit Buttons */}
       {success.value && (
-        <div id="form-success" class="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded flex items-center gap-2">
+        <div
+          id="form-success"
+          class="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded flex items-center gap-2"
+        >
           <span>✓</span> {success.value}
         </div>
       )}
@@ -960,7 +1753,9 @@ export default function ItemForm({ initialData, isEdit = false, csrfToken = "" }
           disabled={submitting.value}
           class="px-6 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          {submitting.value ? "Saving..." : (isEdit ? "Update Item" : "Add Item")}
+          {submitting.value
+            ? "Saving..."
+            : (isEdit ? "Update Item" : "Add Item")}
         </button>
         <a
           href="/inventory"

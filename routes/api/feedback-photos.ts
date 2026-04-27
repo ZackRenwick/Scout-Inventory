@@ -32,13 +32,17 @@ async function handleUpload(
 
   const file = formData.get("photo");
   if (!(file instanceof File)) {
-    return Response.json({ error: "No photo field in request" }, { status: 400 });
+    return Response.json({ error: "No photo field in request" }, {
+      status: 400,
+    });
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const validation = validateUploadedImage(file.type, bytes);
   if ("status" in validation) {
-    return Response.json({ error: validation.error }, { status: validation.status });
+    return Response.json({ error: validation.error }, {
+      status: validation.status,
+    });
   }
 
   try {

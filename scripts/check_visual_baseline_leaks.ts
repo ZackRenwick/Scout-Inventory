@@ -91,7 +91,9 @@ function scanForBaselineImportLeak(content: string): boolean {
 async function run(): Promise<void> {
   const baselineNames = await collectBaselineFileNames();
   if (baselineNames.size === 0) {
-    console.log("[check:visual-baselines] No baseline PNGs found; nothing to validate.");
+    console.log(
+      "[check:visual-baselines] No baseline PNGs found; nothing to validate.",
+    );
     return;
   }
 
@@ -145,7 +147,9 @@ async function run(): Promise<void> {
     fail(problems.join("\n\n"));
   }
 
-  console.log("[check:visual-baselines] OK: no baseline leakage into runtime assets/code.");
+  console.log(
+    "[check:visual-baselines] OK: no baseline leakage into runtime assets/code.",
+  );
 }
 
 await run();

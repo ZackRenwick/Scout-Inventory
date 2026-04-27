@@ -16,34 +16,33 @@ interface CategoryState {
 
 type CategoryKey = "inventory" | "loans" | "camps" | "meals" | "activityLog";
 
-const CATEGORIES: { key: CategoryKey; label: string; description: string }[] =
-  [
-    {
-      key: "inventory",
-      label: "Inventory",
-      description: "All items, indexes, necker count & stats",
-    },
-    {
-      key: "loans",
-      label: "Loans",
-      description: "All loan / checkout records",
-    },
-    {
-      key: "camps",
-      label: "Camp Plans",
-      description: "All camp plans and templates",
-    },
-    {
-      key: "meals",
-      label: "Meals",
-      description: "All meal plans",
-    },
-    {
-      key: "activityLog",
-      label: "Activity Log",
-      description: "All activity log entries",
-    },
-  ];
+const CATEGORIES: { key: CategoryKey; label: string; description: string }[] = [
+  {
+    key: "inventory",
+    label: "Inventory",
+    description: "All items, indexes, necker count & stats",
+  },
+  {
+    key: "loans",
+    label: "Loans",
+    description: "All loan / checkout records",
+  },
+  {
+    key: "camps",
+    label: "Camp Plans",
+    description: "All camp plans and templates",
+  },
+  {
+    key: "meals",
+    label: "Meals",
+    description: "All meal plans",
+  },
+  {
+    key: "activityLog",
+    label: "Activity Log",
+    description: "All activity log entries",
+  },
+];
 
 function initialState(): Record<CategoryKey, CategoryState> {
   return Object.fromEntries(
@@ -90,7 +89,11 @@ export default function DbClear({ csrfToken }: Props) {
         });
       }
     } catch {
-      setCategory(key, { stage: "done", ok: false, message: "Request failed." });
+      setCategory(key, {
+        stage: "done",
+        ok: false,
+        message: "Request failed.",
+      });
     }
   }
 
@@ -101,7 +104,10 @@ export default function DbClear({ csrfToken }: Props) {
         const isConfirm = stage === "confirm";
 
         return (
-          <div key={key} class="rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
+          <div
+            key={key}
+            class="rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden"
+          >
             {/* Row header — always visible */}
             <div class="flex items-center gap-2 px-3 py-2">
               <div class="flex-1 min-w-0">
@@ -117,7 +123,8 @@ export default function DbClear({ csrfToken }: Props) {
                 {stage === "idle" && (
                   <button
                     type="button"
-                    onClick={() => setCategory(key, { stage: "confirm", confirmText: "" })}
+                    onClick={() =>
+                      setCategory(key, { stage: "confirm", confirmText: "" })}
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition-colors"
                   >
                     🗑️ Clear…
@@ -169,8 +176,8 @@ export default function DbClear({ csrfToken }: Props) {
             {isConfirm && (
               <div class="border-t border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-3 py-3 space-y-2">
                 <p class="text-xs font-medium text-red-700 dark:text-red-300">
-                  This will permanently delete all {label.toLowerCase()} data
-                  and cannot be undone. Type{" "}
+                  This will permanently delete all {label.toLowerCase()}{" "}
+                  data and cannot be undone. Type{" "}
                   <strong class="font-mono">CLEAR</strong> to confirm:
                 </p>
                 <div class="flex items-center gap-2">
@@ -210,4 +217,3 @@ export default function DbClear({ csrfToken }: Props) {
     </div>
   );
 }
-

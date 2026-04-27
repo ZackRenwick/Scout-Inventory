@@ -39,7 +39,9 @@ function getR2Config(): R2Config {
   if (missing.length > 0) {
     const runtime = Deno.env.get("DENO_DEPLOYMENT_ID") ? "deploy" : "local";
     throw new Error(
-      `R2 is not configured. Missing/empty env vars: ${missing.join(", ")}. Runtime=${runtime}.`,
+      `R2 is not configured. Missing/empty env vars: ${
+        missing.join(", ")
+      }. Runtime=${runtime}.`,
     );
   }
 
@@ -52,7 +54,7 @@ export function isR2Configured(): boolean {
   const bucket = Deno.env.get("R2_BUCKET")?.trim() ?? "";
   const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID")?.trim() ?? "";
   const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY")?.trim() ?? "";
-  
+
   return !!(accountId && bucket && accessKeyId && secretAccessKey);
 }
 
@@ -88,7 +90,9 @@ async function bodyToBytes(body: unknown): Promise<Uint8Array> {
     return new Uint8Array(await body.arrayBuffer());
   }
   if (body && typeof body === "object" && "transformToByteArray" in body) {
-    const streamLike = body as { transformToByteArray: () => Promise<Uint8Array> };
+    const streamLike = body as {
+      transformToByteArray: () => Promise<Uint8Array>;
+    };
     return await streamLike.transformToByteArray();
   }
 
@@ -113,7 +117,9 @@ export type StoredPhotoRecord = ItemPhotoMeta | LegacyItemPhoto;
 export const INVENTORY_PHOTO_PREFIX = "inventory/photos/";
 export const FEEDBACK_PHOTO_PREFIX = "feedback/photos/";
 
-export function isLegacyPhotoRecord(record: StoredPhotoRecord): record is LegacyItemPhoto {
+export function isLegacyPhotoRecord(
+  record: StoredPhotoRecord,
+): record is LegacyItemPhoto {
   return "data" in record;
 }
 
@@ -193,7 +199,9 @@ export async function uploadFeedbackPhotoObject(
   };
 }
 
-export async function getPhotoObject(objectKey: string): Promise<PhotoObject | null> {
+export async function getPhotoObject(
+  objectKey: string,
+): Promise<PhotoObject | null> {
   try {
     const result = await getR2Client().send(
       new GetObjectCommand({
@@ -208,7 +216,10 @@ export async function getPhotoObject(objectKey: string): Promise<PhotoObject | n
       contentType: result.ContentType ?? "application/octet-stream",
     };
   } catch (error) {
-    if (error && typeof error === "object" && "name" in error && error.name === "NoSuchKey") {
+    if (
+      error && typeof error === "object" && "name" in error &&
+      error.name === "NoSuchKey"
+    ) {
       return null;
     }
     throw error;

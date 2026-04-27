@@ -2,7 +2,8 @@ import { normalizeLocalData } from "./normalize_local_data.ts";
 const repoRoot = new URL("../", import.meta.url).pathname;
 
 const port = Deno.env.get("E2E_PORT")?.trim() || "8787";
-const baseUrl = Deno.env.get("E2E_BASE_URL")?.trim() || `http://127.0.0.1:${port}`;
+const baseUrl = Deno.env.get("E2E_BASE_URL")?.trim() ||
+  `http://127.0.0.1:${port}`;
 const username = Deno.env.get("E2E_USERNAME")?.trim() || "admin";
 const password = Deno.env.get("E2E_PASSWORD")?.trim() || "changeme";
 

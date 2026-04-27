@@ -1,13 +1,13 @@
 // POST /admin/clear-db — clears a specific data category.
 // Body: { category: "inventory" | "loans" | "camps" | "meals" | "activityLog" }
 // Auth data (users/sessions) is never touched. Admin-only. CSRF-protected.
-import { clearCamps, clearInventoryData, clearLoans, clearMeals } from "../../db/kv.ts";
 import {
-  csrfFailed,
-  csrfOk,
-  forbidden,
-  type Session,
-} from "../../lib/auth.ts";
+  clearCamps,
+  clearInventoryData,
+  clearLoans,
+  clearMeals,
+} from "../../db/kv.ts";
+import { csrfFailed, csrfOk, forbidden, type Session } from "../../lib/auth.ts";
 import { clearActivityLog } from "../../lib/activityLog.ts";
 import type { Handlers } from "$fresh/server.ts";
 
@@ -27,7 +27,13 @@ export const handler: Handlers = {
     }
 
     const category = body.category as Category | undefined;
-    const valid: Category[] = ["inventory", "loans", "camps", "meals", "activityLog"];
+    const valid: Category[] = [
+      "inventory",
+      "loans",
+      "camps",
+      "meals",
+      "activityLog",
+    ];
     if (!category || !valid.includes(category)) {
       return Response.json({ error: "Invalid category." }, { status: 400 });
     }

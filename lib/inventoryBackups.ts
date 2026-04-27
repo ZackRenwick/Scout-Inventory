@@ -121,7 +121,10 @@ function reviveInventoryItem(raw: Record<string, unknown>): InventoryItem {
 function reviveCheckOut(raw: Record<string, unknown>): CheckOut {
   return {
     ...raw,
-    checkOutDate: reviveDateStrict("checkOuts[].checkOutDate", raw.checkOutDate),
+    checkOutDate: reviveDateStrict(
+      "checkOuts[].checkOutDate",
+      raw.checkOutDate,
+    ),
     expectedReturnDate: reviveDateStrict(
       "checkOuts[].expectedReturnDate",
       raw.expectedReturnDate,
@@ -148,7 +151,10 @@ function reviveCampTemplate(raw: Record<string, unknown>): CampTemplate {
   return {
     ...raw,
     createdAt: reviveDateStrict("campTemplates[].createdAt", raw.createdAt),
-    lastUpdated: reviveDateStrict("campTemplates[].lastUpdated", raw.lastUpdated),
+    lastUpdated: reviveDateStrict(
+      "campTemplates[].lastUpdated",
+      raw.lastUpdated,
+    ),
   } as CampTemplate;
 }
 
@@ -170,12 +176,18 @@ function reviveRiskAssessment(raw: Record<string, unknown>): RiskAssessment {
   return {
     ...raw,
     createdAt: reviveDateStrict("riskAssessments[].createdAt", raw.createdAt),
-    lastUpdated: reviveDateStrict("riskAssessments[].lastUpdated", raw.lastUpdated),
+    lastUpdated: reviveDateStrict(
+      "riskAssessments[].lastUpdated",
+      raw.lastUpdated,
+    ),
     lastReviewedAt: raw.lastReviewedAt
       ? reviveDateStrict("riskAssessments[].lastReviewedAt", raw.lastReviewedAt)
       : null,
     lastAnnualCheckAt: raw.lastAnnualCheckAt
-      ? reviveDateStrict("riskAssessments[].lastAnnualCheckAt", raw.lastAnnualCheckAt)
+      ? reviveDateStrict(
+        "riskAssessments[].lastAnnualCheckAt",
+        raw.lastAnnualCheckAt,
+      )
       : null,
     annualReminderDismissedUntil: raw.annualReminderDismissedUntil
       ? reviveDateStrict(
@@ -207,8 +219,13 @@ function reviveFeedbackRequest(raw: Record<string, unknown>): FeedbackRequest {
     description: String(raw.description ?? "").trim(),
     status: status as FeedbackRequest["status"],
     createdBy: String(raw.createdBy ?? "").trim().toLowerCase(),
-    createdAt: reviveIsoTimestamp("feedbackRequests[].createdAt", raw.createdAt),
-    reviewedBy: raw.reviewedBy ? String(raw.reviewedBy).trim().toLowerCase() : null,
+    createdAt: reviveIsoTimestamp(
+      "feedbackRequests[].createdAt",
+      raw.createdAt,
+    ),
+    reviewedBy: raw.reviewedBy
+      ? String(raw.reviewedBy).trim().toLowerCase()
+      : null,
     reviewedAt: raw.reviewedAt
       ? reviveIsoTimestamp("feedbackRequests[].reviewedAt", raw.reviewedAt)
       : null,
@@ -247,8 +264,10 @@ export function parseInventoryBackupPayload(text: string): {
 
   try {
     const parsedSchemaVersion = Number(raw.schemaVersion ?? 2);
-    if (!Number.isInteger(parsedSchemaVersion) ||
-      (parsedSchemaVersion !== 1 && parsedSchemaVersion !== 2)) {
+    if (
+      !Number.isInteger(parsedSchemaVersion) ||
+      (parsedSchemaVersion !== 1 && parsedSchemaVersion !== 2)
+    ) {
       return {
         snapshot: null,
         error: "Unsupported backup schema version.",
@@ -262,8 +281,10 @@ export function parseInventoryBackupPayload(text: string): {
         const contentType = String(rec.contentType ?? "").trim();
         const objectKey = String(rec.objectKey ?? "").trim();
         const byteLength = Number(rec.byteLength ?? 0);
-        if (!photoId || !contentType || !objectKey ||
-          !Number.isFinite(byteLength) || byteLength < 0) {
+        if (
+          !photoId || !contentType || !objectKey ||
+          !Number.isFinite(byteLength) || byteLength < 0
+        ) {
           throw new Error("Invalid photo record in backup.");
         }
         if (!isInventoryPhotoObjectKey(objectKey)) {
@@ -334,8 +355,8 @@ export function parseInventoryBackupPayload(text: string): {
         : [],
       firstAidCatalog: Array.isArray(raw.firstAidCatalog)
         ? raw.firstAidCatalog as Awaited<
-            ReturnType<typeof getAllFirstAidCatalogItems>
-          >
+          ReturnType<typeof getAllFirstAidCatalogItems>
+        >
         : [],
       firstAidChecks: {
         overall: raw.firstAidChecks &&
@@ -380,11 +401,13 @@ export function parseInventoryBackupPayload(text: string): {
         : [],
     };
 
-    if (!Number.isFinite(snapshot.neckers.inStock) ||
+    if (
+      !Number.isFinite(snapshot.neckers.inStock) ||
       !Number.isFinite(snapshot.neckers.created) ||
       !Number.isFinite(snapshot.neckers.totalMade) ||
       !Number.isFinite(snapshot.neckers.adultCreated) ||
-      !Number.isFinite(snapshot.neckers.adultTotalMade)) {
+      !Number.isFinite(snapshot.neckers.adultTotalMade)
+    ) {
       return {
         snapshot: null,
         error: "Backup file contains invalid necker metrics.",
@@ -448,10 +471,15 @@ async function pruneOldBackups(
   }
 
   await Promise.all(stale.map((obj) => deletePhotoObject(obj.key)));
-  return { deleted: stale.length, remaining: jsonObjects.length - stale.length };
+  return {
+    deleted: stale.length,
+    remaining: jsonObjects.length - stale.length,
+  };
 }
 
-export async function createInventoryBackup(source: "cron" | "manual" = "cron") {
+export async function createInventoryBackup(
+  source: "cron" | "manual" = "cron",
+) {
   const [
     items,
     photoRecords,

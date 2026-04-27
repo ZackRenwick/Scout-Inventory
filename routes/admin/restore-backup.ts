@@ -25,20 +25,31 @@ export const handler: Handlers = {
     try {
       formData = await req.formData();
     } catch {
-      return Response.json({ ok: false, message: "Invalid form data." }, { status: 400 });
+      return Response.json({ ok: false, message: "Invalid form data." }, {
+        status: 400,
+      });
     }
 
     const file = formData.get("backupFile");
     if (!(file instanceof File)) {
-      return Response.json({ ok: false, message: "Choose a backup JSON file to restore." }, { status: 400 });
+      return Response.json({
+        ok: false,
+        message: "Choose a backup JSON file to restore.",
+      }, { status: 400 });
     }
     if (file.size > MAX_BACKUP_BYTES) {
-      return Response.json({ ok: false, message: "Backup file is too large. Maximum size is 25 MB." }, { status: 413 });
+      return Response.json({
+        ok: false,
+        message: "Backup file is too large. Maximum size is 25 MB.",
+      }, { status: 413 });
     }
 
     const parsed = parseInventoryBackupPayload(await file.text());
     if (!parsed.snapshot) {
-      return Response.json({ ok: false, message: parsed.error ?? "Backup file could not be parsed." }, { status: 400 });
+      return Response.json({
+        ok: false,
+        message: parsed.error ?? "Backup file could not be parsed.",
+      }, { status: 400 });
     }
 
     try {
@@ -53,7 +64,8 @@ export const handler: Handlers = {
       });
       return Response.json({
         ok: true,
-        message: `Backup restored successfully from ${file.name}. Safety snapshot: ${safetyBackup.objectKey}`,
+        message:
+          `Backup restored successfully from ${file.name}. Safety snapshot: ${safetyBackup.objectKey}`,
         itemCount: parsed.snapshot.items.length,
         photoCount: parsed.snapshot.photoRecords.length,
         safetyBackup: safetyBackup.objectKey,

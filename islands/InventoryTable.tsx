@@ -799,7 +799,8 @@ export default function InventoryTable(
                   {canEdit && confirmDeleteId.value === item.id && (
                     <div class="px-4 py-3 bg-red-50 dark:bg-red-950/40 border-t border-red-200 dark:border-red-900 rounded-b-lg">
                       <p class="text-xs font-medium text-red-700 dark:text-red-300 mb-2">
-                        Permanently delete <strong>{item.name}</strong>? This cannot be undone.
+                        Permanently delete{" "}
+                        <strong>{item.name}</strong>? This cannot be undone.
                       </p>
                       <div class="flex items-center gap-2">
                         <button

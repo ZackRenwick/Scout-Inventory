@@ -8,10 +8,10 @@ interface ExpiryBadgeProps {
 export default function ExpiryBadge({ expiryDate }: ExpiryBadgeProps) {
   const date = expiryDate instanceof Date ? expiryDate : new Date(expiryDate);
   const days = getDaysUntil(date);
-  
+
   let status: string;
   let colorClass: string;
-  
+
   if (days < 0) {
     status = `Expired ${Math.abs(days)} days ago`;
     colorClass = "bg-red-100 text-red-800 border-red-300";
@@ -28,9 +28,11 @@ export default function ExpiryBadge({ expiryDate }: ExpiryBadgeProps) {
     status = `${days} days left`;
     colorClass = "bg-green-100 text-green-800 border-green-300";
   }
-  
+
   return (
-    <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${colorClass}`}>
+    <span
+      class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${colorClass}`}
+    >
       {status}
     </span>
   );

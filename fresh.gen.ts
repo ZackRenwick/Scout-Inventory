@@ -30,6 +30,7 @@ import * as $api_camps_index from "./routes/api/camps/index.ts";
 import * as $api_easter_egg from "./routes/api/easter-egg.ts";
 import * as $api_feedback_photos from "./routes/api/feedback-photos.ts";
 import * as $api_feedback_photos_photoId_ from "./routes/api/feedback-photos/[photoId].ts";
+import * as $api_feedback_pending_count from "./routes/api/feedback/pending-count.ts";
 import * as $api_first_aid_check from "./routes/api/first-aid-check.ts";
 import * as $api_items_id_ from "./routes/api/items/[id].ts";
 import * as $api_items_id_photo from "./routes/api/items/[id]/photo.ts";
@@ -88,6 +89,7 @@ import * as $DbCleanup from "./islands/DbCleanup.tsx";
 import * as $DbClear from "./islands/DbClear.tsx";
 import * as $EasterEgg from "./islands/EasterEgg.tsx";
 import * as $FeedbackFormClient from "./islands/FeedbackFormClient.tsx";
+import * as $FeedbackPendingBadge from "./islands/FeedbackPendingBadge.tsx";
 import * as $FeedbackScreenshot from "./islands/FeedbackScreenshot.tsx";
 import * as $FirstAidCheckWizard from "./islands/FirstAidCheckWizard.tsx";
 import * as $FirstAidKitEditor from "./islands/FirstAidKitEditor.tsx";
@@ -149,6 +151,7 @@ const manifest = {
     "./routes/api/easter-egg.ts": $api_easter_egg,
     "./routes/api/feedback-photos.ts": $api_feedback_photos,
     "./routes/api/feedback-photos/[photoId].ts": $api_feedback_photos_photoId_,
+    "./routes/api/feedback/pending-count.ts": $api_feedback_pending_count,
     "./routes/api/first-aid-check.ts": $api_first_aid_check,
     "./routes/api/items/[id].ts": $api_items_id_,
     "./routes/api/items/[id]/photo.ts": $api_items_id_photo,
@@ -210,6 +213,7 @@ const manifest = {
     "./islands/DbClear.tsx": $DbClear,
     "./islands/EasterEgg.tsx": $EasterEgg,
     "./islands/FeedbackFormClient.tsx": $FeedbackFormClient,
+    "./islands/FeedbackPendingBadge.tsx": $FeedbackPendingBadge,
     "./islands/FeedbackScreenshot.tsx": $FeedbackScreenshot,
     "./islands/FirstAidCheckWizard.tsx": $FirstAidCheckWizard,
     "./islands/FirstAidKitEditor.tsx": $FirstAidKitEditor,

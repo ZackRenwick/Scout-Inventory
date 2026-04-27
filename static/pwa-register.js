@@ -36,18 +36,24 @@ if ("serviceWorker" in navigator) {
           const newWorker = reg.installing;
           if (!newWorker) return;
           newWorker.addEventListener("statechange", function () {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            if (
+              newWorker.state === "installed" &&
+              navigator.serviceWorker.controller
+            ) {
               activateWaitingWorker();
             }
           });
         });
 
         let reloading = false;
-        navigator.serviceWorker.addEventListener("controllerchange", function () {
-          if (reloading) return;
-          reloading = true;
-          globalThis.location.reload();
-        });
+        navigator.serviceWorker.addEventListener(
+          "controllerchange",
+          function () {
+            if (reloading) return;
+            reloading = true;
+            globalThis.location.reload();
+          },
+        );
 
         reg.update();
       });

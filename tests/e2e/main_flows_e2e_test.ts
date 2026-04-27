@@ -9,11 +9,15 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 async function login(page: import("npm:playwright").Page): Promise<void> {
-  await page.goto(new URL("/login", baseUrl).toString(), { waitUntil: "networkidle" });
+  await page.goto(new URL("/login", baseUrl).toString(), {
+    waitUntil: "networkidle",
+  });
   await page.fill('input[name="username"]', username);
   await page.fill('input[name="password"]', password);
   await Promise.all([
-    page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15_000 }),
+    page.waitForURL((url) => !url.pathname.startsWith("/login"), {
+      timeout: 15_000,
+    }),
     page.click('button[type="submit"]'),
   ]);
 }
@@ -32,7 +36,10 @@ Deno.test({
         waitUntil: "networkidle",
       });
       const url = new URL(page.url());
-      assert(url.pathname === "/login", `Expected /login redirect, got ${url.pathname}`);
+      assert(
+        url.pathname === "/login",
+        `Expected /login redirect, got ${url.pathname}`,
+      );
       assert(
         (url.searchParams.get("redirect") ?? "").startsWith("/inventory"),
         "Expected redirect query param for protected path",
@@ -66,7 +73,9 @@ Deno.test({
       ];
 
       for (const route of routes) {
-        await page.goto(new URL(route, baseUrl).toString(), { waitUntil: "networkidle" });
+        await page.goto(new URL(route, baseUrl).toString(), {
+          waitUntil: "networkidle",
+        });
         const finalUrl = new URL(page.url());
         assert(
           !finalUrl.pathname.startsWith("/login"),
@@ -74,9 +83,14 @@ Deno.test({
         );
       }
 
-      await page.goto(new URL("/meals", baseUrl).toString(), { waitUntil: "networkidle" });
+      await page.goto(new URL("/meals", baseUrl).toString(), {
+        waitUntil: "networkidle",
+      });
       const mealsUrl = new URL(page.url());
-      assert(mealsUrl.pathname === "/meals", `Expected /meals access, got ${mealsUrl.pathname}`);
+      assert(
+        mealsUrl.pathname === "/meals",
+        `Expected /meals access, got ${mealsUrl.pathname}`,
+      );
     } finally {
       await context.close();
       await browser.close();
@@ -104,13 +118,19 @@ Deno.test({
         });
         return res.status;
       }, new URL("/api/logout", baseUrl).toString());
-      assert(logoutStatus >= 200 && logoutStatus < 400, `Unexpected logout status: ${logoutStatus}`);
+      assert(
+        logoutStatus >= 200 && logoutStatus < 400,
+        `Unexpected logout status: ${logoutStatus}`,
+      );
 
       await page.goto(new URL("/inventory", baseUrl).toString(), {
         waitUntil: "networkidle",
       });
       const url = new URL(page.url());
-      assert(url.pathname === "/login", `Expected /login after logout, got ${url.pathname}`);
+      assert(
+        url.pathname === "/login",
+        `Expected /login after logout, got ${url.pathname}`,
+      );
     } finally {
       await context.close();
       await browser.close();

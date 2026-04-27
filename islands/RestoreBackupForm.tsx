@@ -39,7 +39,8 @@ export default function RestoreBackupForm({ csrfToken }: Props) {
       const data = await res.json().catch(() => ({}));
       setStatus({
         ok: res.ok,
-        message: data.message ?? (res.ok ? "Backup restored." : "Restore failed."),
+        message: data.message ??
+          (res.ok ? "Backup restored." : "Restore failed."),
       });
       if (res.ok && input) {
         input.value = "";
@@ -52,10 +53,16 @@ export default function RestoreBackupForm({ csrfToken }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
-      <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">Restore Backup</h3>
+    <form
+      onSubmit={onSubmit}
+      class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4"
+    >
+      <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+        Restore Backup
+      </h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-        Upload a backup JSON created by this app to replace current app data. Photo metadata is restored, but photo objects must still exist in R2.
+        Upload a backup JSON created by this app to replace current app data.
+        Photo metadata is restored, but photo objects must still exist in R2.
       </p>
       <input
         ref={fileRef}
@@ -71,7 +78,13 @@ export default function RestoreBackupForm({ csrfToken }: Props) {
         {running ? "⏳ Restoring…" : "♻️ Restore Backup"}
       </button>
       {status && (
-        <p class={`mt-3 text-sm ${status.ok ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+        <p
+          class={`mt-3 text-sm ${
+            status.ok
+              ? "text-green-700 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
           {status.message}
         </p>
       )}

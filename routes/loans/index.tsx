@@ -16,7 +16,9 @@ export const handler: Handlers<LoansPageData> = {
     try {
       const loans = await getAllCheckOuts();
       // Newest first
-      loans.sort((a, b) => new Date(b.checkOutDate).getTime() - new Date(a.checkOutDate).getTime());
+      loans.sort((a, b) =>
+        new Date(b.checkOutDate).getTime() - new Date(a.checkOutDate).getTime()
+      );
       return ctx.render({ loans, session: ctx.state.session as Session });
     } catch (error) {
       console.error("Failed to fetch loans:", error);
@@ -33,7 +35,11 @@ export default function LoansPage({ data }: PageProps<LoansPageData>) {
   ).length;
 
   return (
-    <Layout title="Loans" username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title="Loans"
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p class="text-gray-600 dark:text-gray-400">

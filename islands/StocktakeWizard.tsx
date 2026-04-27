@@ -1,5 +1,5 @@
 // Guided stock-take wizard island
-import { useSignal, useComputed } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 import { getCategoryEmoji } from "../types/inventory.ts";
 import NumberInput from "../components/NumberInput.tsx";
 
@@ -43,7 +43,9 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
   const currentIdx = useSignal(0);
   const phase = useSignal<Phase>("wizard");
   const applyError = useSignal<string | null>(null);
-  const applyResult = useSignal<{ applied: number; errors: string[] } | null>(null);
+  const applyResult = useSignal<{ applied: number; errors: string[] } | null>(
+    null,
+  );
 
   const total = entries.value.length;
 
@@ -58,7 +60,9 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
     )
   );
 
-  const skippedCount = useComputed(() => entries.value.filter((e) => e.skipped).length);
+  const skippedCount = useComputed(() =>
+    entries.value.filter((e) => e.skipped).length
+  );
 
   function updateCurrentQty(qty: number) {
     const idx = currentIdx.value;
@@ -110,7 +114,9 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
     const updates = discrepancies.value.map((e) => ({
       id: e.id,
       quantity: e.countedQty,
-      ...(e.hasCondition && e.countedCondition ? { condition: e.countedCondition } : {}),
+      ...(e.hasCondition && e.countedCondition
+        ? { condition: e.countedCondition }
+        : {}),
     }));
 
     try {
@@ -128,7 +134,9 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
       applyResult.value = data;
       phase.value = "done";
     } catch (e) {
-      applyError.value = e instanceof Error ? e.message : "Failed to apply changes.";
+      applyError.value = e instanceof Error
+        ? e.message
+        : "Failed to apply changes.";
       phase.value = "review";
     }
   }
@@ -139,11 +147,15 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
     return (
       <div class="max-w-xl mx-auto text-center py-12">
         <div class="text-5xl mb-4">✅</div>
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-2">Stock-take Complete</h2>
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-purple-100 mb-2">
+          Stock-take Complete
+        </h2>
         <p class="text-gray-600 dark:text-gray-400 mb-6">
           {result.applied === 0
             ? "No corrections were needed — inventory is up to date."
-            : `${result.applied} item${result.applied !== 1 ? "s" : ""} updated in inventory.`}
+            : `${result.applied} item${
+              result.applied !== 1 ? "s" : ""
+            } updated in inventory.`}
         </p>
         {result.errors.length > 0 && (
           <div class="mb-6 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-md text-sm text-left text-yellow-800 dark:text-yellow-300">
@@ -178,15 +190,21 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
       <div class="max-w-3xl mx-auto">
         <div class="mb-6 flex items-center justify-between">
           <div>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-purple-100">Review Discrepancies</h3>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-purple-100">
+              Review Discrepancies
+            </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {discrepancies.value.length} discrepanc{discrepancies.value.length !== 1 ? "ies" : "y"} found
+              {discrepancies.value.length}{" "}
+              discrepanc{discrepancies.value.length !== 1 ? "ies" : "y"} found
               {skippedCount.value > 0 && ` · ${skippedCount.value} skipped`}
             </p>
           </div>
           <button
             type="button"
-            onClick={() => { currentIdx.value = 0; phase.value = "wizard"; }}
+            onClick={() => {
+              currentIdx.value = 0;
+              phase.value = "wizard";
+            }}
             class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
           >
             ← Back to wizard
@@ -199,52 +217,91 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
           </div>
         )}
 
-        {discrepancies.value.length === 0 ? (
-          <div class="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg mb-6">
-            <div class="text-4xl mb-2">🎉</div>
-            <p class="text-gray-600 dark:text-gray-400 font-medium">No discrepancies found</p>
-            <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">All counted quantities match the records.</p>
-          </div>
-        ) : (
-          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 overflow-hidden">
-            <table class="w-full text-sm">
-              <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-                <tr>
-                  <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">Item</th>
-                  <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">Recorded</th>
-                  <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">Counted</th>
-                  <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">Δ Qty</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                {discrepancies.value.map((e) => {
-                  const qtyDiff = e.countedQty - e.recordedQty;
-                  const condChanged = e.hasCondition && e.countedCondition !== e.recordedCondition;
-                  return (
-                    <tr key={e.id} class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                      <td class="px-4 py-3">
-                        <div class="font-medium text-gray-800 dark:text-gray-100">{e.name}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">{e.location}</div>
-                        {condChanged && (
-                          <div class="text-xs text-orange-600 dark:text-orange-400 mt-0.5">
-                            Condition: {e.recordedCondition} → {e.countedCondition}
+        {discrepancies.value.length === 0
+          ? (
+            <div class="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg mb-6">
+              <div class="text-4xl mb-2">🎉</div>
+              <p class="text-gray-600 dark:text-gray-400 font-medium">
+                No discrepancies found
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">
+                All counted quantities match the records.
+              </p>
+            </div>
+          )
+          : (
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm mb-6 overflow-hidden">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600 dark:text-gray-300">
+                      Item
+                    </th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                      Recorded
+                    </th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                      Counted
+                    </th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                      Δ Qty
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                  {discrepancies.value.map((e) => {
+                    const qtyDiff = e.countedQty - e.recordedQty;
+                    const condChanged = e.hasCondition &&
+                      e.countedCondition !== e.recordedCondition;
+                    return (
+                      <tr
+                        key={e.id}
+                        class="hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                      >
+                        <td class="px-4 py-3">
+                          <div class="font-medium text-gray-800 dark:text-gray-100">
+                            {e.name}
                           </div>
-                        )}
-                      </td>
-                      <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-400">{e.recordedQty}</td>
-                      <td class="px-4 py-3 text-center font-semibold text-gray-900 dark:text-gray-100">{e.countedQty}</td>
-                      <td class="px-4 py-3 text-center">
-                        <span class={`font-bold ${qtyDiff > 0 ? "text-green-600 dark:text-green-400" : qtyDiff < 0 ? "text-red-600 dark:text-red-400" : "text-gray-500"}`}>
-                          {qtyDiff === 0 ? "—" : qtyDiff > 0 ? `+${qtyDiff}` : qtyDiff}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                          <div class="text-xs text-gray-500 dark:text-gray-400">
+                            {e.location}
+                          </div>
+                          {condChanged && (
+                            <div class="text-xs text-orange-600 dark:text-orange-400 mt-0.5">
+                              Condition: {e.recordedCondition} →{" "}
+                              {e.countedCondition}
+                            </div>
+                          )}
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-400">
+                          {e.recordedQty}
+                        </td>
+                        <td class="px-4 py-3 text-center font-semibold text-gray-900 dark:text-gray-100">
+                          {e.countedQty}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                          <span
+                            class={`font-bold ${
+                              qtyDiff > 0
+                                ? "text-green-600 dark:text-green-400"
+                                : qtyDiff < 0
+                                ? "text-red-600 dark:text-red-400"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {qtyDiff === 0
+                              ? "—"
+                              : qtyDiff > 0
+                              ? `+${qtyDiff}`
+                              : qtyDiff}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
         <div class="flex gap-3">
           <button
@@ -253,13 +310,20 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
             onClick={applyChanges}
             class="flex-1 py-3 bg-purple-600 text-white font-semibold rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {applying ? "Applying…" : `Apply ${discrepancies.value.length} Correction${discrepancies.value.length !== 1 ? "s" : ""}`}
+            {applying
+              ? "Applying…"
+              : `Apply ${discrepancies.value.length} Correction${
+                discrepancies.value.length !== 1 ? "s" : ""
+              }`}
           </button>
           {discrepancies.value.length === 0 && (
             <button
               type="button"
               disabled={applying}
-              onClick={() => { applyResult.value = { applied: 0, errors: [] }; phase.value = "done"; }}
+              onClick={() => {
+                applyResult.value = { applied: 0, errors: [] };
+                phase.value = "done";
+              }}
               class="flex-1 py-3 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
               ✓ Confirm — No Changes Needed
@@ -275,7 +339,8 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
   const idx = currentIdx.value;
   const progressPct = Math.round((idx / total) * 100);
   const qtyChanged = entry.countedQty !== entry.recordedQty;
-  const condChanged = entry.hasCondition && entry.countedCondition !== entry.recordedCondition;
+  const condChanged = entry.hasCondition &&
+    entry.countedCondition !== entry.recordedCondition;
 
   return (
     <div class="max-w-xl mx-auto">
@@ -283,7 +348,11 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
       <div class="mb-6">
         <div class="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1.5">
           <span>Item {idx + 1} of {total}</span>
-          <span>{skippedCount.value > 0 && `${skippedCount.value} skipped · `}{discrepancies.value.length} discrepanc{discrepancies.value.length !== 1 ? "ies" : "y"} so far</span>
+          <span>
+            {skippedCount.value > 0 && `${skippedCount.value} skipped · `}
+            {discrepancies.value.length}{" "}
+            discrepanc{discrepancies.value.length !== 1 ? "ies" : "y"} so far
+          </span>
         </div>
         <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div
@@ -294,19 +363,25 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
       </div>
 
       {/* Item card */}
-      <div class={`bg-white dark:bg-gray-800 rounded-lg shadow border p-6 mb-5 ${
-        entry.skipped
-          ? "border-gray-300 dark:border-gray-600 opacity-60"
-          : "border-gray-200 dark:border-gray-700"
-      }`}>
+      <div
+        class={`bg-white dark:bg-gray-800 rounded-lg shadow border p-6 mb-5 ${
+          entry.skipped
+            ? "border-gray-300 dark:border-gray-600 opacity-60"
+            : "border-gray-200 dark:border-gray-700"
+        }`}
+      >
         {/* Header */}
         <div class="flex items-start justify-between gap-3 mb-4">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="text-xl">{getCategoryEmoji(entry.category)}</span>
-              <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{entry.name}</h3>
+              <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">
+                {entry.name}
+              </h3>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{entry.location}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              {entry.location}
+            </p>
           </div>
           {entry.skipped && (
             <span class="shrink-0 text-xs font-medium px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
@@ -315,62 +390,81 @@ export default function StocktakeWizard({ items: rawItems, csrfToken }: Props) {
           )}
         </div>
 
-        {entry.skipped ? (
-          <button
-            type="button"
-            onClick={unskipCurrent}
-            class="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          >
-            ↩ Undo skip — count this item
-          </button>
-        ) : (
-          <div class="space-y-4">
-            {/* Quantity */}
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Actual count
-                </label>
-                <span class="text-xs text-gray-400 dark:text-gray-500">
-                  Recorded: {entry.recordedQty}
-                  {qtyChanged && (
-                    <span class={`ml-2 font-semibold ${entry.countedQty > entry.recordedQty ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
-                      ({entry.countedQty > entry.recordedQty ? "+" : ""}{entry.countedQty - entry.recordedQty})
-                    </span>
-                  )}
-                </span>
-              </div>
-              <NumberInput
-                key={entry.id}
-                value={entry.countedQty}
-                min={0}
-                onChange={(n) => updateCurrentQty(n)}
-                class={inputClass}
-              />
-            </div>
-
-            {/* Condition */}
-            {entry.hasCondition && (
+        {entry.skipped
+          ? (
+            <button
+              type="button"
+              onClick={unskipCurrent}
+              class="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              ↩ Undo skip — count this item
+            </button>
+          )
+          : (
+            <div class="space-y-4">
+              {/* Quantity */}
               <div>
                 <div class="flex items-center justify-between mb-1">
-                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Condition</label>
-                  {condChanged && (
-                    <span class="text-xs text-orange-500 dark:text-orange-400 font-medium">Changed</span>
-                  )}
+                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Actual count
+                  </label>
+                  <span class="text-xs text-gray-400 dark:text-gray-500">
+                    Recorded: {entry.recordedQty}
+                    {qtyChanged && (
+                      <span
+                        class={`ml-2 font-semibold ${
+                          entry.countedQty > entry.recordedQty
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-500 dark:text-red-400"
+                        }`}
+                      >
+                        ({entry.countedQty > entry.recordedQty ? "+" : ""}
+                        {entry.countedQty - entry.recordedQty})
+                      </span>
+                    )}
+                  </span>
                 </div>
-                <select
+                <NumberInput
+                  key={entry.id}
+                  value={entry.countedQty}
+                  min={0}
+                  onChange={(n) => updateCurrentQty(n)}
                   class={inputClass}
-                  value={entry.countedCondition ?? ""}
-                  onChange={(e) => updateCurrentCondition((e.target as HTMLSelectElement).value)}
-                >
-                  {CONDITIONS.map((c) => (
-                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1).replace("-", " ")}</option>
-                  ))}
-                </select>
+                />
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Condition */}
+              {entry.hasCondition && (
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Condition
+                    </label>
+                    {condChanged && (
+                      <span class="text-xs text-orange-500 dark:text-orange-400 font-medium">
+                        Changed
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    class={inputClass}
+                    value={entry.countedCondition ?? ""}
+                    onChange={(e) =>
+                      updateCurrentCondition(
+                        (e.target as HTMLSelectElement).value,
+                      )}
+                  >
+                    {CONDITIONS.map((c) => (
+                      <option key={c} value={c}>
+                        {c.charAt(0).toUpperCase() +
+                          c.slice(1).replace("-", " ")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
       </div>
 
       {/* Navigation */}

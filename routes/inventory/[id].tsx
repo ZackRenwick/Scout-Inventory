@@ -1,14 +1,29 @@
 // Individual item details page
 import { Handlers, PageProps } from "$fresh/server.ts";
-import type { InventoryItem, TentItem, CookingEquipment, FoodItem, GamesItem, KitItem, KiltOutfitItem } from "../../types/inventory.ts";
-import { isTentItem, isCookingEquipment, isFoodItem, isGamesItem, isKitItem, isKiltOutfitItem } from "../../types/inventory.ts";
+import type {
+  CookingEquipment,
+  FoodItem,
+  GamesItem,
+  InventoryItem,
+  KiltOutfitItem,
+  KitItem,
+  TentItem,
+} from "../../types/inventory.ts";
+import {
+  isCookingEquipment,
+  isFoodItem,
+  isGamesItem,
+  isKiltOutfitItem,
+  isKitItem,
+  isTentItem,
+} from "../../types/inventory.ts";
 import Layout from "../../components/Layout.tsx";
 import ExpiryBadge from "../../components/ExpiryBadge.tsx";
 import CategoryIcon from "../../components/CategoryIcon.tsx";
 import { formatDate } from "../../lib/date-utils.ts";
 import type { Session } from "../../lib/auth.ts";
 import { csrfFailed, forbidden } from "../../lib/auth.ts";
-import { getItemById, createItem } from "../../db/kv.ts";
+import { createItem, getItemById } from "../../db/kv.ts";
 import PhotoViewer from "../../islands/PhotoViewer.tsx";
 import ItemDeleteButton from "../../islands/ItemDeleteButton.tsx";
 import { logActivity } from "../../lib/activityLog.ts";
@@ -26,7 +41,11 @@ export const handler: Handlers<ItemDetailData> = {
     try {
       const item = await getItemById(id);
       if (!item) {
-        return ctx.render({ item: null, session, csrfToken: session?.csrfToken });
+        return ctx.render({
+          item: null,
+          session,
+          csrfToken: session?.csrfToken,
+        });
       }
       return ctx.render({ item, session, csrfToken: session?.csrfToken });
     } catch (error) {
@@ -101,7 +120,9 @@ function ContentsTable(
       <tbody>
         {contents.map((c, i) => (
           <tr key={i} class={`border-b ${dividerColor} last:border-0`}>
-            <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">{c.name}</td>
+            <td class="py-1.5 pr-4 text-gray-900 dark:text-gray-100">
+              {c.name}
+            </td>
             <td class="py-1.5 text-right font-medium text-gray-900 dark:text-gray-100">
               {c.quantity}
             </td>
@@ -125,46 +146,64 @@ function ContentsTable(
 export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
   if (!data.item) {
     return (
-      <Layout title="Item Not Found" username={data.session?.username} role={data.session?.role}>
+      <Layout
+        title="Item Not Found"
+        username={data.session?.username}
+        role={data.session?.role}
+      >
         <div class="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
           <p class="text-red-700 text-lg">Item not found</p>
-          <a href="/inventory" class="mt-4 inline-block text-red-600 hover:text-red-800 underline">
+          <a
+            href="/inventory"
+            class="mt-4 inline-block text-red-600 hover:text-red-800 underline"
+          >
             ← Back to Inventory
           </a>
         </div>
       </Layout>
     );
   }
-  
+
   const item = data.item;
   const isLowStock = item.quantity <= item.minThreshold;
-  
+
   return (
-    <Layout title={item.name} username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title={item.name}
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="mb-6">
-        <a href="/inventory" class="text-purple-600 dark:text-purple-400 hover:text-purple-800">
+        <a
+          href="/inventory"
+          class="text-purple-600 dark:text-purple-400 hover:text-purple-800"
+        >
           ← Back to Inventory
         </a>
       </div>
-      
+
       <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-5 sm:p-8">
         {/* Header */}
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
           <div class="flex items-center space-x-3">
             <CategoryIcon category={item.category} size="lg" />
             <div>
-              <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">{item.name}</h1>
-              <p class="text-gray-600 dark:text-gray-400 capitalize">{item.category}</p>
+              <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">
+                {item.name}
+              </h1>
+              <p class="text-gray-600 dark:text-gray-400 capitalize">
+                {item.category}
+              </p>
             </div>
           </div>
           <div class="flex gap-3 shrink-0 flex-wrap">
             {data.session?.role !== "viewer" && (
-            <a
-              href={`/inventory/edit/${item.id}`}
-              class="px-4 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700"
-            >
-              ✏️ Edit
-            </a>
+              <a
+                href={`/inventory/edit/${item.id}`}
+                class="px-4 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700"
+              >
+                ✏️ Edit
+              </a>
             )}
             <a
               href={`/inventory/${item.id}/maintenance`}
@@ -173,25 +212,25 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
               🛠️ Maintenance
             </a>
             {data.session?.role !== "viewer" && (
-            <form method="POST" action={`/inventory/${item.id}`}>
-              <input type="hidden" name="csrf" value={data.csrfToken ?? ""} />
-              <button
-                type="submit"
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                📋 Duplicate
-              </button>
-            </form>
+              <form method="POST" action={`/inventory/${item.id}`}>
+                <input type="hidden" name="csrf" value={data.csrfToken ?? ""} />
+                <button
+                  type="submit"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  📋 Duplicate
+                </button>
+              </form>
             )}
             {data.session?.role === "admin" && (
-            <a
-              href={`/inventory/${item.id}/qr`}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              🖨️ QR Label
-            </a>
+              <a
+                href={`/inventory/${item.id}/qr`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                🖨️ QR Label
+              </a>
             )}
             <a
               href={`/inventory/${item.id}/scan`}
@@ -208,16 +247,17 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
             )}
           </div>
         </div>
-        
+
         {/* Alerts */}
         {isLowStock && (
           <div class="mb-6 bg-red-50 dark:bg-red-950/50 border-l-4 border-red-500 p-4">
             <p class="text-red-700 dark:text-red-300 font-medium">
-              ⚠️ Low Stock Alert - Only {item.quantity} remaining (minimum: {item.minThreshold})
+              ⚠️ Low Stock Alert - Only {item.quantity} remaining (minimum:{" "}
+              {item.minThreshold})
             </p>
           </div>
         )}
-        
+
         {isFoodItem(item) && (
           <div class="mb-6">
             <ExpiryBadge expiryDate={item.expiryDate} />
@@ -236,102 +276,169 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
                 style="max-height: 320px"
               />
             </div>
-          )
-        }
-        
+          )}
+
         {/* Common Details */}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
           <div>
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Quantity</h3>
-            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{item.quantity}</p>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">
+              Quantity
+            </h3>
+            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {item.quantity}
+            </p>
           </div>
           <div>
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Minimum Threshold</h3>
-            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">{item.minThreshold}</p>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">
+              Minimum Threshold
+            </h3>
+            <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {item.minThreshold}
+            </p>
           </div>
           <div>
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Location</h3>
-            <p class="mt-1 text-lg text-gray-900 dark:text-gray-100">{item.location}</p>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">
+              Location
+            </h3>
+            <p class="mt-1 text-lg text-gray-900 dark:text-gray-100">
+              {item.location}
+            </p>
           </div>
           <div>
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Added Date</h3>
-            <p class="mt-1 text-lg text-gray-900 dark:text-gray-100">{formatDate(item.addedDate)}</p>
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">
+              Added Date
+            </h3>
+            <p class="mt-1 text-lg text-gray-900 dark:text-gray-100">
+              {formatDate(item.addedDate)}
+            </p>
           </div>
         </div>
-        
+
         {/* Category-specific Details */}
         {isTentItem(item) && (
           <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-950/40 rounded-lg">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Tent Details</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+              Tent Details
+            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Type</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.tentType}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Type
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.tentType}
+                </p>
               </div>
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Capacity</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100">{item.capacity} people</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Capacity
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100">
+                  {item.capacity} people
+                </p>
               </div>
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Size</h3>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Size
+                </h3>
                 <p class="mt-1 text-gray-900 dark:text-gray-100">{item.size}</p>
               </div>
               {item.setupInstructions && (
                 <div class="sm:col-span-2">
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Setup Instructions</h3>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Setup Instructions
+                  </h3>
                   <p class="mt-1 text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
                     {item.setupInstructions}
                   </p>
                 </div>
               )}
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Condition
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.condition}
+                </p>
               </div>
               {item.brand && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Brand</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.brand}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Brand
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.brand}
+                  </p>
                 </div>
               )}
               {item.yearPurchased && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.yearPurchased}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Year Purchased
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.yearPurchased}
+                  </p>
                 </div>
               )}
             </div>
           </div>
         )}
-        
+
         {isCookingEquipment(item) && (
           <div class="mt-6 p-4 bg-orange-50 dark:bg-orange-950/40 rounded-lg">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Cooking Equipment Details</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+              Cooking Equipment Details
+            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Equipment Type</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.equipmentType === "water-container" ? "Water Container" : item.equipmentType === "box" ? "Box / Kit" : item.equipmentType.replace('-', ' ')}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Equipment Type
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.equipmentType === "water-container"
+                    ? "Water Container"
+                    : item.equipmentType === "box"
+                    ? "Box / Kit"
+                    : item.equipmentType.replace("-", " ")}
+                </p>
               </div>
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Condition
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.condition}
+                </p>
               </div>
               {item.material && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Material</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.material}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Material
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.material}
+                  </p>
                 </div>
               )}
               {item.fuelType && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Fuel Type</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.fuelType}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Fuel Type
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.fuelType}
+                  </p>
                 </div>
               )}
               {item.capacity && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Capacity</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.capacity}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Capacity
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.capacity}
+                  </p>
                 </div>
               )}
             </div>
@@ -349,69 +456,115 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
             )}
           </div>
         )}
-        
+
         {isFoodItem(item) && (
           <div class="mt-6 p-4 bg-green-50 dark:bg-green-950/40 rounded-lg">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Food Details</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+              Food Details
+            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Food Type</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.foodType}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Food Type
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.foodType}
+                </p>
               </div>
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Expiry Date</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 font-bold">{formatDate(item.expiryDate)}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Expiry Date
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 font-bold">
+                  {formatDate(item.expiryDate)}
+                </p>
               </div>
               {item.storageRequirements && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Storage Requirements</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.storageRequirements.replace(/-/g, ' ')}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Storage Requirements
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                    {item.storageRequirements.replace(/-/g, " ")}
+                  </p>
                 </div>
               )}
               {item.weight && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Weight</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.weight}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Weight
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.weight}
+                  </p>
                 </div>
               )}
               {item.servings && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Servings</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.servings}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Servings
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.servings}
+                  </p>
                 </div>
               )}
               {item.allergens && item.allergens.length > 0 && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Allergens</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.allergens.join(", ")}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Allergens
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.allergens.join(", ")}
+                  </p>
                 </div>
               )}
             </div>
           </div>
         )}
-        
+
         {isGamesItem(item) && (
           <div class="mt-6 p-4 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Games Details</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+              Games Details
+            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Game Type</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.gameType === "box" ? "Box / Kit" : item.gameType.replace(/-/g, ' ')}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Game Type
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.gameType === "box"
+                    ? "Box / Kit"
+                    : item.gameType.replace(/-/g, " ")}
+                </p>
               </div>
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Condition
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.condition}
+                </p>
               </div>
               {item.playerCount && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Player Count</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.playerCount}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Player Count
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.playerCount}
+                  </p>
                 </div>
               )}
               {item.yearPurchased && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.yearPurchased}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Year Purchased
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.yearPurchased}
+                  </p>
                 </div>
               )}
             </div>
@@ -432,26 +585,44 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
 
         {isKitItem(item) && (
           <div class="mt-6 p-4 bg-teal-50 dark:bg-teal-950/40 rounded-lg">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Kit / Box Details</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+              Kit / Box Details
+            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Kit Type</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.kitType.replace(/-/g, ' ')}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Kit Type
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.kitType.replace(/-/g, " ")}
+                </p>
               </div>
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Condition
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.condition}
+                </p>
               </div>
               {item.brand && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Brand</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.brand}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Brand
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.brand}
+                  </p>
                 </div>
               )}
               {item.yearPurchased && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.yearPurchased}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Year Purchased
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.yearPurchased}
+                  </p>
                 </div>
               )}
             </div>
@@ -470,45 +641,77 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
 
         {isKiltOutfitItem(item) && (
           <div class="mt-6 p-4 bg-purple-50 dark:bg-purple-950/40 rounded-lg">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Kilt Outfit Details</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
+              Kilt Outfit Details
+            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="sm:col-span-2">
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Components Included</h3>
-                {item.kiltComponents.length === 0 ? (
-                  <p class="mt-1 text-gray-400 dark:text-gray-500 italic text-sm">No components recorded</p>
-                ) : (
-                  <div class="mt-2 flex flex-wrap gap-2">
-                    {item.kiltComponents.map((c) => {
-                      const labels: Record<string, string> = { kilt: "Kilt", sporran: "Sporran", socks: "Socks", flashes: "Flashes" };
-                      return (
-                        <span key={c} class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-800/60 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-700">
-                          {labels[c] ?? c}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Components Included
+                </h3>
+                {item.kiltComponents.length === 0
+                  ? (
+                    <p class="mt-1 text-gray-400 dark:text-gray-500 italic text-sm">
+                      No components recorded
+                    </p>
+                  )
+                  : (
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      {item.kiltComponents.map((c) => {
+                        const labels: Record<string, string> = {
+                          kilt: "Kilt",
+                          sporran: "Sporran",
+                          socks: "Socks",
+                          flashes: "Flashes",
+                        };
+                        return (
+                          <span
+                            key={c}
+                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 dark:bg-purple-800/60 text-purple-800 dark:text-purple-200 border border-purple-200 dark:border-purple-700"
+                          >
+                            {labels[c] ?? c}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
               </div>
               <div>
-                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Condition</h3>
-                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">{item.condition}</p>
+                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Condition
+                </h3>
+                <p class="mt-1 text-gray-900 dark:text-gray-100 capitalize">
+                  {item.condition}
+                </p>
               </div>
               {item.size && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Size</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.size}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Size
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.size}
+                  </p>
                 </div>
               )}
               {item.brand && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Brand</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.brand}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Brand
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.brand}
+                  </p>
                 </div>
               )}
               {item.yearPurchased && (
                 <div>
-                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Year Purchased</h3>
-                  <p class="mt-1 text-gray-900 dark:text-gray-100">{item.yearPurchased}</p>
+                  <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Year Purchased
+                  </h3>
+                  <p class="mt-1 text-gray-900 dark:text-gray-100">
+                    {item.yearPurchased}
+                  </p>
                 </div>
               )}
             </div>
@@ -518,8 +721,12 @@ export default function ItemDetailPage({ data }: PageProps<ItemDetailData>) {
         {/* Notes */}
         {item.notes && (
           <div class="mt-6">
-          <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Notes</h2>
-          <p class="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded">{item.notes}</p>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+              Notes
+            </h2>
+            <p class="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-4 rounded">
+              {item.notes}
+            </p>
           </div>
         )}
       </div>

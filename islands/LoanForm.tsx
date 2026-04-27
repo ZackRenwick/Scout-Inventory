@@ -1,5 +1,5 @@
 // Island for creating a new loan record
-import { useSignal, useComputed } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 import { useEffect } from "preact/hooks";
 import NumberInput from "../components/NumberInput.tsx";
 
@@ -30,9 +30,12 @@ function defaultReturnDateIso(): string {
 
 const inputClass =
   "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500";
-const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+const labelClass =
+  "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
 
-export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormProps) {
+export default function LoanForm(
+  { items, csrfToken, initialItemId }: LoanFormProps,
+) {
   const search = useSignal("");
   const selectedItem = useSignal<LoanableItem | null>(null);
   const borrower = useSignal("");
@@ -102,8 +105,11 @@ export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormPr
       return;
     }
     const qty = quantity.value;
-    if (!Number.isInteger(qty) || qty < 1 || qty > selectedItem.value.quantity) {
-      error.value = `Quantity must be between 1 and ${selectedItem.value.quantity}.`;
+    if (
+      !Number.isInteger(qty) || qty < 1 || qty > selectedItem.value.quantity
+    ) {
+      error.value =
+        `Quantity must be between 1 and ${selectedItem.value.quantity}.`;
       return;
     }
 
@@ -165,7 +171,9 @@ export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormPr
             }}
             onBlur={() => {
               // Brief delay so click on dropdown item fires first
-              setTimeout(() => { showDropdown.value = false; }, 150);
+              setTimeout(() => {
+                showDropdown.value = false;
+              }, 150);
             }}
             autocomplete="off"
           />
@@ -183,30 +191,39 @@ export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormPr
 
         {showDropdown.value && !selectedItem.value && (
           <div class="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
-            {filtered.value.length === 0 ? (
-              <p class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No items match your search.</p>
-            ) : (
-              filtered.value.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  class="w-full text-left px-4 py-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0"
-                  onClick={() => selectItem(item)}
-                >
-                  <span class="font-medium text-gray-800 dark:text-gray-100">{item.name}</span>
-                  <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                    {item.category} · {item.location} · {item.quantity} in stock
-                  </span>
-                </button>
-              ))
-            )}
+            {filtered.value.length === 0
+              ? (
+                <p class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                  No items match your search.
+                </p>
+              )
+              : (
+                filtered.value.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    class="w-full text-left px-4 py-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0"
+                    onClick={() => selectItem(item)}
+                  >
+                    <span class="font-medium text-gray-800 dark:text-gray-100">
+                      {item.name}
+                    </span>
+                    <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                      {item.category} · {item.location} · {item.quantity}{" "}
+                      in stock
+                    </span>
+                  </button>
+                ))
+              )}
           </div>
         )}
 
         {selectedItem.value && (
           <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
             {selectedItem.value.category} · {selectedItem.value.location} ·{" "}
-            <strong class="text-gray-700 dark:text-gray-300">{selectedItem.value.quantity} in stock</strong>
+            <strong class="text-gray-700 dark:text-gray-300">
+              {selectedItem.value.quantity} in stock
+            </strong>
           </p>
         )}
       </div>
@@ -218,7 +235,9 @@ export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormPr
           type="text"
           class={inputClass}
           value={borrower.value}
-          onInput={(e) => (borrower.value = (e.target as HTMLInputElement).value)}
+          onInput={(
+            e,
+          ) => (borrower.value = (e.target as HTMLInputElement).value)}
           placeholder="e.g. 12th Edinburgh Scouts"
           required
         />
@@ -233,7 +252,9 @@ export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormPr
             value={quantity.value}
             min={1}
             max={selectedItem.value?.quantity}
-            onChange={(n) => { quantity.value = n; }}
+            onChange={(n) => {
+              quantity.value = n;
+            }}
             required
             class={inputClass}
           />
@@ -250,7 +271,9 @@ export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormPr
             class={inputClass}
             min={todayIso()}
             value={expectedReturn.value}
-            onInput={(e) => (expectedReturn.value = (e.target as HTMLInputElement).value)}
+            onInput={(
+              e,
+            ) => (expectedReturn.value = (e.target as HTMLInputElement).value)}
             required
           />
         </div>
@@ -263,7 +286,9 @@ export default function LoanForm({ items, csrfToken, initialItemId }: LoanFormPr
           class={`${inputClass} resize-none`}
           rows={3}
           value={notes.value}
-          onInput={(e) => (notes.value = (e.target as HTMLTextAreaElement).value)}
+          onInput={(
+            e,
+          ) => (notes.value = (e.target as HTMLTextAreaElement).value)}
           placeholder="Contact details, purpose, any conditions…"
         />
       </div>

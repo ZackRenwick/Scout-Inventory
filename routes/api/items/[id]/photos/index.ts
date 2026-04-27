@@ -45,13 +45,17 @@ export const handler: Handlers = {
 
     const file = formData.get("photo");
     if (!(file instanceof File)) {
-      return Response.json({ error: "No photo field in request" }, { status: 400 });
+      return Response.json({ error: "No photo field in request" }, {
+        status: 400,
+      });
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
     const validation = validateUploadedImage(file.type, bytes);
     if ("status" in validation) {
-      return Response.json({ error: validation.error }, { status: validation.status });
+      return Response.json({ error: validation.error }, {
+        status: validation.status,
+      });
     }
 
     const photoId = await addItemPhoto(id, bytes, file.type, item);
@@ -76,7 +80,9 @@ export const handler: Handlers = {
       !Array.isArray(body.photoIds) ||
       body.photoIds.some((p) => typeof p !== "string")
     ) {
-      return Response.json({ error: "photoIds must be a string array" }, { status: 400 });
+      return Response.json({ error: "photoIds must be a string array" }, {
+        status: 400,
+      });
     }
 
     await reorderItemPhotos(id, body.photoIds as string[]);

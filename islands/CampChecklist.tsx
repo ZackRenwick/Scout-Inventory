@@ -78,7 +78,9 @@ export default function CampChecklist(
   const itemSearch = useSignal("");
   const itemCategoryFilter = useSignal("all");
   const itemLocationFilter = useSignal("all");
-  const selectedItems = useSignal<Map<string, { qty: number; note: string }>>(new Map());
+  const selectedItems = useSignal<Map<string, { qty: number; note: string }>>(
+    new Map(),
+  );
   const showAddPanel = useSignal(false);
   const addMode = useSignal<"item" | "box" | "template">("item");
   const selectedBox = useSignal("");
@@ -416,7 +418,9 @@ export default function CampChecklist(
     selectedItems.value = new Map();
     itemSearch.value = "";
     if (skipped.length > 0) {
-      error.value = `Added ${newEntries.length} item${newEntries.length !== 1 ? "s" : ""}. Skipped (no stock): ${skipped.join(", ")}.`;
+      error.value = `Added ${newEntries.length} item${
+        newEntries.length !== 1 ? "s" : ""
+      }. Skipped (no stock): ${skipped.join(", ")}.`;
     }
   }
 
@@ -1033,7 +1037,8 @@ export default function CampChecklist(
                       <div>
                         {selectedItems.value.size === 0 && (
                           <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                            Tick items to select them, then adjust quantities below.
+                            Tick items to select them, then adjust quantities
+                            below.
                           </p>
                         )}
                         <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md divide-y divide-gray-100 dark:divide-gray-700">
@@ -1062,7 +1067,9 @@ export default function CampChecklist(
                                         : "bg-white dark:bg-gray-700 border-gray-400 dark:border-gray-500"
                                     }`}
                                   >
-                                    {isSelected && <span class="text-xs font-bold">✓</span>}
+                                    {isSelected && (
+                                      <span class="text-xs font-bold">✓</span>
+                                    )}
                                   </span>
                                   <div class="flex-1 min-w-0">
                                     <div class="flex items-baseline justify-between gap-2">
@@ -1080,12 +1087,15 @@ export default function CampChecklist(
                                       >
                                         Available: {available}
                                         {inv.category === "food" && (
-                                          <span class="ml-1 text-orange-500">🍽️</span>
+                                          <span class="ml-1 text-orange-500">
+                                            🍽️
+                                          </span>
                                         )}
                                       </span>
                                     </div>
                                     <div class="text-gray-400 dark:text-gray-500 text-xs truncate mt-0.5">
-                                      {getCategoryLabel(inv.category)} · {inv.location}
+                                      {getCategoryLabel(inv.category)} ·{" "}
+                                      {inv.location}
                                     </div>
                                   </div>
                                 </div>
@@ -1101,11 +1111,15 @@ export default function CampChecklist(
                       <div class="space-y-3 border border-purple-200 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-900/10 rounded-md p-3">
                         <div class="flex items-center justify-between">
                           <p class="text-sm font-medium text-purple-800 dark:text-purple-200">
-                            {selectedItems.value.size} item{selectedItems.value.size !== 1 ? "s" : ""} selected
+                            {selectedItems.value.size}{" "}
+                            item{selectedItems.value.size !== 1 ? "s" : ""}{" "}
+                            selected
                           </p>
                           <button
                             type="button"
-                            onClick={() => { selectedItems.value = new Map(); }}
+                            onClick={() => {
+                              selectedItems.value = new Map();
+                            }}
                             class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                           >
                             Clear all
@@ -1119,75 +1133,97 @@ export default function CampChecklist(
                           <div class="flex items-start gap-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded text-xs text-orange-800 dark:text-orange-300">
                             <span class="shrink-0">⚠️</span>
                             <span>
-                              <strong>Food items</strong> will have their quantity deducted from inventory when packed. They won't appear in the return list.
+                              <strong>Food items</strong>{" "}
+                              will have their quantity deducted from inventory
+                              when packed. They won't appear in the return list.
                             </span>
                           </div>
                         )}
 
                         <div class="max-h-48 overflow-y-auto divide-y divide-purple-100 dark:divide-purple-800/40">
-                          {[...selectedItems.value].map(([itemId, { qty, note }]) => {
-                            const inv = allItems.find((i) => i.id === itemId);
-                            if (!inv) return null;
-                            const available = availableToPlan(inv);
-                            const qtyTooHigh = qty > available;
-                            return (
-                              <div key={itemId} class="py-2 first:pt-0 last:pb-0">
-                                <div class="flex items-center justify-between gap-2 mb-1">
-                                  <span class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
-                                    {getCategoryEmoji(inv.category)} {inv.name}
-                                    {inv.category === "food" && <span class="ml-1 text-xs text-orange-500">🍽️</span>}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleItemSelection(inv)}
-                                    class="shrink-0 text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm leading-none"
-                                    title="Deselect"
-                                  >
-                                    ×
-                                  </button>
+                          {[...selectedItems.value].map(
+                            ([itemId, { qty, note }]) => {
+                              const inv = allItems.find((i) => i.id === itemId);
+                              if (!inv) return null;
+                              const available = availableToPlan(inv);
+                              const qtyTooHigh = qty > available;
+                              return (
+                                <div
+                                  key={itemId}
+                                  class="py-2 first:pt-0 last:pb-0"
+                                >
+                                  <div class="flex items-center justify-between gap-2 mb-1">
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
+                                      {getCategoryEmoji(inv.category)}{" "}
+                                      {inv.name}
+                                      {inv.category === "food" && (
+                                        <span class="ml-1 text-xs text-orange-500">
+                                          🍽️
+                                        </span>
+                                      )}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleItemSelection(inv)}
+                                      class="shrink-0 text-gray-400 hover:text-red-500 dark:hover:text-red-400 text-sm leading-none"
+                                      title="Deselect"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                  <div class="flex items-center gap-2">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                                      Qty
+                                    </label>
+                                    <NumberInput
+                                      value={qty}
+                                      min={1}
+                                      max={available}
+                                      onChange={(n) =>
+                                        updateSelectedQty(itemId, n)}
+                                      class={`${inputClass} w-20`}
+                                    />
+                                    <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
+                                      / {available}
+                                    </span>
+                                    <input
+                                      type="text"
+                                      class={`${inputClass} flex-1 min-w-0`}
+                                      placeholder="Note (optional)"
+                                      value={note}
+                                      onInput={(e) =>
+                                        updateSelectedNote(
+                                          itemId,
+                                          (e.target as HTMLInputElement).value,
+                                        )}
+                                    />
+                                  </div>
+                                  {qtyTooHigh && (
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
+                                      Only {available} available in stock.
+                                    </p>
+                                  )}
                                 </div>
-                                <div class="flex items-center gap-2">
-                                  <label class="text-xs text-gray-500 dark:text-gray-400 shrink-0">Qty</label>
-                                  <NumberInput
-                                    value={qty}
-                                    min={1}
-                                    max={available}
-                                    onChange={(n) => updateSelectedQty(itemId, n)}
-                                    class={`${inputClass} w-20`}
-                                  />
-                                  <span class="text-xs text-gray-400 dark:text-gray-500 shrink-0">
-                                    / {available}
-                                  </span>
-                                  <input
-                                    type="text"
-                                    class={`${inputClass} flex-1 min-w-0`}
-                                    placeholder="Note (optional)"
-                                    value={note}
-                                    onInput={(e) => updateSelectedNote(itemId, (e.target as HTMLInputElement).value)}
-                                  />
-                                </div>
-                                {qtyTooHigh && (
-                                  <p class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
-                                    Only {available} available in stock.
-                                  </p>
-                                )}
-                              </div>
-                            );
-                          })}
+                              );
+                            },
+                          )}
                         </div>
 
                         <button
                           type="button"
                           onClick={addSelectedItems}
-                          disabled={saving.value || [...selectedItems.value].some(([id, { qty }]) => {
-                            const inv = allItems.find((i) => i.id === id);
-                            return !inv || qty > availableToPlan(inv);
-                          })}
+                          disabled={saving.value ||
+                            [...selectedItems.value].some(([id, { qty }]) => {
+                              const inv = allItems.find((i) => i.id === id);
+                              return !inv || qty > availableToPlan(inv);
+                            })}
                           class="w-full px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-60 transition-colors"
                         >
                           {saving.value
                             ? "Adding…"
-                            : `Add ${selectedItems.value.size} item${selectedItems.value.size !== 1 ? "s" : ""} to plan`}
+                            : `Add ${selectedItems.value.size} item${
+                              selectedItems.value.size !== 1 ? "s" : ""
+                            } to plan`}
                         </button>
                       </div>
                     )}
@@ -1251,7 +1287,9 @@ export default function CampChecklist(
               ? (
                 <div class="divide-y divide-gray-100 dark:divide-gray-700">
                   {totalItems.value > 0 &&
-                    (packedGearCount.value + packedFoodCount.value) < totalItems.value && canEdit && (
+                    (packedGearCount.value + packedFoodCount.value) <
+                      totalItems.value &&
+                    canEdit && (
                     <div class="px-4 py-2 flex justify-end bg-gray-50 dark:bg-gray-800/60">
                       <button
                         type="button"

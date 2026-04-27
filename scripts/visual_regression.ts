@@ -124,7 +124,9 @@ function normalizeRoutePath(routeFilePath: string): string | null {
     .replace(/\/index$/, "")
     .replace(/\/+/g, "/");
 
-  if (!raw || raw === "/_app" || raw === "/_404" || raw.endsWith("/_middleware")) {
+  if (
+    !raw || raw === "/_app" || raw === "/_404" || raw.endsWith("/_middleware")
+  ) {
     return null;
   }
 
@@ -161,11 +163,15 @@ async function maybeLogin(page: import("npm:playwright").Page): Promise<void> {
     return;
   }
 
-  await page.goto(new URL("/login", baseUrl).toString(), { waitUntil: "networkidle" });
+  await page.goto(new URL("/login", baseUrl).toString(), {
+    waitUntil: "networkidle",
+  });
   await page.fill('input[name="username"]', visualUsername);
   await page.fill('input[name="password"]', visualPassword);
   await Promise.all([
-    page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15_000 }),
+    page.waitForURL((url) => !url.pathname.startsWith("/login"), {
+      timeout: 15_000,
+    }),
     page.click('button[type="submit"]'),
   ]);
 }
@@ -188,12 +194,13 @@ async function resolveDynamicRoute(
       continue;
     }
 
-    await page.goto(new URL(resolver.listPath, baseUrl).toString(), { waitUntil: "networkidle" });
+    await page.goto(new URL(resolver.listPath, baseUrl).toString(), {
+      waitUntil: "networkidle",
+    });
     const hrefs = await page.$$eval("a[href]", (anchors) =>
       anchors
         .map((a) => a.getAttribute("href") ?? "")
-        .filter((href) => href.startsWith("/"))
-    );
+        .filter((href) => href.startsWith("/")));
 
     for (const href of hrefs) {
       const matched = href.match(resolver.matcher);
@@ -251,7 +258,8 @@ function comparePngs(
 
   if (actual.width !== baseline.width || actual.height !== baseline.height) {
     return {
-      error: `Snapshot dimensions differ. actual=${actual.width}x${actual.height}, baseline=${baseline.width}x${baseline.height}`,
+      error:
+        `Snapshot dimensions differ. actual=${actual.width}x${actual.height}, baseline=${baseline.width}x${baseline.height}`,
     };
   }
 
@@ -274,7 +282,11 @@ function comparePngs(
 async function run(): Promise<void> {
   await ensureDirs();
 
-  console.log(`\n🔍 Visual regression starting — ${updateSnapshots ? "UPDATE mode" : "COMPARE mode"}`);
+  console.log(
+    `\n🔍 Visual regression starting — ${
+      updateSnapshots ? "UPDATE mode" : "COMPARE mode"
+    }`,
+  );
   console.log(`   Base URL : ${baseUrl}`);
   console.log(`   Threshold: ${(maxDiffRatio * 100).toFixed(1)}%\n`);
 
@@ -311,7 +323,9 @@ async function run(): Promise<void> {
     }
 
     const totalTests = resolvedRoutes.length * viewports.length;
-    console.log(`📋 Discovered ${resolvedRoutes.length} routes × ${viewports.length} viewports = ${totalTests} screenshots\n`);
+    console.log(
+      `📋 Discovered ${resolvedRoutes.length} routes × ${viewports.length} viewports = ${totalTests} screenshots\n`,
+    );
 
     let done = 0;
     for (const routePath of resolvedRoutes) {
@@ -322,10 +336,16 @@ async function run(): Promise<void> {
         const diffPath = `${diffDir}/${testName}.diff.png`;
 
         done++;
-        const progress = `[${String(done).padStart(String(totalTests).length)}/${totalTests}]`;
+        const progress = `[${
+          String(done).padStart(String(totalTests).length)
+        }/${totalTests}]`;
         process.stdout.write(`${progress} 📸 ${testName} … `);
 
-        const { bytes: actual, finalPathname } = await capturePath(browser, viewport, routePath);
+        const { bytes: actual, finalPathname } = await capturePath(
+          browser,
+          viewport,
+          routePath,
+        );
 
         // Always save the actual so the report can show it
         await Deno.writeFile(actualPath, actual);
@@ -419,7 +439,9 @@ async function run(): Promise<void> {
     }
 
     if (skipped.length > 0) {
-      const message = `Skipped unresolved dynamic routes: ${skipped.join(", ")}`;
+      const message = `Skipped unresolved dynamic routes: ${
+        skipped.join(", ")
+      }`;
       if (strictMode) {
         failures.push(message);
       } else {
@@ -483,14 +505,22 @@ function imgCell(path: string | undefined, label: string): string {
 
 async function generateHtmlReport(results: TestResult[]): Promise<void> {
   const total = results.length;
-  const failed = results.filter((r) => r.status === "fail" || r.status === "error").length;
+  const failed =
+    results.filter((r) => r.status === "fail" || r.status === "error").length;
   const passed = results.filter((r) => r.status === "pass").length;
-  const newOrUpdated = results.filter((r) => r.status === "new" || r.status === "updated").length;
-  const timestamp = new Date().toLocaleString("en-GB", { timeZone: "Europe/London" });
+  const newOrUpdated =
+    results.filter((r) => r.status === "new" || r.status === "updated").length;
+  const timestamp = new Date().toLocaleString("en-GB", {
+    timeZone: "Europe/London",
+  });
 
   const cards = results.map((r) => {
-    const diffPct = r.diffRatio !== undefined ? `${(r.diffRatio * 100).toFixed(2)}%` : "—";
-    const maxPct = r.maxDiffRatio !== undefined ? `${(r.maxDiffRatio * 100).toFixed(2)}%` : "—";
+    const diffPct = r.diffRatio !== undefined
+      ? `${(r.diffRatio * 100).toFixed(2)}%`
+      : "—";
+    const maxPct = r.maxDiffRatio !== undefined
+      ? `${(r.maxDiffRatio * 100).toFixed(2)}%`
+      : "—";
     return `<div class="card" data-status="${r.status}">
   <div class="card-header">
     <div class="card-title">

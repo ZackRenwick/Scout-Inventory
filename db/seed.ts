@@ -1,19 +1,25 @@
 // Seed data for development and testing
 import type { CampPlan, InventoryItem } from "../types/inventory.ts";
 import type { MealPayload } from "../types/meals.ts";
-import { createCampPlan, createCampTemplate, createItem, createMeal, rebuildIndexes } from "./kv.ts";
+import {
+  createCampPlan,
+  createCampTemplate,
+  createItem,
+  createMeal,
+  rebuildIndexes,
+} from "./kv.ts";
 import { logActivity } from "../lib/activityLog.ts";
 
 const CAMP_STORE = "camp-store" as const;
 
 // Stable IDs for food items so meal ingredients can link to them
 const FOOD_IDS = {
-  beans:      "seed-food-beans-001",
-  oatmeal:    "seed-food-oatmeal-001",
-  trailMix:   "seed-food-trailmix-001",
-  freezeDried:"seed-food-freezedried-001",
-  apples:     "seed-food-apples-001",
-  hotChoc:    "seed-food-hotchoc-001",
+  beans: "seed-food-beans-001",
+  oatmeal: "seed-food-oatmeal-001",
+  trailMix: "seed-food-trailmix-001",
+  freezeDried: "seed-food-freezedried-001",
+  apples: "seed-food-apples-001",
+  hotChoc: "seed-food-hotchoc-001",
 } as const;
 
 const GEAR_IDS = {
@@ -79,7 +85,7 @@ export async function seedDatabase() {
       lastUpdated: new Date("2024-06-01"),
       notes: "Needs minor repairs to base canvas",
     },
-    
+
     // Cooking Equipment
     {
       id: GEAR_IDS.stove2Burner,
@@ -257,7 +263,7 @@ export async function seedDatabase() {
       lastUpdated: new Date("2025-05-16"),
       notes: "Used for parade nights",
     },
-    
+
     // Food Items
     // Pre-assigned IDs so meals can reference them as linked ingredients
     {
@@ -372,7 +378,8 @@ export async function seedDatabase() {
   const sampleMeals: MealPayload[] = [
     {
       name: "Porridge Breakfast",
-      description: "Simple hot oat porridge — quick to prepare for large groups",
+      description:
+        "Simple hot oat porridge — quick to prepare for large groups",
       ingredients: [
         { name: "Instant Oatmeal Packets", servingsPerUnit: 1 },
         { name: "Honey", servingsPerUnit: 20 },
@@ -495,8 +502,16 @@ export async function seedDatabase() {
   const now = new Date();
   const upcomingCampDate = new Date(now.getFullYear(), now.getMonth() + 1, 14);
   const upcomingCampEnd = new Date(now.getFullYear(), now.getMonth() + 1, 16);
-  const activeCampDate = new Date(now.getFullYear(), now.getMonth(), Math.max(1, now.getDate() - 2));
-  const activeCampEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const activeCampDate = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    Math.max(1, now.getDate() - 2),
+  );
+  const activeCampEnd = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+  );
 
   const samplePlans: CampPlan[] = [
     {

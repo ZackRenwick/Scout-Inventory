@@ -1,4 +1,10 @@
-import { clearCamps, clearInventoryData, clearLoans, clearMeals, rebuildIndexes } from "../db/kv.ts";
+import {
+  clearCamps,
+  clearInventoryData,
+  clearLoans,
+  clearMeals,
+  rebuildIndexes,
+} from "../db/kv.ts";
 import { seedDatabase } from "../db/seed.ts";
 import { clearActivityLog } from "../lib/activityLog.ts";
 
@@ -7,7 +13,9 @@ export interface NormalizeOptions {
   reseed?: boolean;
 }
 
-export async function normalizeLocalData(options: NormalizeOptions = {}): Promise<void> {
+export async function normalizeLocalData(
+  options: NormalizeOptions = {},
+): Promise<void> {
   const clearActivity = options.clearActivity ?? true;
   const reseed = options.reseed ?? true;
 
@@ -19,7 +27,9 @@ export async function normalizeLocalData(options: NormalizeOptions = {}): Promis
   const activity = clearActivity ? await clearActivityLog() : 0;
 
   console.log(
-    `[normalize] Cleared inventory=${inventory.items} (indexes=${inventory.indexes}), loans=${loans}, camps=${camps}, meals=${meals}${clearActivity ? `, activity=${activity}` : ""}`,
+    `[normalize] Cleared inventory=${inventory.items} (indexes=${inventory.indexes}), loans=${loans}, camps=${camps}, meals=${meals}${
+      clearActivity ? `, activity=${activity}` : ""
+    }`,
   );
 
   if (reseed) {

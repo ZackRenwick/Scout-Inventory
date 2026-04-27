@@ -7,15 +7,20 @@ interface CategoryIconProps {
   size?: "sm" | "md" | "lg";
 }
 
-export default function CategoryIcon({ category, size = "md" }: CategoryIconProps) {
+export default function CategoryIcon(
+  { category, size = "md" }: CategoryIconProps,
+) {
   const sizeClasses = {
     sm: "text-xl",
     md: "text-2xl",
     lg: "text-4xl",
   };
-  
+
   return (
-    <span class={`inline-flex items-center ${sizeClasses[size]}`} title={getCategoryLabel(category)}>
+    <span
+      class={`inline-flex items-center ${sizeClasses[size]}`}
+      title={getCategoryLabel(category)}
+    >
       {getCategoryEmoji(category)}
     </span>
   );

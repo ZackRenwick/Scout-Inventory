@@ -77,7 +77,9 @@ function getNextCheckDueDate(
   lastCheckedAt: Date | null | undefined,
   dismissedUntil?: Date | null,
 ): Date | null {
-  const checkDueDate = lastCheckedAt ? addOneCalendarMonth(lastCheckedAt) : null;
+  const checkDueDate = lastCheckedAt
+    ? addOneCalendarMonth(lastCheckedAt)
+    : null;
 
   if (checkDueDate && dismissedUntil) {
     return checkDueDate.getTime() > dismissedUntil.getTime()
@@ -323,7 +325,9 @@ export const handler: Handlers<FirstAidPageData> = {
       return new Response(null, {
         status: 303,
         headers: {
-          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+          Location: kitId
+            ? `/first-aid?edit=${encodeURIComponent(kitId)}`
+            : "/first-aid",
         },
       });
     }
@@ -339,7 +343,9 @@ export const handler: Handlers<FirstAidPageData> = {
       return new Response(null, {
         status: 303,
         headers: {
-          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+          Location: kitId
+            ? `/first-aid?edit=${encodeURIComponent(kitId)}`
+            : "/first-aid",
         },
       });
     }
@@ -371,7 +377,9 @@ export const handler: Handlers<FirstAidPageData> = {
       return new Response(null, {
         status: 303,
         headers: {
-          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+          Location: kitId
+            ? `/first-aid?edit=${encodeURIComponent(kitId)}`
+            : "/first-aid",
         },
       });
     }
@@ -394,7 +402,9 @@ export const handler: Handlers<FirstAidPageData> = {
       return new Response(null, {
         status: 303,
         headers: {
-          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+          Location: kitId
+            ? `/first-aid?edit=${encodeURIComponent(kitId)}`
+            : "/first-aid",
         },
       });
     }
@@ -413,7 +423,9 @@ export const handler: Handlers<FirstAidPageData> = {
       return new Response(null, {
         status: 303,
         headers: {
-          Location: kitId ? `/first-aid?edit=${encodeURIComponent(kitId)}` : "/first-aid",
+          Location: kitId
+            ? `/first-aid?edit=${encodeURIComponent(kitId)}`
+            : "/first-aid",
         },
       });
     }
@@ -426,7 +438,8 @@ export const handler: Handlers<FirstAidPageData> = {
 };
 
 export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
-  const canEdit = data.session?.role !== "viewer" && data.session?.role !== "explorer";
+  const canEdit = data.session?.role !== "viewer" &&
+    data.session?.role !== "explorer";
   const kitLastCheckedById = data.kitLastCheckedById ?? {};
   const kitDismissedUntilById = data.kitDismissedUntilById ?? {};
   const overallCheckDue = data.overallCheckDue ?? false;
@@ -726,22 +739,32 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
                               <table class="min-w-full text-sm">
                                 <thead>
                                   <tr class="text-left border-b border-gray-200 dark:border-gray-700">
-                                    <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">Item</th>
-                                    <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">Target Qty</th>
+                                    <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">
+                                      Item
+                                    </th>
+                                    <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">
+                                      Target Qty
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {[...kit.entries]
                                     .sort((a, b) =>
-                                      a.name.localeCompare(b.name, undefined, { numeric: true })
+                                      a.name.localeCompare(b.name, undefined, {
+                                        numeric: true,
+                                      })
                                     )
                                     .map((entry) => (
                                       <tr
                                         key={`${kit.id}-readonly-${entry.itemId}`}
                                         class="border-b border-gray-100 dark:border-gray-800"
                                       >
-                                        <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">{entry.name}</td>
-                                        <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">{entry.quantityTarget}</td>
+                                        <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">
+                                          {entry.name}
+                                        </td>
+                                        <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">
+                                          {entry.quantityTarget}
+                                        </td>
                                       </tr>
                                     ))}
                                 </tbody>

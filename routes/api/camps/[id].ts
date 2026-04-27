@@ -1,7 +1,19 @@
 // API route for individual camp plans
 import { Handlers } from "$fresh/server.ts";
-import { deleteCampPlan, getCampPlanById, getItemById, rebuildComputedStats, updateCampPlan, updateItem } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import {
+  deleteCampPlan,
+  getCampPlanById,
+  getItemById,
+  rebuildComputedStats,
+  updateCampPlan,
+  updateItem,
+} from "../../../db/kv.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 import type { CampPlanItem } from "../../../types/inventory.ts";
 
 /**
@@ -32,13 +44,19 @@ async function applyItemSideEffects(
       tasks.push(() =>
         getItemById(itemId).then((inv) => {
           if (inv) {
-            return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+            return updateItem(itemId, {
+              quantity: inv.quantity + old.quantityPlanned,
+            });
           }
-        }),
+        })
       );
-    } else if (old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus) {
+    } else if (
+      old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus
+    ) {
       // Gear removed while still at camp — mark as returned to store
-      tasks.push(() => updateItem(itemId, { atCamp: false, quantityAtCamp: 0 }));
+      tasks.push(() =>
+        updateItem(itemId, { atCamp: false, quantityAtCamp: 0 })
+      );
     }
   }
 
@@ -55,18 +73,22 @@ async function applyItemSideEffects(
         tasks.push(() =>
           getItemById(itemId).then((inv) => {
             if (inv) {
-              return updateItem(itemId, { quantity: Math.max(0, inv.quantity - newItem.quantityPlanned) });
+              return updateItem(itemId, {
+                quantity: Math.max(0, inv.quantity - newItem.quantityPlanned),
+              });
             }
-          }),
+          })
         );
       } else if (old.packedStatus && !newItem.packedStatus) {
         // Food unpacked → restore quantity
         tasks.push(() =>
           getItemById(itemId).then((inv) => {
             if (inv) {
-              return updateItem(itemId, { quantity: inv.quantity + old.quantityPlanned });
+              return updateItem(itemId, {
+                quantity: inv.quantity + old.quantityPlanned,
+              });
             }
-          }),
+          })
         );
       }
     } else {
@@ -136,18 +158,21 @@ async function validatePlannedItemQuantities(
       return `Item "${item.itemName}" no longer exists in inventory. Remove it from this plan before editing it.`;
     }
 
-    const alreadyDeductedFoodQty = old && old.itemCategory === "food" && old.packedStatus
-      ? old.quantityPlanned
-      : 0;
+    const alreadyDeductedFoodQty =
+      old && old.itemCategory === "food" && old.packedStatus
+        ? old.quantityPlanned
+        : 0;
     const currentlyAtCampQty = inv.category !== "food" && inv.atCamp
       ? Math.max(0, Math.min(inv.quantity, inv.quantityAtCamp ?? inv.quantity))
       : 0;
-    const thisPlanReservedNonFoodQty = old && old.itemCategory !== "food" && old.packedStatus && !old.returnedStatus
-      ? old.quantityPlanned
-      : 0;
-    const effectiveAvailable = (inv.quantity - currentlyAtCampQty)
-      + alreadyDeductedFoodQty
-      + thisPlanReservedNonFoodQty;
+    const thisPlanReservedNonFoodQty =
+      old && old.itemCategory !== "food" && old.packedStatus &&
+        !old.returnedStatus
+        ? old.quantityPlanned
+        : 0;
+    const effectiveAvailable = (inv.quantity - currentlyAtCampQty) +
+      alreadyDeductedFoodQty +
+      thisPlanReservedNonFoodQty;
 
     if (item.quantityPlanned > effectiveAvailable) {
       return `Cannot add ${item.quantityPlanned} of "${item.itemName}". Only ${effectiveAvailable} in stock.`;
@@ -168,7 +193,9 @@ export const handler: Handlers = {
       }
       return Response.json(plan);
     } catch (_error) {
-      return Response.json({ error: "Failed to fetch camp plan" }, { status: 500 });
+      return Response.json({ error: "Failed to fetch camp plan" }, {
+        status: 500,
+      });
     }
   },
 
@@ -198,10 +225,15 @@ export const handler: Handlers = {
 
       if (body.items) {
         if (!Array.isArray(body.items)) {
-          return Response.json({ error: "items must be an array" }, { status: 400 });
+          return Response.json({ error: "items must be an array" }, {
+            status: 400,
+          });
         }
         const nextItems = body.items as CampPlanItem[];
-        const quantityError = await validatePlannedItemQuantities(existing.items, nextItems);
+        const quantityError = await validatePlannedItemQuantities(
+          existing.items,
+          nextItems,
+        );
         if (quantityError) {
           return Response.json({ error: quantityError }, { status: 400 });
         }
@@ -215,7 +247,9 @@ export const handler: Handlers = {
       }
       return Response.json(updated);
     } catch (_error) {
-      return Response.json({ error: "Failed to update camp plan" }, { status: 500 });
+      return Response.json({ error: "Failed to update camp plan" }, {
+        status: 500,
+      });
     }
   },
 
@@ -239,7 +273,9 @@ export const handler: Handlers = {
       }
       return Response.json({ success: true });
     } catch (_error) {
-      return Response.json({ error: "Failed to delete camp plan" }, { status: 500 });
+      return Response.json({ error: "Failed to delete camp plan" }, {
+        status: 500,
+      });
     }
   },
 };

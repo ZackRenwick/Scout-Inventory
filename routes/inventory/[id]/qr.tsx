@@ -24,7 +24,10 @@ export const handler: Handlers<QrPageData> = {
     }
     const session = ctx.state.session as Session | undefined;
     if (!session || session.role !== "admin") {
-      return new Response(null, { status: 302, headers: { location: `/inventory/${id}` } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: `/inventory/${id}` },
+      });
     }
     const origin = new URL(req.url).origin;
     const itemUrl = `${origin}/inventory/${id}/scan`;
@@ -40,7 +43,9 @@ export const handler: Handlers<QrPageData> = {
         action: "item.qr_failed",
         resource: item.name,
         resourceId: item.id,
-        details: err instanceof Error ? err.message : "Unknown QR generation error",
+        details: err instanceof Error
+          ? err.message
+          : "Unknown QR generation error",
       });
     }
 
@@ -58,7 +63,8 @@ export default function QrLabelPage({ data }: PageProps<QrPageData>) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>QR Label — {item.name}</title>
-        <style>{`
+        <style>
+          {`
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -133,11 +139,14 @@ export default function QrLabelPage({ data }: PageProps<QrPageData>) {
               page-break-inside: avoid;
             }
           }
-        `}</style>
+        `}
+        </style>
       </head>
       <body>
         <div class="no-print">
-          <a href={`/inventory/${item.id}`} class="btn btn-secondary">← Back to Item</a>
+          <a href={`/inventory/${item.id}`} class="btn btn-secondary">
+            ← Back to Item
+          </a>
           <PrintButton />
         </div>
 
@@ -155,8 +164,11 @@ export default function QrLabelPage({ data }: PageProps<QrPageData>) {
                 class="label-qr"
               />
             )
-            : <p style="font-size:0.75rem;color:#9ca3af;margin:1rem 0">QR code unavailable</p>
-          }
+            : (
+              <p style="font-size:0.75rem;color:#9ca3af;margin:1rem 0">
+                QR code unavailable
+              </p>
+            )}
           <div class="label-qty">Qty: {item.quantity}</div>
           <div class="label-url">{itemUrl}</div>
         </div>

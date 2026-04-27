@@ -19,13 +19,18 @@ const STATUS_LABELS: Record<CampPlanStatus, string> = {
 
 const STATUS_COLORS: Record<CampPlanStatus, string> = {
   planning: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  packing: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
-  active: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  returning: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  packing:
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+  active:
+    "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  returning:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
   completed: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
 };
 
-export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }: CampPlanListProps) {
+export default function CampPlanList(
+  { plans: initialPlans, canEdit, csrfToken }: CampPlanListProps,
+) {
   const plans = useSignal<CampPlan[]>(initialPlans);
   const deleting = useSignal<string | null>(null);
   const error = useSignal<string | null>(null);
@@ -54,7 +59,9 @@ export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }
     return (
       <div class="text-center py-16">
         <div class="text-5xl mb-4">🏕️</div>
-        <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">No camp plans yet</p>
+        <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">
+          No camp plans yet
+        </p>
         {canEdit && (
           <a
             href="/camps/new"
@@ -89,7 +96,11 @@ export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }
                   <h3 class="font-semibold text-gray-800 dark:text-gray-100 text-lg leading-tight">
                     {plan.name}
                   </h3>
-                  <span class={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[plan.status as CampPlanStatus]}`}>
+                  <span
+                    class={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
+                      STATUS_COLORS[plan.status as CampPlanStatus]
+                    }`}
+                  >
                     {STATUS_LABELS[plan.status as CampPlanStatus]}
                   </span>
                 </div>
@@ -98,7 +109,9 @@ export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }
                   {plan.endDate && ` – ${formatDate(plan.endDate)}`}
                 </p>
                 {plan.location && (
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">📍 {plan.location}</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    📍 {plan.location}
+                  </p>
                 )}
                 {total > 0 && (
                   <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1 mt-2">
@@ -106,7 +119,11 @@ export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }
                       <div class="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                         <div
                           class="bg-yellow-400 h-1.5 rounded-full transition-all"
-                          style={{ width: `${total ? Math.round((packed / total) * 100) : 0}%` }}
+                          style={{
+                            width: `${
+                              total ? Math.round((packed / total) * 100) : 0
+                            }%`,
+                          }}
                         />
                       </div>
                       <span>{packed}/{total} packed</span>
@@ -115,7 +132,11 @@ export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }
                       <div class="flex-1 bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                         <div
                           class="bg-green-400 h-1.5 rounded-full transition-all"
-                          style={{ width: `${total ? Math.round((returned / total) * 100) : 0}%` }}
+                          style={{
+                            width: `${
+                              total ? Math.round((returned / total) * 100) : 0
+                            }%`,
+                          }}
                         />
                       </div>
                       <span>{returned}/{total} returned</span>
@@ -123,7 +144,9 @@ export default function CampPlanList({ plans: initialPlans, canEdit, csrfToken }
                   </div>
                 )}
                 {total === 0 && (
-                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 italic">No items added yet</p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 italic">
+                    No items added yet
+                  </p>
                 )}
               </div>
               <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-3 flex gap-2">

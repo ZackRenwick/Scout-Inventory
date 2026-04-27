@@ -5,8 +5,8 @@
 //   - API / admin routes: network-only (never cache sensitive data)
 
 const CACHE_VERSION = "v13";
-const STATIC_CACHE  = `scouts-static-${CACHE_VERSION}`;
-const PAGE_CACHE    = `scouts-pages-${CACHE_VERSION}`;
+const STATIC_CACHE = `scouts-static-${CACHE_VERSION}`;
+const PAGE_CACHE = `scouts-pages-${CACHE_VERSION}`;
 
 // Only pre-cache assets guaranteed to return 200 with no auth.
 // Authenticated page URLs redirect to /login — addAll() rejects on any
@@ -47,7 +47,9 @@ self.addEventListener("fetch", (event) => {
 
   // Skip cross-origin, API and admin routes entirely.
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin/")) return;
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin/")) {
+    return;
+  }
 
   // Always prefer network for the main stylesheet so UI updates appear quickly.
   if (url.pathname === "/styles.css") {
@@ -63,7 +65,10 @@ self.addEventListener("fetch", (event) => {
   // Non-hashed Fresh JS (island entrypoints, main.js, signals.js, etc.):
   // always try network first so redeployments are picked up immediately.
   // Fall back to cache only when offline.
-  if ((url.pathname.startsWith("/_frsh/") || url.pathname.startsWith("/_fresh/")) && /\.js$/i.test(url.pathname)) {
+  if (
+    (url.pathname.startsWith("/_frsh/") ||
+      url.pathname.startsWith("/_fresh/")) && /\.js$/i.test(url.pathname)
+  ) {
     event.respondWith(networkFirstStatic(request));
     return;
   }
@@ -137,10 +142,10 @@ async function networkFirstPage(request) {
     const fallback = await caches.match("/");
     return (
       fallback ??
-      new Response("You are offline.", {
-        status: 503,
-        headers: { "Content-Type": "text/plain" },
-      })
+        new Response("You are offline.", {
+          status: 503,
+          headers: { "Content-Type": "text/plain" },
+        })
     );
   }
 }

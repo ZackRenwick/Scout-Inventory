@@ -56,7 +56,9 @@ export default function CampCalendar({ plans: rawPlans }: CampCalendarProps) {
   const plans = rawPlans.map((p) => ({
     ...p,
     campDate: startOfDay(new Date(p.campDate)),
-    endDate: p.endDate ? startOfDay(new Date(p.endDate)) : startOfDay(new Date(p.campDate)),
+    endDate: p.endDate
+      ? startOfDay(new Date(p.endDate))
+      : startOfDay(new Date(p.campDate)),
   }));
 
   function prevMonth() {
@@ -118,7 +120,9 @@ export default function CampCalendar({ plans: rawPlans }: CampCalendarProps) {
           ← Prev
         </button>
         <div class="flex items-center gap-3">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{monthName}</h3>
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+            {monthName}
+          </h3>
           <button
             type="button"
             onClick={goToday}
@@ -157,7 +161,9 @@ export default function CampCalendar({ plans: rawPlans }: CampCalendarProps) {
 
           // Camps overlapping this week
           const weekCamps = plans
-            .filter((p) => p.campDate <= weekEnd && (p.endDate ?? p.campDate) >= weekStart)
+            .filter((p) =>
+              p.campDate <= weekEnd && (p.endDate ?? p.campDate) >= weekStart
+            )
             .sort((a, b) => a.campDate.getTime() - b.campDate.getTime());
 
           return (
@@ -196,32 +202,42 @@ export default function CampCalendar({ plans: rawPlans }: CampCalendarProps) {
               {weekCamps.length > 0 && (
                 <div class="grid grid-cols-7 gap-y-0.5 pb-1 px-px">
                   {weekCamps.map((camp) => {
-                    const clampedStart = camp.campDate < weekStart ? weekStart : camp.campDate;
-                    const clampedEnd =
-                      (camp.endDate ?? camp.campDate) > weekEnd
-                        ? weekEnd
-                        : (camp.endDate ?? camp.campDate);
+                    const clampedStart = camp.campDate < weekStart
+                      ? weekStart
+                      : camp.campDate;
+                    const clampedEnd = (camp.endDate ?? camp.campDate) > weekEnd
+                      ? weekEnd
+                      : (camp.endDate ?? camp.campDate);
                     const startCol = dayOfWeekMon(clampedStart) + 1; // CSS grid is 1-based
-                    const span =
-                      dayOfWeekMon(clampedEnd) - dayOfWeekMon(clampedStart) + 1;
+                    const span = dayOfWeekMon(clampedEnd) -
+                      dayOfWeekMon(clampedStart) + 1;
 
                     const colorClass =
-                      STATUS_COLORS[camp.status as CampPlanStatus] ?? "bg-purple-500 text-white";
+                      STATUS_COLORS[camp.status as CampPlanStatus] ??
+                        "bg-purple-500 text-white";
 
                     const continuesBefore = camp.campDate < weekStart;
-                    const continuesAfter = (camp.endDate ?? camp.campDate) > weekEnd;
+                    const continuesAfter =
+                      (camp.endDate ?? camp.campDate) > weekEnd;
 
                     return (
                       <a
                         key={`${camp.id}-w${wi}`}
                         href={`/camps/${camp.id}`}
                         class={`text-xs font-medium px-1.5 py-0.5 truncate transition-opacity hover:opacity-80 ${colorClass} ${
-                          continuesBefore ? "rounded-r" : continuesAfter ? "rounded-l" : "rounded"
+                          continuesBefore
+                            ? "rounded-r"
+                            : continuesAfter
+                            ? "rounded-l"
+                            : "rounded"
                         }`}
                         style={{ gridColumn: `${startCol} / span ${span}` }}
-                        title={`${camp.name}${camp.location ? ` · ${camp.location}` : ""}`}
+                        title={`${camp.name}${
+                          camp.location ? ` · ${camp.location}` : ""
+                        }`}
                       >
-                        {continuesBefore ? "↩ " : ""}{camp.name}
+                        {continuesBefore ? "↩ " : ""}
+                        {camp.name}
                         {continuesAfter ? " →" : ""}
                       </a>
                     );
@@ -235,9 +251,13 @@ export default function CampCalendar({ plans: rawPlans }: CampCalendarProps) {
 
       {/* Legend */}
       <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-600 dark:text-gray-400">
-        {(Object.entries(STATUS_COLORS) as [CampPlanStatus, string][]).map(([status, cls]) => (
+        {(Object.entries(STATUS_COLORS) as [CampPlanStatus, string][]).map((
+          [status, cls],
+        ) => (
           <span key={status} class="flex items-center gap-1.5">
-            <span class={`w-3 h-3 rounded-sm inline-block ${cls.split(" ")[0]}`} />
+            <span
+              class={`w-3 h-3 rounded-sm inline-block ${cls.split(" ")[0]}`}
+            />
             {STATUS_LABELS[status]}
           </span>
         ))}

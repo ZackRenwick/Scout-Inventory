@@ -10,14 +10,14 @@ import {
   getAllFirstAidKitIds,
   getAllItems,
   getAllRiskAssessments,
-  rebuildComputedStats,
   getComputedStats,
   getFirstAidKitCheckStates,
   getFirstAidOverallCheckState,
   getFoodItemsSortedByExpiry,
+  rebuildComputedStats,
 } from "../db/kv.ts";
 import { getDaysUntil } from "../lib/date-utils.ts";
-import { getRecentActivity, type ActivityEntry } from "../lib/activityLog.ts";
+import { type ActivityEntry, getRecentActivity } from "../lib/activityLog.ts";
 
 const YEARLY_CHECK_DAYS = 365;
 
@@ -146,9 +146,13 @@ export const handler: Handlers<DashboardData> = {
       const expiringFood = { expired: 0, expiringSoon: 0, expiringWarning: 0 };
       for (const item of foodItems) {
         const d = getDaysUntil(item.expiryDate);
-        if (d < 0) expiringFood.expired++;
-        else if (d <= 7) expiringFood.expiringSoon++;
-        else if (d <= 30) expiringFood.expiringWarning++;
+        if (d < 0) {
+          expiringFood.expired++;
+        } else if (d <= 7) {
+          expiringFood.expiringSoon++;
+        } else if (d <= 30) {
+          expiringFood.expiringWarning++;
+        }
       }
 
       // activeLoansCount comes from precomputed stats (O(1) KV read, already fetched above).
@@ -156,7 +160,8 @@ export const handler: Handlers<DashboardData> = {
       // checkout list is served from the in-memory cache.
       const now = new Date();
       const overdueLoans = activeLoansData.filter(
-        (l) => new Date(l.expectedReturnDate) < now,
+        (l) =>
+          new Date(l.expectedReturnDate) < now,
       ).length;
 
       const inspections = { dueSoon: 0, overdue: 0 };
@@ -275,7 +280,14 @@ function timeAgo(ts: string): string {
 }
 
 export default function Home({ data }: PageProps<DashboardData>) {
-  const { stats, session, neckerThreshold, firstAid, riskAssessments, recentActivity } = data;
+  const {
+    stats,
+    session,
+    neckerThreshold,
+    firstAid,
+    riskAssessments,
+    recentActivity,
+  } = data;
   const canViewInspections = session?.role === "manager" ||
     session?.role === "admin";
   const canViewNeckers = session?.role === "manager" ||
@@ -584,14 +596,14 @@ export default function Home({ data }: PageProps<DashboardData>) {
                   </span>
                   <div class="flex-1 min-w-0">
                     <p class="text-sm text-gray-800 dark:text-gray-100">
-                      <span class="font-medium">{entry.username}</span>
-                      {" "}
+                      <span class="font-medium">{entry.username}</span>{" "}
                       <span class="text-gray-500 dark:text-gray-400">
                         {entry.action.replace(/_/g, " ").replace(/\./g, " › ")}
                       </span>
                       {entry.resource && (
                         <span class="text-gray-700 dark:text-gray-200">
-                          {" — "}{entry.resource}
+                          {" — "}
+                          {entry.resource}
                         </span>
                       )}
                     </p>
@@ -609,7 +621,6 @@ export default function Home({ data }: PageProps<DashboardData>) {
             </div>
           </div>
         )}
-
       </div>
     </Layout>
   );

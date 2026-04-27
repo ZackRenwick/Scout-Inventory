@@ -173,7 +173,9 @@ export const handler: Handlers<EditRiskAssessmentPageData> = {
       );
     }
 
-    if (checkMode !== "none" && form.get("check_confirmed")?.toString() !== "yes") {
+    if (
+      checkMode !== "none" && form.get("check_confirmed")?.toString() !== "yes"
+    ) {
       return await renderPage(
         ctx,
         session,
@@ -195,7 +197,9 @@ export const handler: Handlers<EditRiskAssessmentPageData> = {
       action: "risk_assessment.updated",
       resource: name,
       resourceId: assessmentId,
-      details: `Updated with ${riskRows.length} risk row${riskRows.length === 1 ? "" : "s"}`,
+      details: `Updated with ${riskRows.length} risk row${
+        riskRows.length === 1 ? "" : "s"
+      }`,
     });
 
     if (checkMode === "annual") {

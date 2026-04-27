@@ -1,12 +1,12 @@
 // Authentication helpers: users and sessions stored in Deno KV
 import bcrypt from "bcryptjs";
-import type { UserRole, User } from "./auth-roles.ts";
+import type { User, UserRole } from "./auth-roles.ts";
 export {
+  ASSIGNABLE_USER_ROLES,
+  type User,
+  USER_ROLE_META,
   USER_ROLES,
   type UserRole,
-  ASSIGNABLE_USER_ROLES,
-  USER_ROLE_META,
-  type User,
 } from "./auth-roles.ts";
 
 const SESSION_DURATION_MS = 1000 * 60 * 15; // 15 minutes
@@ -22,11 +22,27 @@ const SHA256_RE = /^[0-9a-f]{64}$/;
 const PASSWORD_MIN = 12;
 const PASSWORD_MAX = 128;
 const COMMON_PASSWORDS = new Set([
-  "password", "password1", "password12", "password123", "password1234",
-  "123456789012", "12345678901", "1234567890", "123456789", "12345678",
-  "qwerty123456", "qwertyuiop", "letmein123", "iloveyou123",
-  "welcome123", "admin12345", "monkey1234", "dragon1234",
-  "passw0rd123", "p@ssword123", "abc123456789",
+  "password",
+  "password1",
+  "password12",
+  "password123",
+  "password1234",
+  "123456789012",
+  "12345678901",
+  "1234567890",
+  "123456789",
+  "12345678",
+  "qwerty123456",
+  "qwertyuiop",
+  "letmein123",
+  "iloveyou123",
+  "welcome123",
+  "admin12345",
+  "monkey1234",
+  "dragon1234",
+  "passw0rd123",
+  "p@ssword123",
+  "abc123456789",
 ]);
 
 /**
@@ -111,7 +127,9 @@ async function getKv(): Promise<Deno.Kv> {
 
 // ===== USER OPERATIONS =====
 
-export async function getUserByUsername(username: string): Promise<User | null> {
+export async function getUserByUsername(
+  username: string,
+): Promise<User | null> {
   const kv = await getKv();
   const result = await kv.get<User>(["auth", "users", username.toLowerCase()]);
   return result.value ?? null;
@@ -157,7 +175,11 @@ export async function createUser(
 }
 
 // newPassword: plain-text password to hash; or pass preHashedValue to store a hash directly (migration use)
-export async function updateUserPassword(username: string, newPassword: string | undefined, preHashedValue?: string): Promise<boolean> {
+export async function updateUserPassword(
+  username: string,
+  newPassword: string | undefined,
+  preHashedValue?: string,
+): Promise<boolean> {
   const kv = await getKv();
   const user = await getUserByUsername(username);
   if (!user) {
@@ -168,7 +190,10 @@ export async function updateUserPassword(username: string, newPassword: string |
   return true;
 }
 
-export async function updateUserRole(username: string, role: User["role"]): Promise<boolean> {
+export async function updateUserRole(
+  username: string,
+  role: User["role"],
+): Promise<boolean> {
   const kv = await getKv();
   const user = await getUserByUsername(username);
   if (!user) return false;
@@ -189,19 +214,27 @@ export async function deleteUser(username: string): Promise<boolean> {
 
 // ===== RATE LIMITING =====
 
-const RATE_LIMIT_MAX = 5;           // max failures
+const RATE_LIMIT_MAX = 5; // max failures
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15-minute lockout
 
-interface RateLimit { attempts: number; lockedUntil?: string; }
+interface RateLimit {
+  attempts: number;
+  lockedUntil?: string;
+}
 
-export async function checkRateLimit(identifier: string): Promise<{ blocked: boolean; remaining: number }> {
+export async function checkRateLimit(
+  identifier: string,
+): Promise<{ blocked: boolean; remaining: number }> {
   const kv = await getKv();
   const entry = await kv.get<RateLimit>(["auth", "rate_limit", identifier]);
   const data = entry.value ?? { attempts: 0 };
   if (data.lockedUntil && new Date(data.lockedUntil) > new Date()) {
     return { blocked: true, remaining: 0 };
   }
-  return { blocked: false, remaining: Math.max(0, RATE_LIMIT_MAX - data.attempts) };
+  return {
+    blocked: false,
+    remaining: Math.max(0, RATE_LIMIT_MAX - data.attempts),
+  };
 }
 
 export async function recordFailedLogin(identifier: string): Promise<void> {
@@ -215,9 +248,12 @@ export async function recordFailedLogin(identifier: string): Promise<void> {
   }
   data.attempts++;
   if (data.attempts >= RATE_LIMIT_MAX) {
-    data.lockedUntil = new Date(Date.now() + RATE_LIMIT_WINDOW_MS).toISOString();
+    data.lockedUntil = new Date(Date.now() + RATE_LIMIT_WINDOW_MS)
+      .toISOString();
   }
-  await kv.set(["auth", "rate_limit", identifier], data, { expireIn: RATE_LIMIT_WINDOW_MS });
+  await kv.set(["auth", "rate_limit", identifier], data, {
+    expireIn: RATE_LIMIT_WINDOW_MS,
+  });
 }
 
 export async function resetRateLimit(identifier: string): Promise<void> {
@@ -249,9 +285,9 @@ export async function ensureDefaultAdmin(): Promise<void> {
   // is a well-known default and would leave the app completely unprotected.
   if (IS_DEPLOYED && !Deno.env.get("ADMIN_PASSWORD")) {
     throw new Error(
-      "[auth] ADMIN_PASSWORD environment variable is not set. "
-      + "Refusing to start in production with the default fallback password. "
-      + "Set ADMIN_PASSWORD in your Deno Deploy project settings.",
+      "[auth] ADMIN_PASSWORD environment variable is not set. " +
+        "Refusing to start in production with the default fallback password. " +
+        "Set ADMIN_PASSWORD in your Deno Deploy project settings.",
     );
   }
 }
@@ -294,7 +330,10 @@ export async function getSession(sessionId: string): Promise<Session | null> {
 
 // Slide the session expiry forward by SESSION_DURATION_MS from now (rolling session).
 // Accepts the already-fetched session to avoid a redundant KV read.
-export async function extendSession(sessionId: string, existingSession?: Session): Promise<Session | null> {
+export async function extendSession(
+  sessionId: string,
+  existingSession?: Session,
+): Promise<Session | null> {
   const kv = await getKv();
   let session = existingSession;
   if (!session) {
@@ -305,8 +344,12 @@ export async function extendSession(sessionId: string, existingSession?: Session
   session.expiresAt = new Date(Date.now() + SESSION_DURATION_MS).toISOString();
   // Combine both writes into one atomic operation
   await kv.atomic()
-    .set(["auth", "sessions", sessionId], session, { expireIn: SESSION_DURATION_MS })
-    .set(["auth", "user_sessions", session.userId, sessionId], true, { expireIn: SESSION_DURATION_MS })
+    .set(["auth", "sessions", sessionId], session, {
+      expireIn: SESSION_DURATION_MS,
+    })
+    .set(["auth", "user_sessions", session.userId, sessionId], true, {
+      expireIn: SESSION_DURATION_MS,
+    })
     .commit();
   return session;
 }
@@ -343,7 +386,9 @@ export async function cleanUpOrphanedSessions(): Promise<number> {
   const kv = await getKv();
   let count = 0;
   const deletes: Promise<void>[] = [];
-  for await (const entry of kv.list<boolean>({ prefix: ["auth", "user_sessions"] })) {
+  for await (
+    const entry of kv.list<boolean>({ prefix: ["auth", "user_sessions"] })
+  ) {
     const sessionId = entry.key[entry.key.length - 1] as string;
     const session = await kv.get<Session>(["auth", "sessions", sessionId]);
     if (!session.value) {
@@ -372,7 +417,9 @@ const IS_DEPLOYED = !!Deno.env.get("DENO_DEPLOYMENT_ID");
 
 export function makeSessionCookie(sessionId: string): string {
   const secure = IS_DEPLOYED ? "; Secure" : "";
-  return `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DURATION_MS / 1000}${secure}`;
+  return `session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${
+    SESSION_DURATION_MS / 1000
+  }${secure}`;
 }
 
 export function clearSessionCookie(): string {

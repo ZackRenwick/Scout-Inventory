@@ -1,7 +1,10 @@
 import { JSX } from "preact";
 
-interface NumberInputProps
-  extends Omit<JSX.IntrinsicElements["input"], "onChange" | "onInput" | "value" | "type"> {
+interface NumberInputProps extends
+  Omit<
+    JSX.IntrinsicElements["input"],
+    "onChange" | "onInput" | "value" | "type"
+  > {
   value: number | "";
   onChange: (n: number) => void;
   min?: number;
@@ -17,7 +20,8 @@ interface NumberInputProps
  * "can't clear a number field on mobile" problem without any onBlur tricks.
  */
 export default function NumberInput(
-  { value, onChange, min = 0, max, class: className, ...rest }: NumberInputProps,
+  { value, onChange, min = 0, max, class: className, ...rest }:
+    NumberInputProps,
 ) {
   return (
     <input

@@ -1,11 +1,11 @@
 // GET    /api/items/:id/photos/:photoId  — serve one photo
 // DELETE /api/items/:id/photos/:photoId  — remove one photo
 import { Handlers } from "$fresh/server.ts";
+import { getItemPhotoById, removeItemPhotoById } from "../../../../../db/kv.ts";
 import {
-  getItemPhotoById,
-  removeItemPhotoById,
-} from "../../../../../db/kv.ts";
-import { getPhotoObject, isLegacyPhotoRecord } from "../../../../../lib/r2Photos.ts";
+  getPhotoObject,
+  isLegacyPhotoRecord,
+} from "../../../../../lib/r2Photos.ts";
 import {
   csrfFailed,
   csrfOk,

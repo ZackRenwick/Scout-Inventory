@@ -7,11 +7,11 @@
  * DELETE — removes the legacy photo key.
  */
 import { Handlers } from "$fresh/server.ts";
+import { deleteItemPhoto, getItemPhoto } from "../../../../db/kv.ts";
 import {
-  deleteItemPhoto,
-  getItemPhoto,
-} from "../../../../db/kv.ts";
-import { getPhotoObject, isLegacyPhotoRecord } from "../../../../lib/r2Photos.ts";
+  getPhotoObject,
+  isLegacyPhotoRecord,
+} from "../../../../lib/r2Photos.ts";
 import {
   csrfFailed,
   csrfOk,
@@ -67,4 +67,3 @@ export const handler: Handlers = {
     return Response.json({ ok: true });
   },
 };
-

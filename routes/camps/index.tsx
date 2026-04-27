@@ -19,12 +19,18 @@ export const handler: Handlers<CampsPageData> = {
   async GET(req, ctx) {
     try {
       const url = new URL(req.url);
-      const view: ViewMode = url.searchParams.get("view") === "calendar" ? "calendar" : "list";
+      const view: ViewMode = url.searchParams.get("view") === "calendar"
+        ? "calendar"
+        : "list";
       const plans = await getAllCampPlans();
       return ctx.render({ plans, session: ctx.state.session as Session, view });
     } catch (error) {
       console.error("Failed to fetch camp plans:", error);
-      return ctx.render({ plans: [], session: ctx.state.session as Session, view: "list" });
+      return ctx.render({
+        plans: [],
+        session: ctx.state.session as Session,
+        view: "list",
+      });
     }
   },
 };
@@ -32,7 +38,9 @@ export const handler: Handlers<CampsPageData> = {
 /** Returns the CSS classes for a view-toggle tab link. */
 function viewTabClass(active: boolean, hasBorderLeft = false): string {
   const base = "px-3 py-2 transition-colors";
-  const border = hasBorderLeft ? " border-l border-gray-300 dark:border-gray-600" : "";
+  const border = hasBorderLeft
+    ? " border-l border-gray-300 dark:border-gray-600"
+    : "";
   const state = active
     ? " bg-purple-600 text-white"
     : " text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700";
@@ -40,11 +48,15 @@ function viewTabClass(active: boolean, hasBorderLeft = false): string {
 }
 
 export default function CampsPage({ data }: PageProps<CampsPageData>) {
-  const canEdit    = data.session?.role !== "viewer";
+  const canEdit = data.session?.role !== "viewer";
   const isCalendar = data.view === "calendar";
 
   return (
-    <Layout title="Camp Planning" username={data.session?.username} role={data.session?.role}>
+    <Layout
+      title="Camp Planning"
+      username={data.session?.username}
+      role={data.session?.role}
+    >
       <div class="mb-6">
         <div class="flex justify-between items-center gap-4 flex-wrap">
           <p class="text-gray-600 dark:text-gray-400">
@@ -54,8 +66,13 @@ export default function CampsPage({ data }: PageProps<CampsPageData>) {
           <div class="flex gap-2 flex-wrap items-center">
             {/* List / Calendar toggle */}
             <div class="flex rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium">
-              <a href="/camps"              class={viewTabClass(!isCalendar)}>☰ List</a>
-              <a href="/camps?view=calendar" class={viewTabClass(isCalendar, true)}>📅 Calendar</a>
+              <a href="/camps" class={viewTabClass(!isCalendar)}>☰ List</a>
+              <a
+                href="/camps?view=calendar"
+                class={viewTabClass(isCalendar, true)}
+              >
+                📅 Calendar
+              </a>
             </div>
 
             {canEdit && (
@@ -78,9 +95,13 @@ export default function CampsPage({ data }: PageProps<CampsPageData>) {
         </div>
       </div>
 
-      {isCalendar
-        ? <CampCalendar plans={data.plans} />
-        : <CampPlanList plans={data.plans} canEdit={canEdit} csrfToken={data.session?.csrfToken} />}
+      {isCalendar ? <CampCalendar plans={data.plans} /> : (
+        <CampPlanList
+          plans={data.plans}
+          canEdit={canEdit}
+          csrfToken={data.session?.csrfToken}
+        />
+      )}
     </Layout>
   );
 }

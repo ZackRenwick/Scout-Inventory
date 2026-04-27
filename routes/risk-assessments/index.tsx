@@ -221,11 +221,13 @@ function parseBackupPayload(
       risks: parsedRisks,
       lastReviewedAt: parseDateInput(obj.lastReviewedAt),
       lastAnnualCheckAt: parseDateInput(obj.lastAnnualCheckAt),
-      lastAnnualCheckedBy:
-        typeof obj.lastAnnualCheckedBy === "string" && obj.lastAnnualCheckedBy.trim()
-          ? obj.lastAnnualCheckedBy.trim()
-          : null,
-      annualReminderDismissedUntil: parseDateInput(obj.annualReminderDismissedUntil),
+      lastAnnualCheckedBy: typeof obj.lastAnnualCheckedBy === "string" &&
+          obj.lastAnnualCheckedBy.trim()
+        ? obj.lastAnnualCheckedBy.trim()
+        : null,
+      annualReminderDismissedUntil: parseDateInput(
+        obj.annualReminderDismissedUntil,
+      ),
       createdBy: typeof obj.createdBy === "string" && obj.createdBy.trim()
         ? obj.createdBy.trim()
         : fallbackUsername,
@@ -244,10 +246,11 @@ async function buildPageData(
   flashType?: "success" | "error",
 ): Promise<RiskAssessmentsPageData> {
   const assessments = await getAllRiskAssessments();
-  const annualDueCount = assessments.filter((assessment) =>
-    isYearlyDue(assessment.lastAnnualCheckAt) &&
-    !isDismissed(assessment.annualReminderDismissedUntil)
-  ).length;
+  const annualDueCount =
+    assessments.filter((assessment) =>
+      isYearlyDue(assessment.lastAnnualCheckAt) &&
+      !isDismissed(assessment.annualReminderDismissedUntil)
+    ).length;
 
   return {
     assessments,
@@ -323,10 +326,14 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
       await logActivity({
         username: session.username,
         action: "risk_assessment.backup_exported",
-        details: `Exported ${assessments.length} risk assessment backup record${assessments.length === 1 ? "" : "s"}`,
+        details: `Exported ${assessments.length} risk assessment backup record${
+          assessments.length === 1 ? "" : "s"
+        }`,
       });
 
-      const filename = `risk-assessments-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const filename = `risk-assessments-backup-${
+        new Date().toISOString().slice(0, 10)
+      }.json`;
       return new Response(JSON.stringify(payload, null, 2), {
         headers: {
           "content-type": "application/json; charset=utf-8",
@@ -365,13 +372,19 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
         );
       }
 
-      const created = await createRiskAssessment(name, riskRows, session.username);
+      const created = await createRiskAssessment(
+        name,
+        riskRows,
+        session.username,
+      );
       await logActivity({
         username: session.username,
         action: "risk_assessment.created",
         resource: created.name,
         resourceId: created.id,
-        details: `Created with ${created.risks.length} risk row${created.risks.length === 1 ? "" : "s"}`,
+        details: `Created with ${created.risks.length} risk row${
+          created.risks.length === 1 ? "" : "s"
+        }`,
       });
 
       return new Response(null, {
@@ -445,11 +458,17 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
       const backupFile = form.get("backupFile");
       if (!(backupFile instanceof File)) {
         return ctx.render(
-          await buildPageData(session, "Please choose a backup JSON file to restore."),
+          await buildPageData(
+            session,
+            "Please choose a backup JSON file to restore.",
+          ),
         );
       }
 
-      const parsed = parseBackupPayload(await backupFile.text(), session.username);
+      const parsed = parseBackupPayload(
+        await backupFile.text(),
+        session.username,
+      );
       if (parsed.error) {
         return ctx.render(await buildPageData(session, parsed.error));
       }
@@ -459,7 +478,8 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
         await logActivity({
           username: session.username,
           action: "risk_assessment.backup_restored",
-          details: `Merged backup: ${merged.total} total (${merged.created} created, ${merged.updated} updated)`,
+          details:
+            `Merged backup: ${merged.total} total (${merged.created} created, ${merged.updated} updated)`,
         });
 
         return new Response(null, {
@@ -474,7 +494,9 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
       await logActivity({
         username: session.username,
         action: "risk_assessment.backup_restored",
-        details: `Replaced with ${restored} risk assessment${restored === 1 ? "" : "s"} from backup`,
+        details: `Replaced with ${restored} risk assessment${
+          restored === 1 ? "" : "s"
+        } from backup`,
       });
 
       return new Response(null, {
@@ -493,9 +515,10 @@ export const handler: Handlers<RiskAssessmentsPageData> = {
 export default function RiskAssessmentsPage(
   { data }: PageProps<RiskAssessmentsPageData>,
 ) {
-  const canEdit = data.session?.role !== "viewer" && data.session?.role !== "explorer";
-  const canManageBackups =
-    data.session?.role === "admin" || data.session?.role === "manager";
+  const canEdit = data.session?.role !== "viewer" &&
+    data.session?.role !== "explorer";
+  const canManageBackups = data.session?.role === "admin" ||
+    data.session?.role === "manager";
 
   return (
     <Layout
@@ -537,14 +560,19 @@ export default function RiskAssessmentsPage(
             Backup and Restore
           </h3>
           <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-3">
-            Download a JSON backup of all risk assessments and restore it later if needed.
+            Download a JSON backup of all risk assessments and restore it later
+            if needed.
           </p>
           <div class="grid gap-3 xl:grid-cols-2">
             <form
               method="post"
               class="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 space-y-2"
             >
-              <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
+              <input
+                type="hidden"
+                name="_csrf"
+                value={data.session?.csrfToken ?? ""}
+              />
               <input type="hidden" name="action" value="export_backup" />
               <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
                 Create backup
@@ -562,7 +590,11 @@ export default function RiskAssessmentsPage(
               encType="multipart/form-data"
               class="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 space-y-3"
             >
-              <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
+              <input
+                type="hidden"
+                name="_csrf"
+                value={data.session?.csrfToken ?? ""}
+              />
               <input type="hidden" name="action" value="restore_backup" />
               <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
                 Restore backup
@@ -592,8 +624,8 @@ export default function RiskAssessmentsPage(
                 </button>
               </div>
               <p class="mt-2 text-xs text-amber-800 dark:text-amber-200">
-                Replace clears current records first. Merge keeps existing items and
-                updates or adds from backup.
+                Replace clears current records first. Merge keeps existing items
+                and updates or adds from backup.
               </p>
             </form>
           </div>
@@ -654,25 +686,35 @@ export default function RiskAssessmentsPage(
                         <span class="mt-1 inline-block text-gray-500 dark:text-gray-400 transition-transform group-open:rotate-90">
                           ▸
                         </span>
-                      <div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {assessment.name}
-                        </h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          {assessment.risks.length} risk row{assessment.risks.length === 1 ? "" : "s"}
-                        </p>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                          Last ad hoc check: <strong>{formatDate(assessment.lastReviewedAt)}</strong>
-                        </p>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
-                          Next annual due: <strong>{formatAnnualDueDate(assessment.lastAnnualCheckAt, assessment.annualReminderDismissedUntil)}</strong>
-                        </p>
-                        {annualDue && (
-                          <p class="mt-2 inline-flex rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-200">
-                            Annual reminder due
+                        <div>
+                          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                            {assessment.name}
+                          </h3>
+                          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {assessment.risks.length}{" "}
+                            risk row{assessment.risks.length === 1 ? "" : "s"}
                           </p>
-                        )}
-                      </div>
+                          <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                            Last ad hoc check:{" "}
+                            <strong>
+                              {formatDate(assessment.lastReviewedAt)}
+                            </strong>
+                          </p>
+                          <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
+                            Next annual due:{" "}
+                            <strong>
+                              {formatAnnualDueDate(
+                                assessment.lastAnnualCheckAt,
+                                assessment.annualReminderDismissedUntil,
+                              )}
+                            </strong>
+                          </p>
+                          {annualDue && (
+                            <p class="mt-2 inline-flex rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-200">
+                              Annual reminder due
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <p class="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">
                         <span class="group-open:hidden">Expand</span>
@@ -686,10 +728,16 @@ export default function RiskAssessmentsPage(
                       <div class="flex items-start justify-between gap-3 flex-wrap">
                         <div>
                           <p class="text-sm text-gray-600 dark:text-gray-300">
-                            Last annual check: <strong>{formatDate(assessment.lastAnnualCheckAt)}</strong>
+                            Last annual check:{" "}
+                            <strong>
+                              {formatDate(assessment.lastAnnualCheckAt)}
+                            </strong>
                           </p>
                           <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">
-                            Last checked by: <strong>{assessment.lastAnnualCheckedBy ?? "Not recorded"}</strong>
+                            Last checked by:{" "}
+                            <strong>
+                              {assessment.lastAnnualCheckedBy ?? "Not recorded"}
+                            </strong>
                           </p>
                         </div>
 
@@ -710,9 +758,21 @@ export default function RiskAssessmentsPage(
                               </a>
                               {annualDue && (
                                 <form method="post">
-                                  <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
-                                  <input type="hidden" name="action" value="dismiss_annual_reminder" />
-                                  <input type="hidden" name="assessmentId" value={assessment.id} />
+                                  <input
+                                    type="hidden"
+                                    name="_csrf"
+                                    value={data.session?.csrfToken ?? ""}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="action"
+                                    value="dismiss_annual_reminder"
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="assessmentId"
+                                    value={assessment.id}
+                                  />
                                   <button
                                     type="submit"
                                     class="px-3 py-1.5 text-sm border border-amber-400 dark:border-amber-600 rounded-md text-amber-800 dark:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/30"
@@ -741,9 +801,21 @@ export default function RiskAssessmentsPage(
                             Edit
                           </a>
                           <form method="post">
-                            <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
-                            <input type="hidden" name="action" value="duplicate_assessment" />
-                            <input type="hidden" name="assessmentId" value={assessment.id} />
+                            <input
+                              type="hidden"
+                              name="_csrf"
+                              value={data.session?.csrfToken ?? ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="action"
+                              value="duplicate_assessment"
+                            />
+                            <input
+                              type="hidden"
+                              name="assessmentId"
+                              value={assessment.id}
+                            />
                             <button
                               type="submit"
                               class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-500 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -752,9 +824,21 @@ export default function RiskAssessmentsPage(
                             </button>
                           </form>
                           <form method="post">
-                            <input type="hidden" name="_csrf" value={data.session?.csrfToken ?? ""} />
-                            <input type="hidden" name="action" value="delete_assessment" />
-                            <input type="hidden" name="assessmentId" value={assessment.id} />
+                            <input
+                              type="hidden"
+                              name="_csrf"
+                              value={data.session?.csrfToken ?? ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="action"
+                              value="delete_assessment"
+                            />
+                            <input
+                              type="hidden"
+                              name="assessmentId"
+                              value={assessment.id}
+                            />
                             <button
                               type="submit"
                               class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30"
@@ -784,28 +868,53 @@ export default function RiskAssessmentsPage(
                             Risk {riskIndex + 1}
                           </p>
                           <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">Hazards to Health and Safety</p>
-                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{risk.hazards || "-"}</p>
+                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">
+                              Hazards to Health and Safety
+                            </p>
+                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                              {risk.hazards || "-"}
+                            </p>
                           </div>
                           <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">What risks do they pose?</p>
-                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{risk.posedRisks || "-"}</p>
+                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">
+                              What risks do they pose?
+                            </p>
+                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                              {risk.posedRisks || "-"}
+                            </p>
                           </div>
                           <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">Who is affected?</p>
-                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{risk.affectedWho || "-"}</p>
+                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">
+                              Who is affected?
+                            </p>
+                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                              {risk.affectedWho || "-"}
+                            </p>
                           </div>
                           <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">Risk Level</p>
-                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{risk.initialRiskLevel}</p>
+                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">
+                              Risk Level
+                            </p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {risk.initialRiskLevel}
+                            </p>
                           </div>
                           <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">Precautions Taken</p>
-                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{risk.precautionsTaken || "-"}</p>
+                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">
+                              Precautions Taken
+                            </p>
+                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                              {risk.precautionsTaken || "-"}
+                            </p>
                           </div>
                           <div class="border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">What has changed that needs to be thought about and controlled?</p>
-                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{risk.furtherActionNeeded || "-"}</p>
+                            <p class="text-base font-bold text-gray-800 dark:text-gray-100">
+                              What has changed that needs to be thought about
+                              and controlled?
+                            </p>
+                            <p class="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                              {risk.furtherActionNeeded || "-"}
+                            </p>
                           </div>
                         </article>
                       ))}
@@ -815,23 +924,51 @@ export default function RiskAssessmentsPage(
                       <table class="min-w-full text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
                           <tr>
-                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">Hazards to Health and Safety</th>
-                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">What risks do they pose?</th>
-                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">Who is affected?</th>
-                            <th class="px-3 py-2 text-center border-b border-gray-200 dark:border-gray-600">Risk Level (Low/Medium/High)</th>
-                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">Precautions Taken</th>
-                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">What has changed that needs to be thought about and controlled?</th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">
+                              Hazards to Health and Safety
+                            </th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">
+                              What risks do they pose?
+                            </th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">
+                              Who is affected?
+                            </th>
+                            <th class="px-3 py-2 text-center border-b border-gray-200 dark:border-gray-600">
+                              Risk Level (Low/Medium/High)
+                            </th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">
+                              Precautions Taken
+                            </th>
+                            <th class="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-600">
+                              What has changed that needs to be thought about
+                              and controlled?
+                            </th>
                           </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                           {assessment.risks.map((risk) => (
-                            <tr key={risk.id} class="align-top bg-white even:bg-gray-50 dark:bg-gray-800 dark:even:bg-gray-900/40 border-t border-gray-200 dark:border-gray-700">
-                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.hazards}</td>
-                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.posedRisks}</td>
-                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.affectedWho}</td>
-                              <td class="px-3 py-2 text-center font-semibold text-gray-900 dark:text-gray-100">{risk.initialRiskLevel}</td>
-                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.precautionsTaken}</td>
-                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">{risk.furtherActionNeeded}</td>
+                            <tr
+                              key={risk.id}
+                              class="align-top bg-white even:bg-gray-50 dark:bg-gray-800 dark:even:bg-gray-900/40 border-t border-gray-200 dark:border-gray-700"
+                            >
+                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+                                {risk.hazards}
+                              </td>
+                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+                                {risk.posedRisks}
+                              </td>
+                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+                                {risk.affectedWho}
+                              </td>
+                              <td class="px-3 py-2 text-center font-semibold text-gray-900 dark:text-gray-100">
+                                {risk.initialRiskLevel}
+                              </td>
+                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+                                {risk.precautionsTaken}
+                              </td>
+                              <td class="px-3 py-2 whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+                                {risk.furtherActionNeeded}
+                              </td>
                             </tr>
                           ))}
                         </tbody>

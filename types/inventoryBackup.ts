@@ -1,6 +1,15 @@
 import type { FeedbackRequest } from "./feedback.ts";
-import type { FirstAidCatalogItem, FirstAidCheckState, FirstAidKit } from "./firstAid.ts";
-import type { CampPlan, CampTemplate, CheckOut, InventoryItem } from "./inventory.ts";
+import type {
+  FirstAidCatalogItem,
+  FirstAidCheckState,
+  FirstAidKit,
+} from "./firstAid.ts";
+import type {
+  CampPlan,
+  CampTemplate,
+  CheckOut,
+  InventoryItem,
+} from "./inventory.ts";
 import type { Meal } from "./meals.ts";
 import type { RiskAssessment } from "./risk.ts";
 

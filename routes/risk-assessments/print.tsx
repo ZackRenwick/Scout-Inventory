@@ -84,8 +84,13 @@ export default function RiskAssessmentPrintPage(
       <body>
         <div class="page">
           <div class="toolbar">
-            <a class="btn" href="javascript:window.print()">Print / Save as PDF</a>
-            <a href="/risk-assessments" style="font-size: 13px; color: #374151;">
+            <a class="btn" href="javascript:window.print()">
+              Print / Save as PDF
+            </a>
+            <a
+              href="/risk-assessments"
+              style="font-size: 13px; color: #374151;"
+            >
               Back to Risk Assessments
             </a>
           </div>
@@ -96,7 +101,12 @@ export default function RiskAssessmentPrintPage(
               <section class="sheet" key={assessment.id}>
                 <h2>{assessment.name}</h2>
                 <p class="meta">
-                  Last inline review: {formatDate(assessment.lastReviewedAt)} | Last annual check: {formatDate(assessment.lastAnnualCheckAt)} | Last checked by: {assessment.lastAnnualCheckedBy ?? "Not recorded"}
+                  Last inline review: {formatDate(assessment.lastReviewedAt)}
+                  {" "}
+                  | Last annual check:{" "}
+                  {formatDate(assessment.lastAnnualCheckAt)} | Last checked by:
+                  {" "}
+                  {assessment.lastAnnualCheckedBy ?? "Not recorded"}
                 </p>
 
                 <table>
@@ -107,7 +117,10 @@ export default function RiskAssessmentPrintPage(
                       <th>Who is affected?</th>
                       <th class="risk-level">Risk Level</th>
                       <th>Precautions Taken</th>
-                      <th>What has changed that needs to be thought about and controlled?</th>
+                      <th>
+                        What has changed that needs to be thought about and
+                        controlled?
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -136,13 +149,18 @@ export default function RiskAssessmentPrintPage(
                         <dd>{risk.affectedWho}</dd>
                         <dt>Risk Level</dt>
                         <dd>
-                          <span class={`badge badge-${risk.initialRiskLevel.toLowerCase()}`}>
+                          <span
+                            class={`badge badge-${risk.initialRiskLevel.toLowerCase()}`}
+                          >
                             {risk.initialRiskLevel}
                           </span>
                         </dd>
                         <dt>Precautions Taken</dt>
                         <dd>{risk.precautionsTaken}</dd>
-                        <dt>What has changed that needs to be thought about and controlled?</dt>
+                        <dt>
+                          What has changed that needs to be thought about and
+                          controlled?
+                        </dt>
                         <dd>{risk.furtherActionNeeded || "—"}</dd>
                       </dl>
                     </div>

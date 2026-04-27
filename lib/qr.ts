@@ -15,7 +15,10 @@ function escapeXml(value: string): string {
     .replaceAll("'", "&apos;");
 }
 
-export function generateQrSvg(text: string, options: QrSvgOptions = {}): string {
+export function generateQrSvg(
+  text: string,
+  options: QrSvgOptions = {},
+): string {
   const margin = Math.max(0, Math.floor(options.moduleMargin ?? 1));
   const darkColor = options.darkColor ?? "#111111";
   const lightColor = options.lightColor ?? "#ffffff";
@@ -48,7 +51,10 @@ export function generateQrSvg(text: string, options: QrSvgOptions = {}): string 
   ].join("");
 }
 
-export function generateQrDataUri(text: string, options?: QrSvgOptions): string {
+export function generateQrDataUri(
+  text: string,
+  options?: QrSvgOptions,
+): string {
   const svg = generateQrSvg(text, options);
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }

@@ -3,16 +3,16 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
 import PasswordInput from "../../islands/PasswordInput.tsx";
 import {
-  verifyPassword,
-  updateUserPassword,
-  deleteAllSessionsForUser,
-  createSession,
-  makeSessionCookie,
-  validatePassword,
   checkRateLimit,
+  createSession,
+  deleteAllSessionsForUser,
+  makeSessionCookie,
   recordFailedLogin,
   resetRateLimit,
   type Session,
+  updateUserPassword,
+  validatePassword,
+  verifyPassword,
 } from "../../lib/auth.ts";
 
 interface AccountData {
@@ -38,7 +38,11 @@ export const handler: Handlers<AccountData> = {
 
     // Dev bypass sessions don't have a real user in KV
     if (session.id === "local-dev") {
-      return ctx.render({ session, csrfToken: session.csrfToken, error: "Password changes are not available in local dev mode." });
+      return ctx.render({
+        session,
+        csrfToken: session.csrfToken,
+        error: "Password changes are not available in local dev mode.",
+      });
     }
 
     const form = await req.formData();
@@ -46,14 +50,22 @@ export const handler: Handlers<AccountData> = {
     // CSRF validation
     const csrfToken = form.get("csrf_token") as string;
     if (!csrfToken || csrfToken !== session.csrfToken) {
-      return ctx.render({ session, csrfToken: session.csrfToken, error: "Invalid request. Please try again." });
+      return ctx.render({
+        session,
+        csrfToken: session.csrfToken,
+        error: "Invalid request. Please try again.",
+      });
     }
 
     // Rate-limit password change attempts per user to prevent stolen-session brute-force
     const pwChangeKey = `pw-change:${session.username}`;
     const { blocked } = await checkRateLimit(pwChangeKey);
     if (blocked) {
-      return ctx.render({ session, csrfToken: session.csrfToken, error: "Too many attempts. Please try again in 15 minutes." });
+      return ctx.render({
+        session,
+        csrfToken: session.csrfToken,
+        error: "Too many attempts. Please try again in 15 minutes.",
+      });
     }
 
     const currentPassword = form.get("currentPassword") as string ?? "";
@@ -73,7 +85,9 @@ export const handler: Handlers<AccountData> = {
       // Verify current password
       const { getUserByUsername } = await import("../../lib/auth.ts");
       const user = await getUserByUsername(session.username);
-      const result = user ? await verifyPassword(currentPassword, user.passwordHash) : { valid: false };
+      const result = user
+        ? await verifyPassword(currentPassword, user.passwordHash)
+        : { valid: false };
       if (!user || !result.valid) {
         await recordFailedLogin(pwChangeKey);
         throw new Error("Current password is incorrect.");
@@ -85,16 +99,24 @@ export const handler: Handlers<AccountData> = {
       await deleteAllSessionsForUser(user.id);
       // Re-issue a fresh session for this user so they stay logged in
       const newSession = await createSession(user);
-      const headers = new Headers({ "set-cookie": makeSessionCookie(newSession.id) });
+      const headers = new Headers({
+        "set-cookie": makeSessionCookie(newSession.id),
+      });
       return new Response(
         null,
         {
           status: 303,
-          headers: Object.assign(headers, { location: "/account/settings?changed=1" }),
+          headers: Object.assign(headers, {
+            location: "/account/settings?changed=1",
+          }),
         },
       );
     } catch (err) {
-      return ctx.render({ session, csrfToken: session.csrfToken, error: (err as Error).message });
+      return ctx.render({
+        session,
+        csrfToken: session.csrfToken,
+        error: (err as Error).message,
+      });
     }
   },
 };
@@ -103,23 +125,35 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
   const { session, csrfToken, message, error } = data;
 
   return (
-    <Layout title="Account Settings" username={session.username} role={session.role}>
+    <Layout
+      title="Account Settings"
+      username={session.username}
+      role={session.role}
+    >
       <div class="max-w-lg">
         <div class="mb-6">
-          <p class="text-gray-600 dark:text-gray-400">Manage your account credentials</p>
+          <p class="text-gray-600 dark:text-gray-400">
+            Manage your account credentials
+          </p>
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">Signed in as</h2>
+          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-1">
+            Signed in as
+          </h2>
           <div class="flex items-center gap-2 mt-2">
-            <span class="text-gray-700 dark:text-gray-200 font-medium">👤 {session.username}</span>
-            <span class={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              session.role === "admin"
-                ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
-                : session.role === "editor"
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-            }`}>
+            <span class="text-gray-700 dark:text-gray-200 font-medium">
+              👤 {session.username}
+            </span>
+            <span
+              class={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                session.role === "admin"
+                  ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200"
+                  : session.role === "editor"
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+              }`}
+            >
               {session.role}
             </span>
           </div>
@@ -137,7 +171,9 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
-          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">Change Password</h2>
+          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">
+            Change Password
+          </h2>
 
           {message && (
             <div class="mb-4 p-3 bg-green-50 dark:bg-green-900/40 border border-green-200 dark:border-green-700 rounded-lg text-green-800 dark:text-green-200 text-sm">
@@ -153,7 +189,10 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
           <form method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value={csrfToken} />
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="currentPassword">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                for="currentPassword"
+              >
                 Current password
               </label>
               <PasswordInput
@@ -164,7 +203,10 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="newPassword">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                for="newPassword"
+              >
                 New password
               </label>
               <PasswordInput
@@ -178,7 +220,10 @@ export default function AccountPage({ data }: PageProps<AccountData>) {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="confirmPassword">
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                for="confirmPassword"
+              >
                 Confirm new password
               </label>
               <PasswordInput

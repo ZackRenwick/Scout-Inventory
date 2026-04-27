@@ -78,7 +78,8 @@ function sanitizeForSubmission(risks: FormRisk[]): RiskAssessmentRisk[] {
     precautionsTaken: risk.precautionsTaken.trim(),
     furtherActionNeeded: risk.furtherActionNeeded.trim(),
   })).filter((risk) =>
-    risk.hazards || risk.posedRisks || risk.affectedWho || risk.precautionsTaken ||
+    risk.hazards || risk.posedRisks || risk.affectedWho ||
+    risk.precautionsTaken ||
     risk.furtherActionNeeded
   );
 }
@@ -152,7 +153,8 @@ export default function RiskAssessmentForm(props: Props) {
           maxLength={120}
           name="name"
           value={name.value}
-          onInput={(event) => name.value = (event.currentTarget as HTMLInputElement).value}
+          onInput={(event) =>
+            name.value = (event.currentTarget as HTMLInputElement).value}
           class={inputClass}
           placeholder="e.g. Summer Camp Cooking Activity"
         />
@@ -169,7 +171,9 @@ export default function RiskAssessmentForm(props: Props) {
               if (!details.open) return;
               details
                 .querySelectorAll("textarea[data-autosize='1']")
-                .forEach((textarea) => resizeTextarea(textarea as HTMLTextAreaElement));
+                .forEach((textarea) =>
+                  resizeTextarea(textarea as HTMLTextAreaElement)
+                );
             }}
           >
             <summary class="px-4 py-3 cursor-pointer select-none font-semibold text-gray-900 dark:text-gray-100">
@@ -194,129 +198,126 @@ export default function RiskAssessmentForm(props: Props) {
                 </button>
               </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                Risk Level
-              </label>
-              <select
-                value={risk.initialRiskLevel}
-                onChange={(event) =>
-                  updateRisk(risk.id, {
-                    initialRiskLevel: (event.currentTarget as HTMLSelectElement)
-                      .value as RiskLevel,
-                  })}
-                class={inputClass}
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-            </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  Risk Level
+                </label>
+                <select
+                  value={risk.initialRiskLevel}
+                  onChange={(event) =>
+                    updateRisk(risk.id, {
+                      initialRiskLevel:
+                        (event.currentTarget as HTMLSelectElement)
+                          .value as RiskLevel,
+                    })}
+                  class={inputClass}
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                What are the Hazards?
-              </label>
-              <textarea
-                value={risk.hazards}
-                onInput={(event) =>
-                  {
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  What are the Hazards?
+                </label>
+                <textarea
+                  value={risk.hazards}
+                  onInput={(event) => {
                     const textarea = event.currentTarget as HTMLTextAreaElement;
                     resizeTextarea(textarea);
                     updateRisk(risk.id, {
                       hazards: textarea.value,
                     });
                   }}
-                ref={autosizeTextarea}
-                data-autosize="1"
-                class={areaClass}
-                maxLength={1000}
-              />
-            </div>
+                  ref={autosizeTextarea}
+                  data-autosize="1"
+                  class={areaClass}
+                  maxLength={1000}
+                />
+              </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                What risks do they pose?
-              </label>
-              <textarea
-                value={risk.posedRisks}
-                onInput={(event) =>
-                  {
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  What risks do they pose?
+                </label>
+                <textarea
+                  value={risk.posedRisks}
+                  onInput={(event) => {
                     const textarea = event.currentTarget as HTMLTextAreaElement;
                     resizeTextarea(textarea);
                     updateRisk(risk.id, {
                       posedRisks: textarea.value,
                     });
                   }}
-                ref={autosizeTextarea}
-                data-autosize="1"
-                class={areaClass}
-                maxLength={1000}
-              />
-            </div>
+                  ref={autosizeTextarea}
+                  data-autosize="1"
+                  class={areaClass}
+                  maxLength={1000}
+                />
+              </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                Who is affected?
-              </label>
-              <textarea
-                value={risk.affectedWho}
-                onInput={(event) =>
-                  {
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  Who is affected?
+                </label>
+                <textarea
+                  value={risk.affectedWho}
+                  onInput={(event) => {
                     const textarea = event.currentTarget as HTMLTextAreaElement;
                     resizeTextarea(textarea);
                     updateRisk(risk.id, {
                       affectedWho: textarea.value,
                     });
                   }}
-                ref={autosizeTextarea}
-                data-autosize="1"
-                class={areaClass}
-                maxLength={1000}
-              />
-            </div>
+                  ref={autosizeTextarea}
+                  data-autosize="1"
+                  class={areaClass}
+                  maxLength={1000}
+                />
+              </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                What precautions have been taken to reduce the risk?
-              </label>
-              <textarea
-                value={risk.precautionsTaken}
-                onInput={(event) =>
-                  {
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  What precautions have been taken to reduce the risk?
+                </label>
+                <textarea
+                  value={risk.precautionsTaken}
+                  onInput={(event) => {
                     const textarea = event.currentTarget as HTMLTextAreaElement;
                     resizeTextarea(textarea);
                     updateRisk(risk.id, {
                       precautionsTaken: textarea.value,
                     });
                   }}
-                ref={autosizeTextarea}
-                data-autosize="1"
-                class={areaClass}
-                maxLength={1000}
-              />
-            </div>
+                  ref={autosizeTextarea}
+                  data-autosize="1"
+                  class={areaClass}
+                  maxLength={1000}
+                />
+              </div>
 
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                What has changed that needs to be thought about and controlled?
-              </label>
-              <textarea
-                value={risk.furtherActionNeeded}
-                onInput={(event) =>
-                  {
+              <div>
+                <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  What has changed that needs to be thought about and
+                  controlled?
+                </label>
+                <textarea
+                  value={risk.furtherActionNeeded}
+                  onInput={(event) => {
                     const textarea = event.currentTarget as HTMLTextAreaElement;
                     resizeTextarea(textarea);
                     updateRisk(risk.id, {
                       furtherActionNeeded: textarea.value,
                     });
                   }}
-                ref={autosizeTextarea}
-                data-autosize="1"
-                class={areaClass}
-                maxLength={1000}
-              />
-            </div>
+                  ref={autosizeTextarea}
+                  data-autosize="1"
+                  class={areaClass}
+                  maxLength={1000}
+                />
+              </div>
             </div>
           </details>
         ))}
@@ -343,16 +344,20 @@ export default function RiskAssessmentForm(props: Props) {
         </div>
 
         {isCheckMode && (
-          <div class={`rounded-lg p-3 sm:p-4 space-y-3 ${
-            checkMode === "annual"
-              ? "border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
-              : "border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"
-          }`}>
-            <p class={`text-sm font-medium ${
+          <div
+            class={`rounded-lg p-3 sm:p-4 space-y-3 ${
               checkMode === "annual"
-                ? "text-amber-900 dark:text-amber-200"
-                : "text-blue-900 dark:text-blue-200"
-            }`}>
+                ? "border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20"
+                : "border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"
+            }`}
+          >
+            <p
+              class={`text-sm font-medium ${
+                checkMode === "annual"
+                  ? "text-amber-900 dark:text-amber-200"
+                  : "text-blue-900 dark:text-blue-200"
+              }`}
+            >
               {checkTitle}
             </p>
             <label

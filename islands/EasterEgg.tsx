@@ -19,7 +19,8 @@ export default function EasterEgg() {
       // Notify admins — fire-and-forget
       fetch("/api/easter-egg", { method: "POST" }).catch(() => {});
     } catch {
-      joke.value = "Why do programmers prefer dark mode? Because light attracts bugs! 🐛";
+      joke.value =
+        "Why do programmers prefer dark mode? Because light attracts bugs! 🐛";
     } finally {
       loading.value = false;
       clicks.value = 0;

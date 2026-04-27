@@ -64,4 +64,3 @@ export default function ConfirmDeleteForm({ csrfToken, username }: Props) {
     </div>
   );
 }
-

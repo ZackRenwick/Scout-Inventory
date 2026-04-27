@@ -8,25 +8,44 @@
 // Returns JSON: { imported: number; errors: { row: number; name?: string; error: string }[] }
 import type { Handlers } from "$fresh/server.ts";
 import { createItem } from "../../db/kv.ts";
-import type { InventoryItem, ItemCategory, ItemLocation, ItemSpace, KiltComponent } from "../../types/inventory.ts";
+import type {
+  InventoryItem,
+  ItemCategory,
+  ItemLocation,
+  ItemSpace,
+  KiltComponent,
+} from "../../types/inventory.ts";
 import type { Session } from "../../lib/auth.ts";
 import { logActivity } from "../../lib/activityLog.ts";
 
 // ===== CONSTANTS =====
 
-const VALID_CATEGORIES = new Set<ItemCategory>(["tent", "cooking", "food", "camping-tools", "games", "kit", "fuel", "kilt"]);
-const VALID_SPACES = new Set<ItemSpace>(["camp-store", "scout-post-loft", "gas-storage-box"]);
+const VALID_CATEGORIES = new Set<ItemCategory>([
+  "tent",
+  "cooking",
+  "food",
+  "camping-tools",
+  "games",
+  "kit",
+  "fuel",
+  "kilt",
+]);
+const VALID_SPACES = new Set<ItemSpace>([
+  "camp-store",
+  "scout-post-loft",
+  "gas-storage-box",
+]);
 
 // Required extra fields per category (beyond the base fields)
 const CATEGORY_REQUIRED: Record<ItemCategory, string[]> = {
-  tent:            ["tentType", "capacity", "size", "condition"],
-  cooking:         ["equipmentType", "condition"],
-  fuel:            ["fuelType", "condition"],
-  food:            ["foodType", "expiryDate"],
+  tent: ["tentType", "capacity", "size", "condition"],
+  cooking: ["equipmentType", "condition"],
+  fuel: ["fuelType", "condition"],
+  food: ["foodType", "expiryDate"],
   "camping-tools": ["toolType", "condition"],
-  games:           ["gameType", "condition"],
-  kit:             ["kitType", "condition"],
-  kilt:            ["condition"],
+  games: ["gameType", "condition"],
+  kit: ["kitType", "condition"],
+  kilt: ["condition"],
 };
 
 // ===== VALIDATION =====
@@ -80,25 +99,50 @@ function validateItem(
     return err(`Row ${index + 1}: "name" is required`);
   }
   if (!VALID_CATEGORIES.has(raw.category)) {
-    return err(`Row ${index + 1} ("${raw.name}"): invalid category "${raw.category}" — must be one of ${[...VALID_CATEGORIES].join(", ")}`);
+    return err(
+      `Row ${
+        index + 1
+      } ("${raw.name}"): invalid category "${raw.category}" — must be one of ${
+        [...VALID_CATEGORIES].join(", ")
+      }`,
+    );
   }
-  if (typeof raw.quantity !== "number" || !Number.isInteger(raw.quantity) || raw.quantity < 0) {
-    return err(`Row ${index + 1} ("${raw.name}"): "quantity" must be a non-negative integer`);
+  if (
+    typeof raw.quantity !== "number" || !Number.isInteger(raw.quantity) ||
+    raw.quantity < 0
+  ) {
+    return err(
+      `Row ${
+        index + 1
+      } ("${raw.name}"): "quantity" must be a non-negative integer`,
+    );
   }
   if (!raw.location || typeof raw.location !== "string") {
     return err(`Row ${index + 1} ("${raw.name}"): "location" is required`);
   }
   if (raw.space !== undefined && !VALID_SPACES.has(raw.space)) {
-    return err(`Row ${index + 1} ("${raw.name}"): invalid space "${raw.space}" — must be camp-store, scout-post-loft, or gas-storage-box`);
+    return err(
+      `Row ${
+        index + 1
+      } ("${raw.name}"): invalid space "${raw.space}" — must be camp-store, scout-post-loft, or gas-storage-box`,
+    );
   }
 
   if (raw.space === "gas-storage-box") {
     if (raw.category !== "fuel") {
-      return err(`Row ${index + 1} ("${raw.name}"): gas-storage-box only accepts fuel category items`);
+      return err(
+        `Row ${
+          index + 1
+        } ("${raw.name}"): gas-storage-box only accepts fuel category items`,
+      );
     }
   }
   if (raw.category === "fuel" && raw.space !== "gas-storage-box") {
-    return err(`Row ${index + 1} ("${raw.name}"): fuel items must be stored in gas-storage-box`);
+    return err(
+      `Row ${
+        index + 1
+      } ("${raw.name}"): fuel items must be stored in gas-storage-box`,
+    );
   }
 
   const category = raw.category as ItemCategory;
@@ -106,22 +150,26 @@ function validateItem(
   // Category-specific required fields
   for (const field of CATEGORY_REQUIRED[category]) {
     if (raw[field] === undefined || raw[field] === null || raw[field] === "") {
-      return err(`Row ${index + 1} ("${raw.name}"): "${field}" is required for category "${category}"`);
+      return err(
+        `Row ${
+          index + 1
+        } ("${raw.name}"): "${field}" is required for category "${category}"`,
+      );
     }
   }
 
   // Build the item — dates are set server-side; id is generated here
   const base = {
-    id:           crypto.randomUUID(),
-    name:         raw.name.trim(),
+    id: crypto.randomUUID(),
+    name: raw.name.trim(),
     category,
-    space:        (raw.space as ItemSpace) ?? "camp-store",
-    quantity:     raw.quantity,
+    space: (raw.space as ItemSpace) ?? "camp-store",
+    quantity: raw.quantity,
     minThreshold: typeof raw.minThreshold === "number" ? raw.minThreshold : 1,
-    location:     raw.location as ItemLocation,
-    notes:        raw.notes ?? undefined,
-    addedDate:    new Date(),
-    lastUpdated:  new Date(),
+    location: raw.location as ItemLocation,
+    notes: raw.notes ?? undefined,
+    addedDate: new Date(),
+    lastUpdated: new Date(),
   };
 
   if (category === "tent") {
@@ -175,12 +223,39 @@ function validateItem(
   if (category === "food") {
     const expiryDate = new Date(raw.expiryDate);
     if (isNaN(expiryDate.getTime())) {
-      return err(`Row ${index + 1} ("${raw.name}"): "expiryDate" must be a valid ISO date string (YYYY-MM-DD)`);
+      return err(
+        `Row ${
+          index + 1
+        } ("${raw.name}"): "expiryDate" must be a valid ISO date string (YYYY-MM-DD)`,
+      );
     }
-    return { ok: true, item: { ...base, category: "food", foodType: raw.foodType, expiryDate, storageRequirements: raw.storageRequirements, allergens: raw.allergens, weight: raw.weight, servings: raw.servings } };
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "food",
+        foodType: raw.foodType,
+        expiryDate,
+        storageRequirements: raw.storageRequirements,
+        allergens: raw.allergens,
+        weight: raw.weight,
+        servings: raw.servings,
+      },
+    };
   }
   if (category === "camping-tools") {
-    return { ok: true, item: { ...base, category: "camping-tools", toolType: raw.toolType, condition: raw.condition, material: raw.material, brand: raw.brand, yearPurchased: raw.yearPurchased } };
+    return {
+      ok: true,
+      item: {
+        ...base,
+        category: "camping-tools",
+        toolType: raw.toolType,
+        condition: raw.condition,
+        material: raw.material,
+        brand: raw.brand,
+        yearPurchased: raw.yearPurchased,
+      },
+    };
   }
   if (category === "games") {
     const contents = parseContents(raw.contents);
@@ -220,15 +295,28 @@ function validateItem(
     };
   }
   // kilt
-  const VALID_KILT_COMPONENTS = new Set(["kilt", "sporran", "socks", "flashes"]);
+  const VALID_KILT_COMPONENTS = new Set([
+    "kilt",
+    "sporran",
+    "socks",
+    "flashes",
+  ]);
   const rawComponents = raw.kiltComponents;
   if (rawComponents !== undefined && !Array.isArray(rawComponents)) {
-    return err(`Row ${index + 1} ("${raw.name}"): "kiltComponents" must be an array`);
+    return err(
+      `Row ${index + 1} ("${raw.name}"): "kiltComponents" must be an array`,
+    );
   }
-  const kiltComponents: KiltComponent[] = Array.isArray(rawComponents) ? rawComponents as KiltComponent[] : [];
+  const kiltComponents: KiltComponent[] = Array.isArray(rawComponents)
+    ? rawComponents as KiltComponent[]
+    : [];
   for (const c of kiltComponents) {
     if (!VALID_KILT_COMPONENTS.has(c)) {
-      return err(`Row ${index + 1} ("${raw.name}"): invalid kilt component "${c}" — must be one of: kilt, sporran, socks, flashes`);
+      return err(
+        `Row ${
+          index + 1
+        } ("${raw.name}"): invalid kilt component "${c}" — must be one of: kilt, sporran, socks, flashes`,
+      );
     }
   }
   return {
@@ -257,7 +345,9 @@ export const handler: Handlers = {
     const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB — generous envelope for multipart overhead
     const contentLength = req.headers.get("Content-Length");
     if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
-      return Response.json({ error: "Request body too large." }, { status: 413 });
+      return Response.json({ error: "Request body too large." }, {
+        status: 413,
+      });
     }
 
     let form: FormData;
@@ -282,7 +372,9 @@ export const handler: Handlers = {
       return Response.json({ error: "No file uploaded" }, { status: 400 });
     }
     if (!file.name.endsWith(".json")) {
-      return Response.json({ error: "File must be a .json file" }, { status: 400 });
+      return Response.json({ error: "File must be a .json file" }, {
+        status: 400,
+      });
     }
     // Reject oversized uploads before buffering into memory (~1 MB limit)
     const MAX_BYTES = 1 * 1024 * 1024;
@@ -299,18 +391,27 @@ export const handler: Handlers = {
       const text = await file.text();
       const parsed = JSON.parse(text);
       if (!Array.isArray(parsed)) {
-        return Response.json({ error: "JSON must be an array of item objects" }, { status: 400 });
+        return Response.json(
+          { error: "JSON must be an array of item objects" },
+          { status: 400 },
+        );
       }
       rows = parsed;
     } catch {
-      return Response.json({ error: "Could not parse JSON — check the file is valid JSON" }, { status: 400 });
+      return Response.json({
+        error: "Could not parse JSON — check the file is valid JSON",
+      }, { status: 400 });
     }
 
     if (rows.length === 0) {
-      return Response.json({ error: "File contains no items" }, { status: 400 });
+      return Response.json({ error: "File contains no items" }, {
+        status: 400,
+      });
     }
     if (rows.length > 500) {
-      return Response.json({ error: "Maximum 500 items per import" }, { status: 400 });
+      return Response.json({ error: "Maximum 500 items per import" }, {
+        status: 400,
+      });
     }
 
     // Validate all rows first so we can report all errors before writing anything
@@ -329,7 +430,11 @@ export const handler: Handlers = {
     // If there are any validation errors, reject the entire import without writing
     if (errors.length > 0) {
       return Response.json(
-        { error: "Import rejected due to validation errors — no items were saved", errors },
+        {
+          error:
+            "Import rejected due to validation errors — no items were saved",
+          errors,
+        },
         { status: 422 },
       );
     }
@@ -342,13 +447,19 @@ export const handler: Handlers = {
     const CONCURRENCY = 20;
     for (let i = 0; i < validItems.length; i += CONCURRENCY) {
       const batch = validItems.slice(i, i + CONCURRENCY);
-      const results = await Promise.allSettled(batch.map((item) => createItem(item)));
+      const results = await Promise.allSettled(
+        batch.map((item) => createItem(item)),
+      );
       for (let j = 0; j < results.length; j++) {
         if (results[j].status === "fulfilled") {
           imported++;
         } else {
           const item = batch[j];
-          writeErrors.push({ row: i + j + 1, name: item.name, error: "Failed to save item to database" });
+          writeErrors.push({
+            row: i + j + 1,
+            name: item.name,
+            error: "Failed to save item to database",
+          });
         }
       }
     }

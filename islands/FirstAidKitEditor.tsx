@@ -4,7 +4,10 @@ import {
   FIRST_AID_PROFILES,
   getCatalogItemName,
 } from "../lib/firstAidCatalog.ts";
-import type { FirstAidCatalogItem, FirstAidKitEntry } from "../types/firstAid.ts";
+import type {
+  FirstAidCatalogItem,
+  FirstAidKitEntry,
+} from "../types/firstAid.ts";
 
 interface FirstAidKitEditorProps {
   kitId: string;
@@ -28,20 +31,27 @@ export default function FirstAidKitEditor({
   const entries = useSignal<FirstAidKitEntry[]>([...initialEntries]);
   const renameValue = useSignal(initialName);
   const selectedProfileId = useSignal(
-    initialProfileId && FIRST_AID_PROFILES.some((p) => p.id === initialProfileId)
+    initialProfileId &&
+      FIRST_AID_PROFILES.some((p) => p.id === initialProfileId)
       ? initialProfileId
       : FIRST_AID_PROFILES[0]?.id ?? "",
   );
   const addItemId = useSignal(catalog[0]?.id ?? "");
   const addQty = useSignal(1);
   const qtyByItem = useSignal<Record<string, number>>(
-    Object.fromEntries(initialEntries.map((entry) => [entry.itemId, entry.quantityTarget])),
+    Object.fromEntries(
+      initialEntries.map((entry) => [entry.itemId, entry.quantityTarget]),
+    ),
   );
   const pending = useSignal(false);
-  const toast = useSignal<{ message: string; type: "success" | "error" } | null>(null);
+  const toast = useSignal<
+    { message: string; type: "success" | "error" } | null
+  >(null);
 
   const sortedEntries = useComputed(() =>
-    [...entries.value].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+    [...entries.value].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true })
+    )
   );
 
   function showToast(message: string, type: "success" | "error") {
@@ -51,7 +61,10 @@ export default function FirstAidKitEditor({
     }, 2500);
   }
 
-  async function postAction(action: string, fields: Record<string, string>): Promise<boolean> {
+  async function postAction(
+    action: string,
+    fields: Record<string, string>,
+  ): Promise<boolean> {
     const formData = new FormData();
     formData.set("_csrf", csrfToken);
     formData.set("action", action);
@@ -117,7 +130,10 @@ export default function FirstAidKitEditor({
   async function onAddItemSubmit(e: Event) {
     e.preventDefault();
     const itemId = addItemId.value;
-    const quantityTarget = Math.max(1, Math.min(999, Number(addQty.value) || 1));
+    const quantityTarget = Math.max(
+      1,
+      Math.min(999, Number(addQty.value) || 1),
+    );
     const name = getCatalogItemName(itemId, catalog);
 
     if (!itemId || !name) {
@@ -257,7 +273,8 @@ export default function FirstAidKitEditor({
       </div>
 
       <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-        Editing: <strong>{kitName.value}</strong> ({entries.value.length} item{entries.value.length === 1 ? "" : "s"})
+        Editing: <strong>{kitName.value}</strong> ({entries.value.length}{" "}
+        item{entries.value.length === 1 ? "" : "s"})
       </div>
       <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
         Profile: {profileId.value === "custom" ? "Custom" : profileId.value}
@@ -268,7 +285,9 @@ export default function FirstAidKitEditor({
           <thead>
             <tr class="text-left border-b border-gray-200 dark:border-gray-700">
               <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">Item</th>
-              <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">Target Qty</th>
+              <th class="py-2 pr-2 text-gray-500 dark:text-gray-400">
+                Target Qty
+              </th>
               <th class="py-2 text-gray-500 dark:text-gray-400">Actions</th>
             </tr>
           </thead>
@@ -278,7 +297,9 @@ export default function FirstAidKitEditor({
                 key={`${kitId}-${entry.itemId}`}
                 class="border-b border-gray-100 dark:border-gray-800"
               >
-                <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">{entry.name}</td>
+                <td class="py-2 pr-2 text-gray-900 dark:text-gray-100">
+                  {entry.name}
+                </td>
                 <td class="py-2 pr-2">
                   <form
                     onSubmit={(e) => onUpdateQtySubmit(e, entry.itemId)}
@@ -288,7 +309,8 @@ export default function FirstAidKitEditor({
                       type="number"
                       min={0}
                       max={999}
-                      value={qtyByItem.value[entry.itemId] ?? entry.quantityTarget}
+                      value={qtyByItem.value[entry.itemId] ??
+                        entry.quantityTarget}
                       disabled={pending.value}
                       onInput={(e) => {
                         const target = e.currentTarget as HTMLInputElement;

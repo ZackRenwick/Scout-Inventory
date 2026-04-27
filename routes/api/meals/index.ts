@@ -1,8 +1,13 @@
 // GET /api/meals        — list all meals (admin only)
 // POST /api/meals       — create a meal (admin only)
 import { Handlers } from "$fresh/server.ts";
-import { getAllMeals, createMeal } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import { createMeal, getAllMeals } from "../../../db/kv.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 import type { MealPayload } from "../../../types/meals.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 
@@ -30,13 +35,17 @@ export const handler: Handlers = {
         return Response.json({ error: "Name is required" }, { status: 400 });
       }
       if (!Array.isArray(body.ingredients) || body.ingredients.length === 0) {
-        return Response.json({ error: "At least one ingredient is required" }, { status: 400 });
+        return Response.json({ error: "At least one ingredient is required" }, {
+          status: 400,
+        });
       }
       const badIngredient = body.ingredients.some(
         (ing: Partial<{ name: string }>) => !ing.name?.trim(),
       );
       if (badIngredient) {
-        return Response.json({ error: "Each ingredient must have a name" }, { status: 400 });
+        return Response.json({ error: "Each ingredient must have a name" }, {
+          status: 400,
+        });
       }
 
       const meal = await createMeal({

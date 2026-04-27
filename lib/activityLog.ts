@@ -132,7 +132,11 @@ export async function clearActivityLog(): Promise<number> {
 // Writes invalidate immediately via invalidateActivityCache(); the TTL is a
 // safety net matching the 10-minute window used by the other KV caches.
 const ACTIVITY_CACHE_TTL_MS = 10 * 60_000; // 10 minutes
-let activityCache: { entries: ActivityEntry[]; limit: number; expiresAt: number } | null = null;
+let activityCache: {
+  entries: ActivityEntry[];
+  limit: number;
+  expiresAt: number;
+} | null = null;
 
 /** Invalidate the activity cache (called after writing a new entry). */
 function invalidateActivityCache() {
@@ -144,7 +148,10 @@ function invalidateActivityCache() {
  * Returns entries in reverse chronological order (newest first).
  */
 export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
-  if (activityCache && Date.now() < activityCache.expiresAt && limit <= activityCache.limit) {
+  if (
+    activityCache && Date.now() < activityCache.expiresAt &&
+    limit <= activityCache.limit
+  ) {
     return activityCache.entries.slice(0, limit);
   }
   const kv = await getKv();
@@ -157,6 +164,10 @@ export async function getRecentActivity(limit = 100): Promise<ActivityEntry[]> {
   ) {
     entries.push(entry.value);
   }
-  activityCache = { entries, limit: effectiveLimit, expiresAt: Date.now() + ACTIVITY_CACHE_TTL_MS };
+  activityCache = {
+    entries,
+    limit: effectiveLimit,
+    expiresAt: Date.now() + ACTIVITY_CACHE_TTL_MS,
+  };
   return entries;
 }

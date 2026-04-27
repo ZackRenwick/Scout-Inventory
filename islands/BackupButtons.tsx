@@ -13,7 +13,9 @@ interface Props {
   latestBackup: BackupMeta | null;
 }
 
-type Status = { ok: boolean; message: string; latestBackup?: BackupMeta } | null;
+type Status =
+  | { ok: boolean; message: string; latestBackup?: BackupMeta }
+  | null;
 
 async function runBackup(csrfToken: string): Promise<Status> {
   try {
@@ -43,7 +45,9 @@ async function runBackup(csrfToken: string): Promise<Status> {
 export default function BackupButtons({ csrfToken, latestBackup }: Props) {
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState<Status>(null);
-  const [currentBackup, setCurrentBackup] = useState<BackupMeta | null>(latestBackup);
+  const [currentBackup, setCurrentBackup] = useState<BackupMeta | null>(
+    latestBackup,
+  );
 
   async function trigger() {
     setRunning(true);
@@ -71,12 +75,21 @@ export default function BackupButtons({ csrfToken, latestBackup }: Props) {
           <p class="font-medium">Latest successful backup</p>
           <p class="mt-1 break-all">{currentBackup.objectKey}</p>
           <p class="mt-1 text-sky-700 dark:text-sky-300">
-            {new Date(currentBackup.createdAt).toLocaleString()} · {currentBackup.itemCount} items · {Math.round(currentBackup.byteLength / 1024)} KB · {currentBackup.source}
+            {new Date(currentBackup.createdAt).toLocaleString()} ·{" "}
+            {currentBackup.itemCount} items ·{" "}
+            {Math.round(currentBackup.byteLength / 1024)} KB ·{" "}
+            {currentBackup.source}
           </p>
         </div>
       )}
       {status && (
-        <p class={`mt-3 text-sm ${status.ok ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+        <p
+          class={`mt-3 text-sm ${
+            status.ok
+              ? "text-green-700 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
           {status.message}
         </p>
       )}

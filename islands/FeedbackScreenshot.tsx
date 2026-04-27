@@ -5,7 +5,9 @@ interface FeedbackScreenshotProps {
   alt: string;
 }
 
-export default function FeedbackScreenshot({ src, alt }: FeedbackScreenshotProps) {
+export default function FeedbackScreenshot(
+  { src, alt }: FeedbackScreenshotProps,
+) {
   return (
     <ImageLightbox
       images={[{ src, alt }]}

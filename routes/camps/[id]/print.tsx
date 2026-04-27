@@ -1,7 +1,11 @@
 // Print-optimised equipment list for a camp plan
 import { Handlers, PageProps } from "$fresh/server.ts";
 import type { CampPlan, CampPlanItem } from "../../../types/inventory.ts";
-import { getCategoryEmoji, getCategoryLabel, ITEM_LOCATIONS } from "../../../types/inventory.ts";
+import {
+  getCategoryEmoji,
+  getCategoryLabel,
+  ITEM_LOCATIONS,
+} from "../../../types/inventory.ts";
 import type { Session } from "../../../lib/auth.ts";
 import { getCampPlanById, getItemById } from "../../../db/kv.ts";
 import PrintButton from "../../../islands/PrintButton.tsx";
@@ -14,7 +18,11 @@ interface PrintPageData {
 function fmt(d: Date | string | undefined): string {
   if (!d) return "";
   const date = typeof d === "string" ? new Date(d) : d;
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export const handler: Handlers<PrintPageData> = {
@@ -22,7 +30,10 @@ export const handler: Handlers<PrintPageData> = {
     const { id } = ctx.params;
     const plan = await getCampPlanById(id);
     if (!plan) {
-      return new Response(null, { status: 302, headers: { location: "/camps" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/camps" },
+      });
     }
     const session = ctx.state.session as Session;
 
@@ -33,7 +44,8 @@ export const handler: Handlers<PrintPageData> = {
         if (item.contents !== undefined) return item;
         const inv = await getItemById(item.itemId);
         if (!inv) return item;
-        const contents = (inv as { contents?: { name: string; quantity: number }[] }).contents;
+        const contents =
+          (inv as { contents?: { name: string; quantity: number }[] }).contents;
         if (!contents || contents.length === 0) return item;
         return { ...item, contents };
       }),
@@ -50,7 +62,7 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
   const food = plan.items.filter((i) => i.itemCategory === "food");
 
   const BOX_LOCATIONS = new Set(
-    ITEM_LOCATIONS.find((g) => g.group === "Boxes")?.options ?? []
+    ITEM_LOCATIONS.find((g) => g.group === "Boxes")?.options ?? [],
   );
 
   // Items stored in a named box — group by box
@@ -76,7 +88,8 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Equipment List — {plan.name}</title>
-        <style>{`
+        <style>
+          {`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
           body {
             font-family: system-ui, -apple-system, sans-serif;
@@ -132,11 +145,14 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
             table { break-inside: auto; }
             tr { break-inside: avoid; }
           }
-        `}</style>
+        `}
+        </style>
       </head>
       <body>
         <div class="no-print">
-          <a href={`/camps/${plan.id}`} class="btn btn-secondary">← Back to Camp Plan</a>
+          <a href={`/camps/${plan.id}`} class="btn btn-secondary">
+            ← Back to Camp Plan
+          </a>
           <PrintButton label="🖨️ Print List" />
         </div>
 
@@ -146,16 +162,25 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
             <div class="meta">
               <span>📅 {dateRange}</span>
               {plan.location && <span>📍 {plan.location}</span>}
-              <span>Status: {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}</span>
+              <span>
+                Status:{" "}
+                {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+              </span>
               <span>Items: {plan.items.length}</span>
             </div>
-            {plan.notes && <p style="margin-top:0.5rem;font-size:0.8rem;color:#555">{plan.notes}</p>}
+            {plan.notes && (
+              <p style="margin-top:0.5rem;font-size:0.8rem;color:#555">
+                {plan.notes}
+              </p>
+            )}
           </div>
 
           {/* Box sections */}
           {Object.entries(boxGear).map(([box, items]) => (
             <div key={box}>
-              <h2>📦 {box} — {items.length} item{items.length !== 1 ? "s" : ""}</h2>
+              <h2>
+                📦 {box} — {items.length} item{items.length !== 1 ? "s" : ""}
+              </h2>
               <table>
                 <thead>
                   <tr>
@@ -170,8 +195,18 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
                   {items.map((item) => (
                     <>
                       <tr key={item.itemId}>
-                        <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
-                        <td><span class={`check${item.returnedStatus ? " ticked" : ""}`} /></td>
+                        <td>
+                          <span
+                            class={`check${item.packedStatus ? " ticked" : ""}`}
+                          />
+                        </td>
+                        <td>
+                          <span
+                            class={`check${
+                              item.returnedStatus ? " ticked" : ""
+                            }`}
+                          />
+                        </td>
                         <td>{item.itemName}</td>
                         <td style="text-align:right">{item.quantityPlanned}</td>
                         <td class="notes">{item.notes ?? ""}</td>
@@ -179,9 +214,14 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
                       {item.contents && item.contents.length > 0 && (
                         <tr key={`${item.itemId}-contents`}>
                           <td colspan={2} />
-                          <td colspan={3} style="padding-top:0;padding-bottom:0.4rem">
+                          <td
+                            colspan={3}
+                            style="padding-top:0;padding-bottom:0.4rem"
+                          >
                             <span style="font-size:0.7rem;color:#888">
-                              {item.contents.map((c) => `${c.quantity}× ${c.name}`).join(" · ")}
+                              {item.contents.map((c) =>
+                                `${c.quantity}× ${c.name}`
+                              ).join(" · ")}
                             </span>
                           </td>
                         </tr>
@@ -212,8 +252,18 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
                   {items.map((item) => (
                     <>
                       <tr key={item.itemId}>
-                        <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
-                        <td><span class={`check${item.returnedStatus ? " ticked" : ""}`} /></td>
+                        <td>
+                          <span
+                            class={`check${item.packedStatus ? " ticked" : ""}`}
+                          />
+                        </td>
+                        <td>
+                          <span
+                            class={`check${
+                              item.returnedStatus ? " ticked" : ""
+                            }`}
+                          />
+                        </td>
                         <td>{item.itemName}</td>
                         <td style="text-align:right">{item.quantityPlanned}</td>
                         <td class="notes">{item.itemLocation}</td>
@@ -222,9 +272,14 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
                       {item.contents && item.contents.length > 0 && (
                         <tr key={`${item.itemId}-contents`}>
                           <td colspan={2} />
-                          <td colspan={4} style="padding-top:0;padding-bottom:0.4rem">
+                          <td
+                            colspan={4}
+                            style="padding-top:0;padding-bottom:0.4rem"
+                          >
                             <span style="font-size:0.7rem;color:#888">
-                              {item.contents.map((c) => `${c.quantity}× ${c.name}`).join(" · ")}
+                              {item.contents.map((c) =>
+                                `${c.quantity}× ${c.name}`
+                              ).join(" · ")}
                             </span>
                           </td>
                         </tr>
@@ -253,7 +308,11 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
                 <tbody>
                   {food.map((item) => (
                     <tr key={item.itemId}>
-                      <td><span class={`check${item.packedStatus ? " ticked" : ""}`} /></td>
+                      <td>
+                        <span
+                          class={`check${item.packedStatus ? " ticked" : ""}`}
+                        />
+                      </td>
                       <td>{item.itemName}</td>
                       <td style="text-align:right">{item.quantityPlanned}</td>
                       <td class="notes">{item.itemLocation}</td>
@@ -266,11 +325,18 @@ export default function CampPrintPage({ data }: PageProps<PrintPageData>) {
           )}
 
           {plan.items.length === 0 && (
-            <p style="color:#888;margin-top:1rem">No items have been added to this camp plan yet.</p>
+            <p style="color:#888;margin-top:1rem">
+              No items have been added to this camp plan yet.
+            </p>
           )}
 
           <div class="footer">
-            Printed from 7th Whitburn Scouts Inventory · {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+            Printed from 7th Whitburn Scouts Inventory ·{" "}
+            {new Date().toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
           </div>
         </div>
       </body>

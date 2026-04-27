@@ -16,11 +16,17 @@ export const handler: Handlers<EditMealPageData> = {
   async GET(_req, ctx) {
     const session = ctx.state.session as Session;
     if (session.role !== "admin") {
-      return new Response(null, { status: 302, headers: { location: "/meals" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/meals" },
+      });
     }
     const meal = await getMealById(ctx.params.id);
     if (!meal) {
-      return new Response(null, { status: 302, headers: { location: "/meals" } });
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/meals" },
+      });
     }
     return ctx.render({ meal, session, csrfToken: session.csrfToken });
   },
@@ -28,10 +34,17 @@ export const handler: Handlers<EditMealPageData> = {
 
 export default function EditMealPage({ data }: PageProps<EditMealPageData>) {
   return (
-    <Layout title="Edit Meal" username={data.session.username} role={data.session.role}>
+    <Layout
+      title="Edit Meal"
+      username={data.session.username}
+      role={data.session.role}
+    >
       <div class="max-w-2xl">
         <div class="mb-4">
-          <a href="/meals" class="text-sm text-purple-600 dark:text-purple-400 hover:underline">
+          <a
+            href="/meals"
+            class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+          >
             ← Back to meals
           </a>
         </div>

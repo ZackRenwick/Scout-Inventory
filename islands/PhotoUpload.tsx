@@ -36,7 +36,10 @@ async function resizeImage(
         canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
         const previewDataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
         canvas.toBlob(
-          (blob) => blob ? resolve({ blob, previewDataUrl }) : reject(new Error("toBlob failed")),
+          (blob) =>
+            blob
+              ? resolve({ blob, previewDataUrl })
+              : reject(new Error("toBlob failed")),
           "image/jpeg",
           JPEG_QUALITY,
         );
@@ -49,7 +52,9 @@ async function resizeImage(
   });
 }
 
-export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfToken }: PhotoUploadProps) {
+export default function PhotoUpload(
+  { itemId, photoIds: initialPhotoIds, csrfToken }: PhotoUploadProps,
+) {
   const photoIds = useSignal<string[]>(initialPhotoIds);
   const activeIndex = useSignal(0);
   const pendingPreview = useSignal<string | null>(null);
@@ -59,7 +64,9 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
 
   const showStatus = (message: string, ok: boolean) => {
     status.value = { message, ok };
-    setTimeout(() => { status.value = null; }, 4000);
+    setTimeout(() => {
+      status.value = null;
+    }, 4000);
   };
 
   const handleFileChange = async (e: Event) => {
@@ -108,7 +115,9 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
   };
 
   const handleRemove = async (photoId: string) => {
-    if (!globalThis.confirm("Remove this photo? This cannot be undone.")) return;
+    if (!globalThis.confirm("Remove this photo? This cannot be undone.")) {
+      return;
+    }
     uploading.value = true;
     try {
       const res = await fetch(`/api/items/${itemId}/photos/${photoId}`, {
@@ -118,7 +127,10 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
       if (res.ok) {
         const next = photoIds.value.filter((p) => p !== photoId);
         photoIds.value = next;
-        activeIndex.value = Math.min(activeIndex.value, Math.max(0, next.length - 1));
+        activeIndex.value = Math.min(
+          activeIndex.value,
+          Math.max(0, next.length - 1),
+        );
         showStatus("Photo removed", true);
       } else {
         showStatus("Failed to remove photo", false);
@@ -139,7 +151,10 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
     try {
       await fetch(`/api/items/${itemId}/photos`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
         body: JSON.stringify({ photoIds: next }),
       });
     } catch {
@@ -175,7 +190,9 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
       {/* Pending preview */}
       {pendingPreview.value && (
         <div class="mb-4">
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Preview — not yet saved</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Preview — not yet saved
+          </p>
           <img
             src={pendingPreview.value}
             alt="Preview"
@@ -193,7 +210,10 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
             </button>
             <button
               type="button"
-              onClick={() => { pendingPreview.value = null; pendingBlob.value = null; }}
+              onClick={() => {
+                pendingPreview.value = null;
+                pendingBlob.value = null;
+              }}
               disabled={uploading.value}
               class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
             >
@@ -208,7 +228,9 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
         <div class="mb-4">
           {/* Large view */}
           <img
-            src={`/api/items/${itemId}/photos/${photoIds.value[activeIndex.value]}`}
+            src={`/api/items/${itemId}/photos/${
+              photoIds.value[activeIndex.value]
+            }`}
             alt={`Photo ${activeIndex.value + 1}`}
             // @ts-ignore: fetchpriority is a valid HTML attribute not yet in Preact stubs
             fetchpriority="high"
@@ -247,7 +269,8 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
               <button
                 type="button"
                 disabled={uploading.value}
-                onClick={() => handleMove(activeIndex.value, activeIndex.value - 1)}
+                onClick={() =>
+                  handleMove(activeIndex.value, activeIndex.value - 1)}
                 class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
               >
                 ← Move left
@@ -257,7 +280,8 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
               <button
                 type="button"
                 disabled={uploading.value}
-                onClick={() => handleMove(activeIndex.value, activeIndex.value + 1)}
+                onClick={() =>
+                  handleMove(activeIndex.value, activeIndex.value + 1)}
                 class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
               >
                 Move right →
@@ -285,7 +309,11 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
         <div>
           <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:border-purple-400 hover:text-purple-600 dark:hover:border-purple-500 dark:hover:text-purple-400 transition-colors">
             <span class="text-lg">📷</span>
-            <span>{photoIds.value.length === 0 ? "Add a photo…" : "Add another photo…"}</span>
+            <span>
+              {photoIds.value.length === 0
+                ? "Add a photo…"
+                : "Add another photo…"}
+            </span>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -301,5 +329,3 @@ export default function PhotoUpload({ itemId, photoIds: initialPhotoIds, csrfTok
     </div>
   );
 }
-
-

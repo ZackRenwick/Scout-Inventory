@@ -1,7 +1,4 @@
-import {
-  assertEquals,
-  assertStringIncludes,
-} from "$std/assert/mod.ts";
+import { assertEquals, assertStringIncludes } from "$std/assert/mod.ts";
 import {
   DEFAULT_UPLOAD_IMAGE_POLICY,
   validateUploadedImage,

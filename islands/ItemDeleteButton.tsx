@@ -7,7 +7,9 @@ interface Props {
   csrfToken: string;
 }
 
-export default function ItemDeleteButton({ itemId, itemName, csrfToken }: Props) {
+export default function ItemDeleteButton(
+  { itemId, itemName, csrfToken }: Props,
+) {
   const confirming = useSignal(false);
   const deleting = useSignal(false);
 

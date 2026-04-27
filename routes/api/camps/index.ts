@@ -1,8 +1,13 @@
 // API route for camp plans list
 import { Handlers } from "$fresh/server.ts";
 import type { CampPlan } from "../../../types/inventory.ts";
-import { getAllCampPlans, createCampPlan } from "../../../db/kv.ts";
-import { type Session, csrfOk, forbidden, csrfFailed } from "../../../lib/auth.ts";
+import { createCampPlan, getAllCampPlans } from "../../../db/kv.ts";
+import {
+  csrfFailed,
+  csrfOk,
+  forbidden,
+  type Session,
+} from "../../../lib/auth.ts";
 
 export const handler: Handlers = {
   // GET /api/camps - list all camp plans
@@ -11,7 +16,9 @@ export const handler: Handlers = {
       const plans = await getAllCampPlans();
       return Response.json(plans);
     } catch (_error) {
-      return Response.json({ error: "Failed to fetch camp plans" }, { status: 500 });
+      return Response.json({ error: "Failed to fetch camp plans" }, {
+        status: 500,
+      });
     }
   },
 
@@ -52,7 +59,9 @@ export const handler: Handlers = {
       const created = await createCampPlan(newPlan);
       return Response.json(created, { status: 201 });
     } catch (_error) {
-      return Response.json({ error: "Failed to create camp plan" }, { status: 500 });
+      return Response.json({ error: "Failed to create camp plan" }, {
+        status: 500,
+      });
     }
   },
 };
