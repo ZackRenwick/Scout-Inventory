@@ -17,10 +17,13 @@ export default function MobileNav({ username, role }: MobileNavProps) {
       <button
         type="button"
         onClick={() => open.value = !open.value}
-        class="lg:hidden flex items-center px-2 py-1 rounded text-white hover:bg-white/20 transition-colors"
+        class="lg:hidden relative flex items-center px-2 py-1 rounded text-white hover:bg-white/20 transition-colors"
         aria-label="Toggle menu"
       >
         <span class="text-xl">{open.value ? "✕" : "☰"}</span>
+        {role === "admin" && (
+          <FeedbackPendingBadge className="absolute -top-1 -right-1 inline-flex min-w-4 items-center justify-center rounded-full bg-red-600 px-1 py-0.5 text-[9px] font-semibold leading-none text-white" />
+        )}
       </button>
 
       {/* Desktop nav links — hidden on mobile/tablet */}
