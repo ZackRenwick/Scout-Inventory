@@ -44,6 +44,35 @@ export default function UserDirectory({
 
   return (
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-8">
+      <div class="px-6 pt-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <label for="users-search" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+          Search users
+        </label>
+        <div class="flex items-center gap-2">
+          <input
+            id="users-search"
+            type="search"
+            value={query.value}
+            onInput={(event) => {
+              query.value = (event.currentTarget as HTMLInputElement).value;
+            }}
+            placeholder="Filter by username or role"
+            class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+          {query.value.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                query.value = "";
+              }}
+              class="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       <details
         open={isOpen.value}
         onToggle={(event) => {
@@ -61,35 +90,6 @@ export default function UserDirectory({
             Large user list detected. Use search to quickly find users.
           </p>
         )}
-
-        <div class="px-6 pb-3">
-          <label for="users-search" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-            Search users
-          </label>
-          <div class="flex items-center gap-2">
-            <input
-              id="users-search"
-              type="search"
-              value={query.value}
-              onInput={(event) => {
-                query.value = (event.currentTarget as HTMLInputElement).value;
-              }}
-              placeholder="Filter by username or role"
-              class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            {query.value.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  query.value = "";
-                }}
-                class="px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
 
         {visibleCount === 0 ? (
           <p class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
