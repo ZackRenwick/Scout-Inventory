@@ -1,5 +1,13 @@
 // Authentication helpers: users and sessions stored in Deno KV
 import bcrypt from "bcryptjs";
+import type { UserRole, User } from "./auth-roles.ts";
+export {
+  USER_ROLES,
+  type UserRole,
+  ASSIGNABLE_USER_ROLES,
+  USER_ROLE_META,
+  type User,
+} from "./auth-roles.ts";
 
 const SESSION_DURATION_MS = 1000 * 60 * 15; // 15 minutes
 const BCRYPT_ROUNDS = 12;
@@ -36,46 +44,6 @@ export function validatePassword(password: string): string | null {
     return "That password is too commonly used. Please choose a more unique one.";
   }
   return null;
-}
-
-export const USER_ROLES = [
-  "admin",
-  "manager",
-  "editor",
-  "explorer",
-  "viewer",
-] as const;
-
-export type UserRole = (typeof USER_ROLES)[number];
-
-export const ASSIGNABLE_USER_ROLES: Record<UserRole, readonly UserRole[]> = {
-  admin: USER_ROLES,
-  manager: ["manager", "editor", "explorer", "viewer"],
-  editor: [],
-  explorer: [],
-  viewer: [],
-};
-
-export const USER_ROLE_META: Record<
-  UserRole,
-  { label: string; description: string }
-> = {
-  admin: { label: "Admin", description: "full access" },
-  manager: { label: "Manager", description: "stock-take, exports & users" },
-  editor: { label: "Editor", description: "manage inventory" },
-  explorer: {
-    label: "Explorer",
-    description: "inventory only (no first aid / risk)",
-  },
-  viewer: { label: "Viewer", description: "read only" },
-};
-
-export interface User {
-  id: string;
-  username: string;
-  passwordHash: string;
-  role: UserRole;
-  createdAt: string;
 }
 
 export interface Session {

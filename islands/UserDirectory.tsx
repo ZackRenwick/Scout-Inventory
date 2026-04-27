@@ -2,7 +2,7 @@ import { useEffect } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import PasswordInputBase from "../components/PasswordInputBase.tsx";
 import ConfirmDeleteForm from "../components/ConfirmDeleteForm.tsx";
-import { USER_ROLE_META, type User } from "../lib/auth.ts";
+import { USER_ROLE_META, type User } from "../lib/auth-roles.ts";
 
 interface UserDirectoryProps {
   users: Array<Pick<User, "id" | "username" | "role" | "createdAt">>;
