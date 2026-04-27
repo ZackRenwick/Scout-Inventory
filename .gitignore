@@ -9,6 +9,9 @@
 _fresh/
 # npm dependencies
 node_modules/
+playwright-report/
+test-results/
+tests/visual/diffs/
 
 # macOS metadata
 .DS_Store

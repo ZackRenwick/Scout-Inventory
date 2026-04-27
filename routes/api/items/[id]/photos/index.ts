@@ -12,10 +12,9 @@ import {
   forbidden,
   type Session,
 } from "../../../../../lib/auth.ts";
+import { validateUploadedImage } from "../../../../../lib/uploadImageValidation.ts";
 
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10 MB hard safety cap
 const MAX_PHOTOS_PER_ITEM = 5;
-const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export const handler: Handlers = {
   // POST /api/items/:id/photos — upload one new photo
@@ -49,19 +48,10 @@ export const handler: Handlers = {
       return Response.json({ error: "No photo field in request" }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.has(file.type)) {
-      return Response.json(
-        { error: "Only JPEG, PNG, or WebP images are allowed" },
-        { status: 415 },
-      );
-    }
-
     const bytes = new Uint8Array(await file.arrayBuffer());
-    if (bytes.length > MAX_PHOTO_BYTES) {
-      return Response.json(
-        { error: "Image exceeds 10 MB limit — please upload a smaller image" },
-        { status: 413 },
-      );
+    const validation = validateUploadedImage(file.type, bytes);
+    if ("status" in validation) {
+      return Response.json({ error: validation.error }, { status: validation.status });
     }
 
     const photoId = await addItemPhoto(id, bytes, file.type, item);

@@ -182,8 +182,41 @@ deno task seed       # Populate database with sample items
 deno task build      # Build for production
 deno task preview    # Preview production build
 deno task check      # Type check, lint, and format check
+deno task check:visual-baselines # Ensure visual baselines are not referenced by runtime code/assets
+deno task pre-commit # Run pre-commit safeguards locally
+deno task test:e2e   # Run E2E smoke tests against an already-running app
+deno task test:e2e:local # Start local app, run E2E smoke tests, then stop app
 deno task migrate:photos-r2      # Migrate legacy KV photo blobs into R2
 ```
+
+### Local E2E Smoke Tests
+
+E2E tests in `tests/e2e/` cover:
+- auth redirect for protected pages
+- login and navigation across core routes
+- logout and session invalidation
+- inventory create/edit/delete flow
+- loan create/return flow
+
+Run against a running app:
+
+```bash
+E2E_BASE_URL=http://127.0.0.1:8000 deno task test:e2e
+```
+
+Or run everything with one command (starts app with local admin credentials automatically):
+
+```bash
+deno task test:e2e:local
+```
+
+Optional overrides:
+- `E2E_PORT`
+- `E2E_BASE_URL`
+- `E2E_USERNAME`
+- `E2E_PASSWORD`
+
+E2E tasks run suites sequentially (file-by-file) because login invalidates prior active sessions for the same user.
 
 ---
 

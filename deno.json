@@ -1,7 +1,15 @@
 {
   "lock": false,
   "tasks": {
-    "check": "deno fmt --check && deno lint && deno check **/*.ts && deno check **/*.tsx",
+    "check": "deno fmt --check && deno lint && deno check **/*.ts && deno check **/*.tsx && deno task check:visual-baselines",
+    "check:visual-baselines": "deno run -A scripts/check_visual_baseline_leaks.ts",
+    "pre-commit": "deno task check:visual-baselines",
+    "test:e2e": "deno test -A tests/e2e/main_flows_e2e_test.ts && deno test -A tests/e2e/mutating_flows_e2e_test.ts",
+    "test:e2e:local": "deno run -A --unstable-kv scripts/run_e2e_local.ts",
+    "test": "deno test -A",
+    "test:unit": "deno test -A lib/*_test.ts",
+    "test:visual": "deno run -A scripts/visual_regression.ts",
+    "test:visual:update": "deno run -A scripts/visual_regression.ts --update",
     "cli": "echo \"import '\\$fresh/src/dev/cli.ts'\" | deno run --unstable -A -",
     "manifest": "deno task cli manifest $(pwd)",
     "start": "deno run -A --unstable-kv --watch=static/,routes/ dev.ts",
