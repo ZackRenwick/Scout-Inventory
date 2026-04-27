@@ -353,6 +353,24 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
           </p>
         </div>
 
+        {isAdmin && (
+          <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg shadow border border-amber-200 dark:border-amber-800 p-6 mb-8">
+            <h2 class="text-base font-semibold text-amber-900 dark:text-amber-100 mb-1">
+              💡 Action Needed: Feedback Review
+            </h2>
+            <p class="text-sm text-amber-800/90 dark:text-amber-200/90 mb-4">
+              Review and triage new feature requests and bug reports from users.
+            </p>
+            <a
+              href="/admin/feedback"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <span>Open Feedback Queue</span>
+              <FeedbackPendingBadge className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white" />
+            </a>
+          </div>
+        )}
+
         {/* Notifications — admin only */}
         {isAdmin && (
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 mb-8">
@@ -428,13 +446,6 @@ export default function UsersPage({ data }: PageProps<UsersPageData>) {
                 class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 📋 Activity Log
-              </a>
-              <a
-                href="/admin/feedback"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                <span>💡 Review Feedback</span>
-                <FeedbackPendingBadge className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white" />
               </a>
             </div>
           </div>
