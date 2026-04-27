@@ -98,17 +98,40 @@ export default function FeedbackFormClient() {
         const fd = new FormData();
         fd.append("photo", pendingFile);
 
-        const res = await fetch("/api/feedback-photos", {
-          method: "POST",
-          body: fd,
-        });
+        const uploadPhoto = async () => {
+          return await fetch("/api/feedback-photos", {
+            method: "POST",
+            body: fd,
+            cache: "no-store",
+            credentials: "same-origin",
+          });
+        };
+
+        let res = await uploadPhoto();
+
+        // If a stale PWA/client path briefly serves the wrong route/method,
+        // ask the SW to update and retry once before failing the submission.
+        if (res.status === 405) {
+          const sw = globalThis.navigator?.serviceWorker;
+          const reg = sw ? await sw.getRegistration() : undefined;
+          if (reg) {
+            try {
+              await reg.update();
+            } catch {
+              // Continue to retry once even if update fails.
+            }
+          }
+          res = await uploadPhoto();
+        }
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           const errorMessage =
             body && typeof body.error === "string"
               ? body.error
-              : "Upload failed with status " + res.status;
+              : (res.status === 405
+                ? "Upload endpoint temporarily unavailable. Please refresh the app and try again."
+                : "Upload failed with status " + res.status);
           throw new Error(errorMessage);
         }
 
