@@ -322,16 +322,16 @@ scout-inventory/
 The app is deployed to Deno Deploy via GitHub. Push to `main` to trigger a deploy.
 
 When using GitHub automatic deploys, Deno Deploy pulls repository contents directly.
-The `deploy:preview` and `deploy:prod` tasks below are for `deployctl` deployments and are the path that applies explicit file excludes.
+The `deploy:preview` and `deploy:prod` tasks below use the new `deno deploy` CLI with explicit `--ignore` flags.
 
-To keep deployment artifacts lean when deploying via `deployctl`, this repo config excludes local-only assets (`tests/**`, `_fresh/**`, `node_modules/**`, Playwright outputs). Use:
+To keep deployment artifacts lean when deploying via the CLI, this repo excludes local-only assets (`tests/**`, `tests/visual/baselines/**`, `_fresh/**`, `node_modules/**`, `.git/**`, Playwright outputs). Use:
 
 ```bash
 deno task deploy:preview
 deno task deploy:prod
 ```
 
-These deploy tasks use explicit `--exclude` flags and match the deploy profile in `deno.json`.
+These deploy tasks use explicit `--ignore` flags.
 
 One notification `Deno.cron` job runs at 08:30 UTC on Wednesday + Friday (only when `ENABLE_NOTIFY_CRON=true`):
 - Low stock check — emails if any inventory items or neckers are below threshold
