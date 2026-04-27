@@ -186,6 +186,13 @@ export default function AdminFeedbackPage(
             Review feature requests and bug reports submitted by users. You can
             accept, complete, or reject requests.
           </p>
+          {counts.pending > 0 && (
+            <p class="mt-2 inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-200">
+              {counts.pending} pending request{counts.pending === 1 ? "" : "s"}
+              {" "}
+              to review
+            </p>
+          )}
         </div>
 
         <div class="flex flex-wrap gap-2">
@@ -207,7 +214,11 @@ export default function AdminFeedbackPage(
               <span>{label}</span>
               <span
                 class={`text-xs px-2 py-0.5 rounded-full ${
-                  activeTab === tab
+                  tab === "pending" && counts.pending > 0
+                    ? activeTab === tab
+                      ? "bg-red-500/90 text-white"
+                      : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200"
+                    : activeTab === tab
                     ? "bg-white/20"
                     : "bg-gray-100 dark:bg-gray-700"
                 }`}
