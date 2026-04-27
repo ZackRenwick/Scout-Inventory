@@ -1,6 +1,12 @@
-// Island wrapper so PasswordInput can be used directly from SSR routes.
-// The actual implementation lives in components/PasswordInputBase.tsx so it
-// can also be imported inside other islands without triggering Fresh's
-// island-in-island restriction.
-export { default } from "../components/PasswordInputBase.tsx";
+// Password input with show/hide toggle.
+// NOTE: The implementation is shared via components/PasswordInputBase.tsx
+// (used by islands that can't nest another island). This file stays in
+// islands/ so Fresh hydrates it when used directly from SSR routes.
+import PasswordInputBase from "../components/PasswordInputBase.tsx";
 export type { PasswordInputProps } from "../components/PasswordInputBase.tsx";
+
+export default function PasswordInput(
+  props: Parameters<typeof PasswordInputBase>[0],
+) {
+  return <PasswordInputBase {...props} />;
+}
