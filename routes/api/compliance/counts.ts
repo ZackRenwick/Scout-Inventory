@@ -30,16 +30,22 @@ export const handler: Handlers = {
         getAllItems(),
       ]);
 
-    // Count first aid kits with monthly check overdue
+    // Count first aid kits with monthly check overdue (excluding dismissed reminders)
     let firstAidDue = 0;
     for (const kitId of kitIds) {
       const state = kitStates[kitId];
-      if (isMonthlyDue(state?.lastCheckedAt ?? null)) {
+      if (
+        isMonthlyDue(state?.lastCheckedAt ?? null) &&
+        !isDismissed(state?.dismissedUntil ?? null)
+      ) {
         firstAidDue++;
       }
     }
-    // Also include overall first-aid health check if due
-    if (isMonthlyDue(overallState?.lastCheckedAt ?? null)) {
+    // Also include overall first-aid health check if due and not dismissed
+    if (
+      isMonthlyDue(overallState?.lastCheckedAt ?? null) &&
+      !isDismissed(overallState?.dismissedUntil ?? null)
+    ) {
       firstAidDue++;
     }
 
