@@ -101,9 +101,17 @@ export default function MobileNav({ username, role }: MobileNavProps) {
           </a>
         )}
         {role !== "explorer" && (
-          <a href="/first-aid" class="hover:text-purple-200 transition-colors inline-flex items-center">
-            First Aid
-            <ComplianceBadge type="first-aid" />
+          <a
+            href="/first-aid"
+            class="hover:text-purple-200 transition-colors inline-flex items-center"
+          >
+            <span>First Aid</span>
+            <span class="ml-1 inline-flex min-w-5 justify-center">
+              <ComplianceBadge
+                type="first-aid"
+                className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white"
+              />
+            </span>
           </a>
         )}
         {role !== "explorer" && (
@@ -111,8 +119,13 @@ export default function MobileNav({ username, role }: MobileNavProps) {
             href="/risk-assessments"
             class="hover:text-purple-200 transition-colors inline-flex items-center"
           >
-            Risk Assessments
-            <ComplianceBadge type="risk" />
+            <span>Risk Assessments</span>
+            <span class="ml-1 inline-flex min-w-5 justify-center">
+              <ComplianceBadge
+                type="risk"
+                className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white"
+              />
+            </span>
           </a>
         )}
         {(role === "admin" || role === "manager") && (
@@ -128,8 +141,12 @@ export default function MobileNav({ username, role }: MobileNavProps) {
             href="/admin/admin-panel"
             class="hover:text-purple-200 transition-colors inline-flex items-center"
           >
-            Admin
-            {role === "admin" && <FeedbackPendingBadge />}
+            <span>Admin</span>
+            {role === "admin" && (
+              <span class="ml-1 inline-flex min-w-5 justify-center">
+                <FeedbackPendingBadge className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white" />
+              </span>
+            )}
           </a>
         )}
         <a
