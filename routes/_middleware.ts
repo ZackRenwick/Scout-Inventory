@@ -102,6 +102,7 @@ async function withTimeout<T>(
 export async function handler(req: Request, ctx: FreshContext) {
   const url = new URL(req.url);
   const path = url.pathname;
+  const isLogoutRequest = req.method === "POST" && path === "/api/logout";
   const startedAt = Date.now();
 
   function logSlowRequest(status: number): void {
@@ -181,6 +182,16 @@ export async function handler(req: Request, ctx: FreshContext) {
   // any activity (navigation, API call, form submission) resets the idle timer.
   // Pass the already-fetched session to avoid a redundant KV read inside extendSession.
   const res = await ctx.next();
+
+  // Routes that intentionally manage cookies (logout, password/session rotation,
+  // etc.) must own the Set-Cookie header without middleware appending another.
+  const routeOwnsCookie = res.headers.has("Set-Cookie");
+
+  if (isLogoutRequest || routeOwnsCookie) {
+    applySecurityHeaders(res.headers);
+    logSlowRequest(res.status);
+    return res;
+  }
 
   try {
     await withTimeout(
