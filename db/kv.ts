@@ -355,17 +355,25 @@ function invalidateFeedbackRequestsCache(): void {
  * served until all data is in memory, eliminating cold-isolate TTFB spikes.
  */
 export function preloadCaches(): Promise<void> {
-  return Promise.all([
-    getAllItems().catch(() => {}),
-    getAllCheckOuts().catch(() => {}),
-    getAllCampPlans().catch(() => {}),
-    getAllCampTemplates().catch(() => {}),
-    getAllMeals().catch(() => {}),
-    getAllFirstAidKits().catch(() => {}),
-    getAllFirstAidCatalogItems().catch(() => {}),
-    getAllRiskAssessments().catch(() => {}),
-    getAllFeedbackRequests().catch(() => {}),
-  ]).then(() => {});
+  const tasks: Array<[name: string, loader: () => Promise<unknown>]> = [
+    ["items", getAllItems],
+    ["checkouts", getAllCheckOuts],
+    ["camp-plans", getAllCampPlans],
+    ["camp-templates", getAllCampTemplates],
+    ["meals", getAllMeals],
+    ["first-aid-kits", getAllFirstAidKits],
+    ["first-aid-catalog", getAllFirstAidCatalogItems],
+    ["risk-assessments", getAllRiskAssessments],
+    ["feedback-requests", getAllFeedbackRequests],
+  ];
+
+  return Promise.all(tasks.map(async ([name, loader]) => {
+    try {
+      await loader();
+    } catch (error) {
+      console.error(`[preloadCaches] ${name} failed`, error);
+    }
+  })).then(() => {});
 }
 
 // ===== ATOMIC INDEX HELPERS =====

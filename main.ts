@@ -25,13 +25,53 @@ import {
 } from "./lib/notifications.ts";
 import { initKv, preloadCaches } from "./db/kv.ts";
 
+const STARTUP_STEP_TIMEOUT_MS = Number(
+  Deno.env.get("STARTUP_STEP_TIMEOUT_MS") ?? "15000",
+);
+
+async function withTimeout<T>(
+  name: string,
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`[startup] ${name} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
+
+async function runStartupStep(
+  name: string,
+  step: () => Promise<void>,
+): Promise<void> {
+  const started = Date.now();
+  try {
+    await withTimeout(name, step(), STARTUP_STEP_TIMEOUT_MS);
+    console.log(`[startup] ${name} ok (${Date.now() - started}ms)`);
+  } catch (error) {
+    console.error(`[startup] ${name} failed`, error);
+  }
+}
+
 // Warm all KV caches and ensure the admin account exist concurrently before
 // starting Fresh. Awaiting here guarantees no request is ever served from a
 // cold cache, eliminating the 4-9 s TTFB spike on new isolates.
+console.log("[startup] Boot sequence started");
 await Promise.all([
-  preloadCaches(),
-  ensureDefaultAdmin(),
+  runStartupStep("preloadCaches", preloadCaches),
+  runStartupStep("ensureDefaultAdmin", ensureDefaultAdmin),
 ]);
+console.log("[startup] Boot sequence complete, starting Fresh");
 
 // Atomically claim the notification run for today (UTC date).
 // Returns true only for the first caller — cron or startup catch-up,
@@ -130,4 +170,5 @@ if (Deno.env.get("DENO_DEPLOYMENT_ID")) {
     runNotifications("startup-catchup");
   }
 }
+console.log("[startup] Fresh server booting");
 await start(manifest, config);
