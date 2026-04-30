@@ -222,6 +222,9 @@ export async function getComputedStats(): Promise<ComputedStats> {
 // All writes invalidate this cache immediately, so the TTL is just a safety net
 // against external KV modifications. 5 minutes is a safe, sensible default.
 const CACHE_TTL_MS = 10 * 60_000; // 10 minutes
+const CACHE_LOAD_TIMEOUT_MS = Number(
+  Deno.env.get("CACHE_LOAD_TIMEOUT_MS") ?? "8000",
+);
 let itemsCache: { items: InventoryItem[]; expiresAt: number } | null = null;
 let checkoutsCache: { checkouts: CheckOut[]; expiresAt: number } | null = null;
 
@@ -271,13 +274,42 @@ let feedbackRequestsCache:
   | null = null;
 let feedbackRequestsInFlight: Promise<FeedbackRequest[]> | null = null;
 
+async function withCacheLoadTimeout<T>(
+  name: string,
+  promise: Promise<T>,
+): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`[cache] ${name} timed out after ${CACHE_LOAD_TIMEOUT_MS}ms`));
+    }, CACHE_LOAD_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
+function runCacheLoad<T>(
+  name: string,
+  loader: () => Promise<T>,
+  resetInFlight: () => void,
+): Promise<T> {
+  return withCacheLoadTimeout(name, loader()).catch((error) => {
+    resetInFlight();
+    throw error;
+  });
+}
+
 export async function getAllItems(): Promise<InventoryItem[]> {
   if (itemsCache && Date.now() < itemsCache.expiresAt) {
     return itemsCache.items;
   }
   // Start a background refresh if not already running
   if (!itemsInFlight) {
-    itemsInFlight = (async () => {
+    itemsInFlight = runCacheLoad("items", async () => {
       const db = await initKv();
       const items: InventoryItem[] = [];
       const entries = db.list<InventoryItem>({ prefix: KEYS.items });
@@ -287,7 +319,7 @@ export async function getAllItems(): Promise<InventoryItem[]> {
       itemsCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
       itemsInFlight = null;
       return items;
-    })();
+    }, invalidateItemsCache);
   }
   // Stale-while-revalidate: serve existing data immediately, refresh in background
   if (itemsCache) return itemsCache.items;
@@ -853,7 +885,7 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
     return checkoutsCache.checkouts;
   }
   if (!checkoutsInFlight) {
-    checkoutsInFlight = (async () => {
+    checkoutsInFlight = runCacheLoad("checkouts", async () => {
       const db = await initKv();
       const checkouts: CheckOut[] = [];
       const entries = db.list<CheckOut>({ prefix: KEYS.checkouts });
@@ -863,7 +895,7 @@ export async function getAllCheckOuts(): Promise<CheckOut[]> {
       checkoutsCache = { checkouts, expiresAt: Date.now() + CACHE_TTL_MS };
       checkoutsInFlight = null;
       return checkouts;
-    })();
+    }, invalidateCheckoutsCache);
   }
   if (checkoutsCache) return checkoutsCache.checkouts;
   return await checkoutsInFlight!;
@@ -1630,7 +1662,7 @@ export async function getAllCampPlans(): Promise<CampPlan[]> {
     return campPlansCache.plans;
   }
   if (!campPlansInFlight) {
-    campPlansInFlight = (async () => {
+    campPlansInFlight = runCacheLoad("camp-plans", async () => {
       const db = await initKv();
       const plans: CampPlan[] = [];
       for await (const entry of db.list<CampPlan>({ prefix: KEYS.camps })) {
@@ -1640,7 +1672,7 @@ export async function getAllCampPlans(): Promise<CampPlan[]> {
       campPlansCache = { plans, expiresAt: Date.now() + CACHE_TTL_MS };
       campPlansInFlight = null;
       return plans;
-    })();
+    }, invalidateCampPlansCache);
   }
   if (campPlansCache) return campPlansCache.plans;
   return await campPlansInFlight!;
@@ -1719,7 +1751,7 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
     return templatesCache.templates;
   }
   if (!templatesInFlight) {
-    templatesInFlight = (async () => {
+    templatesInFlight = runCacheLoad("camp-templates", async () => {
       const db = await initKv();
       const templates: CampTemplate[] = [];
       for await (
@@ -1733,7 +1765,7 @@ export async function getAllCampTemplates(): Promise<CampTemplate[]> {
       templatesCache = { templates, expiresAt: Date.now() + CACHE_TTL_MS };
       templatesInFlight = null;
       return templates;
-    })();
+    }, invalidateTemplatesCache);
   }
   if (templatesCache) return templatesCache.templates;
   return await templatesInFlight!;
@@ -1870,7 +1902,7 @@ export async function getAllFirstAidKits(): Promise<FirstAidKit[]> {
     return firstAidKitsCache.kits;
   }
   if (!firstAidKitsInFlight) {
-    firstAidKitsInFlight = (async () => {
+    firstAidKitsInFlight = runCacheLoad("first-aid-kits", async () => {
       const db = await initKv();
       const kits: FirstAidKit[] = [];
       for await (
@@ -1884,7 +1916,7 @@ export async function getAllFirstAidKits(): Promise<FirstAidKit[]> {
       firstAidKitsCache = { kits, expiresAt: Date.now() + CACHE_TTL_MS };
       firstAidKitsInFlight = null;
       return kits;
-    })();
+    }, invalidateFirstAidKitsCache);
   }
   if (firstAidKitsCache) return firstAidKitsCache.kits;
   return await firstAidKitsInFlight!;
@@ -2194,7 +2226,7 @@ export async function getAllFirstAidCatalogItems(): Promise<
     return firstAidCatalogCache.items;
   }
   if (!firstAidCatalogInFlight) {
-    firstAidCatalogInFlight = (async () => {
+    firstAidCatalogInFlight = runCacheLoad("first-aid-catalog", async () => {
       const db = await initKv();
       const items: FirstAidCatalogItem[] = [];
       for await (
@@ -2237,7 +2269,7 @@ export async function getAllFirstAidCatalogItems(): Promise<
       firstAidCatalogCache = { items, expiresAt: Date.now() + CACHE_TTL_MS };
       firstAidCatalogInFlight = null;
       return items;
-    })();
+    }, invalidateFirstAidCatalogCache);
   }
   if (firstAidCatalogCache) return firstAidCatalogCache.items;
   return await firstAidCatalogInFlight!;
@@ -2335,7 +2367,7 @@ export async function getAllRiskAssessments(): Promise<RiskAssessment[]> {
     return riskAssessmentsCache.assessments;
   }
   if (!riskAssessmentsInFlight) {
-    riskAssessmentsInFlight = (async () => {
+    riskAssessmentsInFlight = runCacheLoad("risk-assessments", async () => {
       const db = await initKv();
       const assessments: RiskAssessment[] = [];
       for await (
@@ -2352,7 +2384,7 @@ export async function getAllRiskAssessments(): Promise<RiskAssessment[]> {
       };
       riskAssessmentsInFlight = null;
       return assessments;
-    })();
+    }, invalidateRiskAssessmentsCache);
   }
   if (riskAssessmentsCache) return riskAssessmentsCache.assessments;
   return await riskAssessmentsInFlight!;
@@ -2528,7 +2560,7 @@ export async function getAllMeals(): Promise<Meal[]> {
     return mealsCache.meals;
   }
   if (!mealsInFlight) {
-    mealsInFlight = (async () => {
+    mealsInFlight = runCacheLoad("meals", async () => {
       const db = await initKv();
       const meals: Meal[] = [];
       for await (const entry of db.list<Meal>({ prefix: KEYS.meals })) {
@@ -2540,7 +2572,7 @@ export async function getAllMeals(): Promise<Meal[]> {
       mealsCache = { meals: sorted, expiresAt: Date.now() + CACHE_TTL_MS };
       mealsInFlight = null;
       return sorted;
-    })();
+    }, invalidateMealsCache);
   }
   if (mealsCache) return mealsCache.meals;
   return await mealsInFlight!;
@@ -2574,7 +2606,7 @@ export async function getAllFeedbackRequests(): Promise<FeedbackRequest[]> {
     return feedbackRequestsCache.requests;
   }
   if (!feedbackRequestsInFlight) {
-    feedbackRequestsInFlight = (async () => {
+    feedbackRequestsInFlight = runCacheLoad("feedback-requests", async () => {
       const db = await initKv();
       const requests: FeedbackRequest[] = [];
       for await (
@@ -2591,7 +2623,7 @@ export async function getAllFeedbackRequests(): Promise<FeedbackRequest[]> {
       };
       feedbackRequestsInFlight = null;
       return sorted;
-    })();
+    }, invalidateFeedbackRequestsCache);
   }
   if (feedbackRequestsCache) return feedbackRequestsCache.requests;
   return await feedbackRequestsInFlight!;

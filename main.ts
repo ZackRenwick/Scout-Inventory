@@ -12,7 +12,6 @@ import config from "./fresh.config.ts";
 import { ensureDefaultAdmin } from "./lib/auth.ts";
 import {
   createInventoryBackup,
-  getWeeklyInventoryBackupSchedule,
   isWeeklyInventoryBackupEnabled,
 } from "./lib/inventoryBackups.ts";
 import {
@@ -63,15 +62,13 @@ async function runStartupStep(
   }
 }
 
-// Warm all KV caches and ensure the admin account exist concurrently before
-// starting Fresh. Awaiting here guarantees no request is ever served from a
-// cold cache, eliminating the 4-9 s TTFB spike on new isolates.
+// Ensure auth bootstrap completes before serving traffic. Cache warming is
+// best-effort and runs in the background so a stalled KV scan can't block boot.
 console.log("[startup] Boot sequence started");
-await Promise.all([
-  runStartupStep("preloadCaches", preloadCaches),
-  runStartupStep("ensureDefaultAdmin", ensureDefaultAdmin),
-]);
+await runStartupStep("ensureDefaultAdmin", ensureDefaultAdmin);
 console.log("[startup] Boot sequence complete, starting Fresh");
+
+void runStartupStep("preloadCaches", preloadCaches);
 
 // Atomically claim the notification run for today (UTC date).
 // Returns true only for the first caller — cron or startup catch-up,

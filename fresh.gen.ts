@@ -23,6 +23,7 @@ import * as $admin_notify from "./routes/admin/notify.ts";
 import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
 import * as $admin_restore_backup from "./routes/admin/restore-backup.ts";
 import * as $admin_stocktake from "./routes/admin/stocktake.tsx";
+import * as $api_middleware from "./routes/api/_middleware.ts";
 import * as $api_camp_templates_id_ from "./routes/api/camp-templates/[id].ts";
 import * as $api_camp_templates_index from "./routes/api/camp-templates/index.ts";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
@@ -149,6 +150,7 @@ const manifest = {
     "./routes/admin/rebuild-indexes.ts": $admin_rebuild_indexes,
     "./routes/admin/restore-backup.ts": $admin_restore_backup,
     "./routes/admin/stocktake.tsx": $admin_stocktake,
+    "./routes/api/_middleware.ts": $api_middleware,
     "./routes/api/camp-templates/[id].ts": $api_camp_templates_id_,
     "./routes/api/camp-templates/index.ts": $api_camp_templates_index,
     "./routes/api/camps/[id].ts": $api_camps_id_,

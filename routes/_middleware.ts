@@ -27,6 +27,10 @@ const PUBLIC_PATHS = [
 
 // True when running on Deno Deploy
 const IS_DEPLOYED = !!Deno.env.get("DENO_DEPLOYMENT_ID");
+const SESSION_EXTEND_TIMEOUT_MS = Number(
+  Deno.env.get("SESSION_EXTEND_TIMEOUT_MS") ?? "1200",
+);
+const SLOW_REQUEST_MS = Number(Deno.env.get("SLOW_REQUEST_MS") ?? "2000");
 
 // Synthetic session injected for local dev bypass
 const DEV_SESSION: Session = {
@@ -76,9 +80,38 @@ function applySecurityHeaders(headers: Headers): void {
   );
 }
 
+async function withTimeout<T>(
+  name: string,
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`[middleware] ${name} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+}
+
 export async function handler(req: Request, ctx: FreshContext) {
   const url = new URL(req.url);
   const path = url.pathname;
+  const startedAt = Date.now();
+
+  function logSlowRequest(status: number): void {
+    const elapsed = Date.now() - startedAt;
+    if (elapsed >= SLOW_REQUEST_MS) {
+      console.warn(
+        `[middleware] slow request ${req.method} ${path} -> ${status} (${elapsed}ms)`,
+      );
+    }
+  }
 
   // Allow public paths and static assets — add long-lived cache headers for immutable assets
   if (
@@ -103,6 +136,7 @@ export async function handler(req: Request, ctx: FreshContext) {
       );
     }
     applySecurityHeaders(res.headers);
+    logSlowRequest(res.status);
     return res;
   }
 
@@ -116,6 +150,7 @@ export async function handler(req: Request, ctx: FreshContext) {
     preloadCaches();
     const res = await ctx.next();
     applySecurityHeaders(res.headers);
+    logSlowRequest(res.status);
     return res;
   }
 
@@ -127,7 +162,12 @@ export async function handler(req: Request, ctx: FreshContext) {
 
   if (!session) {
     const loginUrl = `/login?redirect=${encodeURIComponent(path)}`;
-    return new Response(null, { status: 302, headers: { location: loginUrl } });
+    const redirect = new Response(null, {
+      status: 302,
+      headers: { location: loginUrl },
+    });
+    logSlowRequest(redirect.status);
+    return redirect;
   }
 
   // Attach session to state so handlers/pages can read it
@@ -140,14 +180,25 @@ export async function handler(req: Request, ctx: FreshContext) {
   // Rolling session — extend expiry on every authenticated request so
   // any activity (navigation, API call, form submission) resets the idle timer.
   // Pass the already-fetched session to avoid a redundant KV read inside extendSession.
-  const [res] = await Promise.all([
-    ctx.next(),
-    extendSession(sessionId!, session),
-  ]);
+  const res = await ctx.next();
+
+  try {
+    await withTimeout(
+      "extendSession",
+      extendSession(sessionId!, session),
+      SESSION_EXTEND_TIMEOUT_MS,
+    );
+  } catch (error) {
+    console.error(
+      `[middleware] extendSession failed for ${req.method} ${path}`,
+      error,
+    );
+  }
 
   // Re-issue the cookie so the browser Max-Age counter also resets.
   res.headers.append("Set-Cookie", makeSessionCookie(sessionId!));
   applySecurityHeaders(res.headers);
+  logSlowRequest(res.status);
 
   return res;
 }
