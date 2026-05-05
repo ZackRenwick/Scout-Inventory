@@ -314,13 +314,21 @@ export default function ScanActionPage({ data }: PageProps<ScanPageData>) {
 
         {canEdit && (
           <div class="bg-white dark:bg-gray-900 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-5 sm:p-6">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              Pack to Camp (QR)
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Pack to Camp (QR)
+              </h2>
+              <a
+                href="/camps/new"
+                class="text-xs px-3 py-1.5 border border-purple-300 text-purple-600 dark:text-purple-400 dark:border-purple-600 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+              >
+                ➕ New Camp
+              </a>
+            </div>
             {qrCampPlans.length === 0
               ? (
                 <p class="text-sm text-gray-600 dark:text-gray-400">
-                  No active/planning camp plans found. Create one in Camp Planning first.
+                  No active/planning camp plans found.
                 </p>
               )
               : (
