@@ -2,7 +2,16 @@
 //
 // Required environment variables:
 //   RESEND_API_KEY   — API key from resend.com
-//   NOTIFY_EMAIL     — recipient address for all alert emails
+//   NOTIFY_EMAIL     — fallback recipient address for all alert emails
+//
+// Optional per-type recipients (each falls back to NOTIFY_EMAIL if unset):
+//   NOTIFY_EMAIL_LOW_STOCK       — low stock alerts
+//   NOTIFY_EMAIL_NECKERS         — necker low stock alert
+//   NOTIFY_EMAIL_EXPIRY          — food expiry alerts
+//   NOTIFY_EMAIL_OVERDUE_LOANS   — overdue loan alerts
+//   NOTIFY_EMAIL_MAINTENANCE     — maintenance inspection alerts
+//   NOTIFY_EMAIL_RISK_ASSESSMENT — risk assessment review alerts
+//   NOTIFY_EMAIL_FIRST_AID       — first aid kit check alerts
 //
 // Optional:
 //   NOTIFY_FROM_EMAIL — sender address (defaults to noreply@7thwhitburnscoutsinventory.co.uk)
@@ -26,9 +35,23 @@ const RESEND_URL = "https://api.resend.com/emails";
 
 // ===== INTERNAL SEND HELPER =====
 
-async function sendEmail(subject: string, html: string): Promise<void> {
+type NotificationType =
+  | "LOW_STOCK"
+  | "NECKERS"
+  | "EXPIRY"
+  | "OVERDUE_LOANS"
+  | "MAINTENANCE"
+  | "RISK_ASSESSMENT"
+  | "FIRST_AID";
+
+async function sendEmail(
+  subject: string,
+  html: string,
+  type: NotificationType,
+): Promise<void> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  const toRaw = Deno.env.get("NOTIFY_EMAIL");
+  const toRaw = Deno.env.get(`NOTIFY_EMAIL_${type}`) ??
+    Deno.env.get("NOTIFY_EMAIL");
   const from = Deno.env.get("NOTIFY_FROM_EMAIL") ??
     "noreply@7thwhitburnscoutsinventory.co.uk";
 
@@ -71,21 +94,10 @@ async function sendEmail(subject: string, html: string): Promise<void> {
  * if any items are at or below their minimum threshold.
  */
 export async function checkAndNotifyLowStock(): Promise<void> {
-  const [items, neckerCount] = await Promise.all([
-    getAllItems(),
-    getNeckerCountOrNull(),
-  ]);
+  const items = await getAllItems();
   const lowStock = items.filter((i) => i.quantity <= i.minThreshold);
 
-  // Necker threshold: configurable via NECKER_MIN_THRESHOLD env var, default 5
-  const neckerThreshold = parseInt(
-    Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10",
-    10,
-  );
-  const hasNeckerCount = neckerCount !== null;
-  const neckersLow = hasNeckerCount && neckerCount <= neckerThreshold;
-
-  if (lowStock.length === 0 && !neckersLow) {
+  if (lowStock.length === 0) {
     return;
   }
 
@@ -98,23 +110,10 @@ export async function checkAndNotifyLowStock(): Promise<void> {
     </tr>`
   ).join("\n");
 
-  const neckerRow = neckersLow
-    ? `<tr>
-      <td style="padding:6px 12px">Neckers</td>
-      <td style="padding:6px 12px">Uniform</td>
-      <td style="padding:6px 12px;text-align:center">${
-      neckerCount ?? "n/a"
-    }</td>
-      <td style="padding:6px 12px;text-align:center">${neckerThreshold}</td>
-    </tr>`
-    : "";
-
-  const totalCount = lowStock.length + (neckersLow ? 1 : 0);
-
   const html = `
     <h2 style="color:#7c3aed">⚠️ Low Stock Alert — 7th Whitburn Scouts</h2>
-    <p>${totalCount} item${
-    totalCount !== 1 ? "s are" : " is"
+    <p>${lowStock.length} item${
+    lowStock.length !== 1 ? "s are" : " is"
   } at or below minimum threshold:</p>
     <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
       <thead>
@@ -125,16 +124,60 @@ export async function checkAndNotifyLowStock(): Promise<void> {
           <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e7eb">Min Threshold</th>
         </tr>
       </thead>
-      <tbody>${itemRows}${neckerRow}</tbody>
+      <tbody>${itemRows}</tbody>
     </table>
     <p style="color:#6b7280;font-size:13px;margin-top:16px">Sent by 7th Whitburn Scouts Inventory — visit the app to restock.</p>
   `;
 
   await sendEmail(
-    `⚠️ 7th Whitburn Scouts: ${totalCount} item${
-      totalCount !== 1 ? "s" : ""
+    `⚠️ 7th Whitburn Scouts: ${lowStock.length} item${
+      lowStock.length !== 1 ? "s" : ""
     } low on stock`,
     html,
+    "LOW_STOCK",
+  );
+}
+
+/**
+ * Checks the necker count and sends an alert email if it is at or below
+ * the threshold (NECKER_MIN_THRESHOLD env var, default 10).
+ */
+export async function checkAndNotifyNeckersLow(): Promise<void> {
+  const neckerCount = await getNeckerCountOrNull();
+  if (neckerCount === null) return;
+
+  const neckerThreshold = parseInt(
+    Deno.env.get("NECKER_MIN_THRESHOLD") ?? "10",
+    10,
+  );
+  if (neckerCount > neckerThreshold) return;
+
+  const html = `
+    <h2 style="color:#7c3aed">🧣 Necker Stock Alert — 7th Whitburn Scouts</h2>
+    <p>Necker stock is at or below the minimum threshold:</p>
+    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;width:100%">
+      <thead>
+        <tr style="background:#f9fafb">
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid #e5e7eb">Item</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e7eb">Current Qty</th>
+          <th style="padding:8px 12px;text-align:center;border-bottom:1px solid #e5e7eb">Min Threshold</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:6px 12px">Neckers</td>
+          <td style="padding:6px 12px;text-align:center">${neckerCount}</td>
+          <td style="padding:6px 12px;text-align:center">${neckerThreshold}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="color:#6b7280;font-size:13px;margin-top:16px">Sent by 7th Whitburn Scouts Inventory — visit the app to restock.</p>
+  `;
+
+  await sendEmail(
+    `🧣 7th Whitburn Scouts: Necker stock low (${neckerCount} remaining)`,
+    html,
+    "NECKERS",
   );
 }
 
@@ -194,6 +237,7 @@ export async function checkAndNotifyExpiry(): Promise<void> {
       count !== 1 ? "s" : ""
     } expiring soon`,
     html,
+    "EXPIRY",
   );
 }
 
@@ -260,6 +304,7 @@ export async function checkAndNotifyOverdueLoans(): Promise<void> {
   await sendEmail(
     `📤 7th Whitburn Scouts: ${count} overdue loan${count !== 1 ? "s" : ""}`,
     html,
+    "OVERDUE_LOANS",
   );
 }
 
@@ -328,6 +373,7 @@ export async function checkAndNotifyMaintenanceDue(): Promise<void> {
       count !== 1 ? "s" : ""
     } due`,
     html,
+    "MAINTENANCE",
   );
 }
 
@@ -373,6 +419,7 @@ export async function checkAndNotifyRiskAssessmentDue(): Promise<void> {
       count !== 1 ? "s" : ""
     } need annual review`,
     html,
+    "RISK_ASSESSMENT",
   );
 }
 
@@ -429,5 +476,6 @@ export async function checkAndNotifyFirstAidChecksDue(): Promise<void> {
       count !== 1 ? "s" : ""
     } need checking`,
     html,
+    "FIRST_AID",
   );
 }

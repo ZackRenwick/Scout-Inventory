@@ -7,6 +7,7 @@ import {
   checkAndNotifyFirstAidChecksDue,
   checkAndNotifyLowStock,
   checkAndNotifyMaintenanceDue,
+  checkAndNotifyNeckersLow,
   checkAndNotifyOverdueLoans,
   checkAndNotifyRiskAssessmentDue,
 } from "../../lib/notifications.ts";
@@ -31,6 +32,14 @@ export const handler: Handlers = {
           ok: true,
           message:
             "Low stock check complete — email sent if any items are below threshold.",
+        });
+      }
+      if (type === "neckers") {
+        await checkAndNotifyNeckersLow();
+        return Response.json({
+          ok: true,
+          message:
+            "Necker check complete — email sent if stock is below threshold.",
         });
       }
       if (type === "expiry") {
@@ -75,6 +84,7 @@ export const handler: Handlers = {
       }
       // No type — run all
       await checkAndNotifyLowStock();
+      await checkAndNotifyNeckersLow();
       await checkAndNotifyExpiry();
       await checkAndNotifyOverdueLoans();
       await checkAndNotifyMaintenanceDue();

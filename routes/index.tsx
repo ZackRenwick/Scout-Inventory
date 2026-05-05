@@ -330,60 +330,60 @@ export default function Home({ data }: PageProps<DashboardData>) {
         <div class="grid grid-cols-2 md:grid-cols-8 gap-2 md:gap-2">
           <a
             href="/inventory/add"
-            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-green-700 text-white rounded-md hover:bg-green-800 transition-colors text-sm md:text-xs sm:text-sm font-medium"
           >
-            <span class="md:hidden lg:inline">➕</span>
+            <span class="md:hidden sm:inline">➕</span>
             <span>Add Item</span>
           </a>
           <a
             href="/inventory"
-            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm md:text-xs sm:text-sm font-medium"
           >
-            <span class="md:hidden lg:inline">📋</span>
+            <span class="md:hidden sm:inline">📋</span>
             <span>View All</span>
           </a>
           <a
             href="/reports/expiring"
-            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-orange-700 text-white rounded-md hover:bg-orange-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-orange-700 text-white rounded-md hover:bg-orange-800 transition-colors text-sm md:text-xs sm:text-sm font-medium"
           >
-            <span class="md:hidden lg:inline">⏰</span>
+            <span class="md:hidden sm:inline">⏰</span>
             <span>Expiring Food</span>
           </a>
           <a
             href="/inventory?lowstock=true"
-            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm md:text-xs sm:text-sm font-medium"
           >
-            <span class="md:hidden lg:inline">⚠️</span>
+            <span class="md:hidden sm:inline">⚠️</span>
             <span>Low Stock</span>
           </a>
           <a
             href="/inventory?needsrepair=true"
-            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-yellow-500 text-gray-900 rounded-md hover:bg-yellow-600 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-yellow-500 text-gray-900 rounded-md hover:bg-yellow-600 transition-colors text-sm md:text-xs sm:text-sm font-medium"
           >
-            <span class="md:hidden lg:inline">🔧</span>
+            <span class="md:hidden sm:inline">🔧</span>
             <span>Needs Repair</span>
           </a>
           {canViewNeckers && (
             <a
               href="/neckers"
-              class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+              class="inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-purple-700 text-white rounded-md hover:bg-purple-800 transition-colors text-sm md:text-xs sm:text-sm font-medium"
             >
-              <span class="md:hidden lg:inline">🧣</span>
+              <span class="md:hidden sm:inline">🧣</span>
               <span>Neckers</span>
             </a>
           )}
           <a
             href="/first-aid"
-            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            class="inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm md:text-xs sm:text-sm font-medium"
           >
-            <span class="md:hidden lg:inline">🩹</span>
+            <span class="md:hidden sm:inline">🩹</span>
             <span>First Aid</span>
           </a>
           <a
             href="/risk-assessments"
-            class="col-span-1 inline-flex items-center justify-center gap-2 px-3 md:px-2 lg:px-3 py-2.5 min-h-11 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors text-sm md:text-xs lg:text-sm font-medium"
+            class="col-span-1 inline-flex items-center justify-center gap-2 px-3 md:px-2 sm:px-3 py-2.5 min-h-11 bg-red-700 text-white rounded-md hover:bg-red-800 transition-colors text-sm md:text-xs sm:text-sm font-medium"
           >
-            <span class="md:hidden lg:inline">📝</span>
+            <span class="md:hidden sm:inline">📝</span>
             <span class="text-center leading-tight">Risk Assessments</span>
           </a>
         </div>
@@ -401,7 +401,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
                 High-priority checks first
               </span>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
+            <div class="grid grid-cols-2 md:grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-3.5">
               {hasExpiredFoodIssue && (
                 <a
                   href="/reports/expiring"
@@ -531,7 +531,7 @@ export default function Home({ data }: PageProps<DashboardData>) {
               Live stock movement
             </span>
           </div>
-          <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-3.5">
+          <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 sm:gap-3.5">
             <a
               href="/inventory?onloan=true"
               class="block hover:shadow-lg transition-shadow"

@@ -682,7 +682,7 @@ export default function FirstAidPage({ data }: PageProps<FirstAidPageData>) {
             </div>
           )
           : (
-            <div class="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid items-start gap-4 sm:grid-cols-2 sm:grid-cols-3">
               {data.kits.map((kit) => {
                 const lastCheckedAt = kitLastCheckedById[kit.id] ?? null;
                 const isEditingKit = data.editingKitId === kit.id;

@@ -18,6 +18,7 @@ import {
   checkAndNotifyExpiry,
   checkAndNotifyFirstAidChecksDue,
   checkAndNotifyLowStock,
+  checkAndNotifyNeckersLow,
   checkAndNotifyMaintenanceDue,
   checkAndNotifyOverdueLoans,
   checkAndNotifyRiskAssessmentDue,
@@ -102,6 +103,9 @@ async function runNotifications(source: string) {
   await Promise.all([
     checkAndNotifyLowStock().catch((e) =>
       console.error(`[${sourceTag}] notify-low-stock failed:`, e)
+    ),
+    checkAndNotifyNeckersLow().catch((e) =>
+      console.error(`[${sourceTag}] notify-neckers failed:`, e)
     ),
     checkAndNotifyExpiry().catch((e) =>
       console.error(`[${sourceTag}] notify-expiry failed:`, e)

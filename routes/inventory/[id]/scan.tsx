@@ -4,18 +4,31 @@ import Layout from "../../../components/Layout.tsx";
 import type { Session } from "../../../lib/auth.ts";
 import { csrfFailed, forbidden } from "../../../lib/auth.ts";
 import {
+  getAllCampPlans,
   getActiveCheckOutsByItemId,
+  getCampPlanById,
   getCheckOutById,
   getItemById,
+  rebuildComputedStats,
   returnCheckOut,
+  updateCampPlan,
+  updateItem,
 } from "../../../db/kv.ts";
-import type { CheckOut, InventoryItem } from "../../../types/inventory.ts";
+import type {
+  CampPlan,
+  CampPlanItem,
+  CheckOut,
+  InventoryItem,
+} from "../../../types/inventory.ts";
 import { formatDate } from "../../../lib/date-utils.ts";
 import { logActivity } from "../../../lib/activityLog.ts";
 
 interface ScanPageData {
   item: InventoryItem | null;
   activeLoans: CheckOut[];
+  campPlans: CampPlan[];
+  flash?: string;
+  error?: string;
   session?: Session;
   csrfToken?: string;
 }
@@ -24,11 +37,20 @@ export const handler: Handlers<ScanPageData> = {
   async GET(_req, ctx) {
     const { id } = ctx.params;
     const session = ctx.state.session as Session | undefined;
-    const item = await getItemById(id);
+    const reqUrl = new URL(_req.url);
+    const flash = reqUrl.searchParams.get("flash") ?? undefined;
+    const error = reqUrl.searchParams.get("error") ?? undefined;
+    const [item, campPlans] = await Promise.all([
+      getItemById(id),
+      getAllCampPlans(),
+    ]);
     if (!item) {
       return ctx.render({
         item: null,
         activeLoans: [],
+        campPlans: [],
+        flash,
+        error,
         session,
         csrfToken: session?.csrfToken,
       });
@@ -38,6 +60,9 @@ export const handler: Handlers<ScanPageData> = {
     return ctx.render({
       item,
       activeLoans,
+      campPlans,
+      flash,
+      error,
       session,
       csrfToken: session?.csrfToken,
     });
@@ -53,39 +78,154 @@ export const handler: Handlers<ScanPageData> = {
 
     const { id: itemId } = ctx.params;
     const action = String(formData.get("action") ?? "");
-    if (action !== "return-loan") {
-      return new Response("Invalid action", { status: 400 });
-    }
+    if (action === "return-loan") {
+      const loanId = String(formData.get("loanId") ?? "");
+      if (!loanId) {
+        return new Response("Missing loanId", { status: 400 });
+      }
 
-    const loanId = String(formData.get("loanId") ?? "");
-    if (!loanId) {
-      return new Response("Missing loanId", { status: 400 });
-    }
+      const loan = await getCheckOutById(loanId);
+      if (!loan || loan.itemId !== itemId || loan.status === "returned") {
+        return new Response(null, {
+          status: 303,
+          headers: { Location: `/inventory/${itemId}/scan` },
+        });
+      }
 
-    const loan = await getCheckOutById(loanId);
-    if (!loan || loan.itemId !== itemId || loan.status === "returned") {
+      const updated = await returnCheckOut(loanId);
+      if (updated) {
+        await logActivity({
+          username: session.username,
+          action: "loan.returned",
+          resource: updated.itemName,
+          resourceId: updated.id,
+          details:
+            `QR return for ${updated.quantity}x \"${updated.itemName}\" from ${updated.borrower}`,
+        });
+      }
+
       return new Response(null, {
         status: 303,
         headers: { Location: `/inventory/${itemId}/scan` },
       });
     }
 
-    const updated = await returnCheckOut(loanId);
-    if (updated) {
+    if (action === "pack-camp") {
+      const campId = String(formData.get("campId") ?? "");
+      const quantityRaw = String(formData.get("quantity") ?? "");
+      const quantity = Number(quantityRaw);
+
+      if (!campId || !Number.isInteger(quantity) || quantity < 1) {
+        return new Response(null, {
+          status: 303,
+          headers: {
+            Location:
+              `/inventory/${itemId}/scan?error=Invalid+camp+or+quantity`,
+          },
+        });
+      }
+
+      const [plan, item] = await Promise.all([
+        getCampPlanById(campId),
+        getItemById(itemId),
+      ]);
+      if (!plan || !item) {
+        return new Response(null, {
+          status: 303,
+          headers: {
+            Location: `/inventory/${itemId}/scan?error=Camp+or+item+not+found`,
+          },
+        });
+      }
+      if (plan.status === "completed") {
+        return new Response(null, {
+          status: 303,
+          headers: {
+            Location:
+              `/inventory/${itemId}/scan?error=Cannot+pack+to+a+completed+camp`,
+          },
+        });
+      }
+
+      const existing = plan.items.find((i) => i.itemId === item.id);
+      const currentlyAtCampQty = item.category !== "food" && item.atCamp
+        ? Math.max(0, Math.min(item.quantity, item.quantityAtCamp ?? item.quantity))
+        : 0;
+      const thisPlanReservedNonFoodQty = existing &&
+          existing.itemCategory !== "food" &&
+          existing.packedStatus &&
+          !existing.returnedStatus
+        ? existing.quantityPlanned
+        : 0;
+      const alreadyDeductedFoodQty = existing &&
+          existing.itemCategory === "food" &&
+          existing.packedStatus
+        ? existing.quantityPlanned
+        : 0;
+      const maxAvailable = item.category === "food"
+        ? item.quantity + alreadyDeductedFoodQty
+        : (item.quantity - currentlyAtCampQty) + thisPlanReservedNonFoodQty;
+
+      if (quantity > maxAvailable) {
+        return new Response(null, {
+          status: 303,
+          headers: {
+            Location: `/inventory/${itemId}/scan?error=Only+${maxAvailable}+available+to+pack`,
+          },
+        });
+      }
+
+      const nextItem: CampPlanItem = existing
+        ? {
+          ...existing,
+          quantityPlanned: quantity,
+          packedStatus: true,
+          returnedStatus: false,
+        }
+        : {
+          itemId: item.id,
+          itemName: item.name,
+          itemCategory: item.category,
+          itemLocation: item.location,
+          quantityPlanned: quantity,
+          packedStatus: true,
+          returnedStatus: false,
+        };
+
+      const nextItems = existing
+        ? plan.items.map((i) => i.itemId === item.id ? nextItem : i)
+        : [...plan.items, nextItem];
+
+      if (item.category === "food") {
+        const oldPackedQty = existing?.packedStatus ? existing.quantityPlanned : 0;
+        const delta = quantity - oldPackedQty;
+        if (delta !== 0) {
+          await updateItem(item.id, { quantity: Math.max(0, item.quantity - delta) });
+        }
+      } else {
+        await updateItem(item.id, { atCamp: true, quantityAtCamp: quantity });
+      }
+
+      await updateCampPlan(plan.id, { items: nextItems }, plan);
+      await rebuildComputedStats();
+
       await logActivity({
         username: session.username,
-        action: "loan.returned",
-        resource: updated.itemName,
-        resourceId: updated.id,
-        details:
-          `QR return for ${updated.quantity}x \"${updated.itemName}\" from ${updated.borrower}`,
+        action: "camp.updated",
+        resource: item.name,
+        resourceId: plan.id,
+        details: `QR packed ${quantity}x \"${item.name}\" into camp \"${plan.name}\"`,
+      });
+
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: `/inventory/${itemId}/scan?flash=Packed+to+${encodeURIComponent(plan.name)}`,
+        },
       });
     }
 
-    return new Response(null, {
-      status: 303,
-      headers: { Location: `/inventory/${itemId}/scan` },
-    });
+    return new Response("Invalid action", { status: 400 });
   },
 };
 
@@ -112,6 +252,10 @@ export default function ScanActionPage({ data }: PageProps<ScanPageData>) {
 
   const { item, activeLoans } = data;
   const canEdit = data.session?.role !== "viewer";
+  const qrCampPlans = data.campPlans.filter((plan) =>
+    plan.status === "planning" || plan.status === "packing" ||
+    plan.status === "active" || plan.status === "returning"
+  );
 
   return (
     <Layout
@@ -120,6 +264,17 @@ export default function ScanActionPage({ data }: PageProps<ScanPageData>) {
       role={data.session?.role}
     >
       <div class="max-w-3xl mx-auto space-y-6">
+        {data.flash && (
+          <div class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            {decodeURIComponent(data.flash)}
+          </div>
+        )}
+        {data.error && (
+          <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {decodeURIComponent(data.error)}
+          </div>
+        )}
+
         <div class="bg-white dark:bg-gray-900 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-5 sm:p-6">
           <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">
             QR Quick Actions
@@ -156,6 +311,76 @@ export default function ScanActionPage({ data }: PageProps<ScanPageData>) {
             )}
           </div>
         </div>
+
+        {canEdit && (
+          <div class="bg-white dark:bg-gray-900 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-5 sm:p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Pack to Camp (QR)
+            </h2>
+            {qrCampPlans.length === 0
+              ? (
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  No active/planning camp plans found. Create one in Camp Planning first.
+                </p>
+              )
+              : (
+                <form method="POST" class="space-y-3">
+                  <input type="hidden" name="csrf" value={data.csrfToken ?? ""} />
+                  <input type="hidden" name="action" value="pack-camp" />
+
+                  <div>
+                    <label
+                      for="campId"
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Camp Plan
+                    </label>
+                    <select
+                      id="campId"
+                      name="campId"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      required
+                    >
+                      {qrCampPlans.map((plan) => (
+                        <option value={plan.id} key={plan.id}>
+                          {plan.name} ({plan.status})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      for="quantity"
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Quantity to Pack
+                    </label>
+                    <input
+                      id="quantity"
+                      name="quantity"
+                      type="number"
+                      min="1"
+                      max={String(Math.max(1, item.quantity))}
+                      value="1"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      required
+                    />
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Available in stock: {item.quantity}
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    class="px-4 py-2 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    Mark Packed to Camp
+                  </button>
+                </form>
+              )}
+          </div>
+        )}
 
         <div class="bg-white dark:bg-gray-900 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-5 sm:p-6">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">

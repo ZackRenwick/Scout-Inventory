@@ -170,11 +170,11 @@ function FoodSection({
         <p class={`text-sm mt-1 ${subText}`}>{description}</p>
       </div>
       {/* Mobile cards */}
-      <div class="block lg:hidden space-y-3">
+      <div class="block sm:hidden space-y-3">
         {items.map((item) => <FoodItemCard key={item.id} item={item} />)}
       </div>
       {/* Desktop table */}
-      <div class="hidden lg:block bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
+      <div class="hidden sm:block bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class={tableBg}>
             <tr>
