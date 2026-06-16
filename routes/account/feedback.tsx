@@ -2,6 +2,7 @@ import { Handlers, PageProps } from "$fresh/server.ts";
 import Layout from "../../components/Layout.tsx";
 import {
   createFeedbackRequest,
+  getPublicFeedbackRequests,
   getFeedbackRequestsByUsername,
 } from "../../db/kv.ts";
 import type { FeedbackKind, FeedbackRequest } from "../../types/feedback.ts";
@@ -14,7 +15,8 @@ import FeedbackScreenshot from "../../islands/FeedbackScreenshot.tsx";
 interface FeedbackPageData {
   session: Session;
   csrfToken: string;
-  requests: FeedbackRequest[];
+  myRequests: FeedbackRequest[];
+  publicRequests: FeedbackRequest[];
   r2Configured: boolean;
   message?: string;
   error?: string;
@@ -30,11 +32,15 @@ async function renderPage(
   session: Session,
   overrides: Partial<FeedbackPageData> = {},
 ): Promise<FeedbackPageData> {
-  const requests = await getFeedbackRequestsByUsername(session.username);
+  const [myRequests, publicRequests] = await Promise.all([
+    getFeedbackRequestsByUsername(session.username),
+    getPublicFeedbackRequests(),
+  ]);
   return {
     session,
     csrfToken: session.csrfToken,
-    requests,
+    myRequests,
+    publicRequests,
     r2Configured: isR2Configured(),
     ...overrides,
   };
@@ -140,8 +146,16 @@ function getFeedbackPhotoUrl(photoId: string): string {
 }
 
 export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
-  const { session, csrfToken, requests, r2Configured, message, error, form } =
-    data;
+  const {
+    session,
+    csrfToken,
+    myRequests,
+    publicRequests,
+    r2Configured,
+    message,
+    error,
+    form,
+  } = data;
 
   return (
     <Layout
@@ -283,9 +297,76 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
 
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
           <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">
+            Accepted for Development
+          </h2>
+          <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
+            Requests accepted for development are visible to everyone so the app
+            status is clear.
+          </p>
+          {publicRequests.length === 0
+            ? (
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                No requests have been accepted yet.
+              </p>
+            )
+            : (
+              <div class="space-y-4">
+                {publicRequests.map((request) => (
+                  <article class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                      <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {request.title}
+                      </span>
+                      <span
+                        class={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          statusClasses(request.status)
+                        }`}
+                      >
+                        {statusLabel(request.status)}
+                      </span>
+                      <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                        {request.kind}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                      {request.description}
+                    </p>
+                    {request.photoId && (
+                      <div class="mt-4">
+                        <FeedbackScreenshot
+                          src={getFeedbackPhotoUrl(request.photoId)}
+                          alt={`Screenshot for ${request.title}`}
+                        />
+                      </div>
+                    )}
+                    <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                      Submitted by {request.createdBy} on{" "}
+                      {new Date(request.createdAt).toLocaleString()}
+                    </p>
+                    {request.reviewedAt && (
+                      <div class="mt-3 rounded-md bg-gray-50 dark:bg-gray-900/40 p-3">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                          Reviewed by {request.reviewedBy} on{" "}
+                          {new Date(request.reviewedAt).toLocaleString()}
+                        </p>
+                        {request.reviewReason && (
+                          <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">
+                            {request.reviewReason}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6">
+          <h2 class="text-base font-semibold text-gray-800 dark:text-purple-100 mb-4">
             Your Submitted Requests
           </h2>
-          {requests.length === 0
+          {myRequests.length === 0
             ? (
               <p class="text-sm text-gray-500 dark:text-gray-400">
                 You have not submitted any requests yet.
@@ -293,7 +374,7 @@ export default function FeedbackPage({ data }: PageProps<FeedbackPageData>) {
             )
             : (
               <div class="space-y-4">
-                {requests.map((request) => (
+                {myRequests.map((request) => (
                   <article class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                     <div class="flex flex-wrap items-center gap-2 mb-2">
                       <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">

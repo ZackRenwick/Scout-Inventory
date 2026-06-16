@@ -125,6 +125,34 @@ export const handler: Handlers<EditRiskAssessmentPageData> = {
     }
 
     const action = form.get("action")?.toString();
+    if (action === "autosave_assessment") {
+      const existing = await getRiskAssessmentById(assessmentId);
+      if (!existing) {
+        return new Response("Assessment not found", { status: 404 });
+      }
+
+      const name = form.get("name")?.toString().trim() ?? "";
+      const riskRows = parseRiskRows(form.get("riskRows")?.toString() ?? "[]");
+
+      // Autosave is best-effort: only persist when there is enough valid data.
+      if (!name || name.length > 120 || riskRows.length === 0) {
+        return new Response(JSON.stringify({ saved: false }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      await updateRiskAssessment(assessmentId, {
+        name,
+        risks: riskRows,
+      }, existing);
+
+      return new Response(JSON.stringify({ saved: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     if (action !== "update_assessment") {
       return new Response(null, {
         status: 303,

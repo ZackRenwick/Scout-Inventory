@@ -2644,6 +2644,13 @@ export async function getFeedbackRequestsByUsername(
   return all.filter((request) => request.createdBy === username.toLowerCase());
 }
 
+export async function getPublicFeedbackRequests(): Promise<FeedbackRequest[]> {
+  const all = await getAllFeedbackRequests();
+  return all.filter((request) =>
+    request.status === "accepted" || request.status === "completed"
+  );
+}
+
 export async function createFeedbackRequest(
   payload: Pick<FeedbackRequest, "kind" | "title" | "description"> & {
     photoId?: string;

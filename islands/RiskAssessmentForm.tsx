@@ -93,6 +93,15 @@ function summarizeHazard(hazards: string): string {
 export default function RiskAssessmentForm(props: Props) {
   const name = useSignal(props.initialName ?? "");
   const risks = useSignal<FormRisk[]>(normalizeRisks(props.initialRisks));
+  const draggedRiskId = useSignal<string | null>(null);
+  const dragOverRiskId = useSignal<string | null>(null);
+  const autosaveStatus = useSignal<"idle" | "saving" | "saved" | "error">(
+    "idle",
+  );
+  const autosaveMessage = useSignal("");
+  let autosaveInFlight = false;
+  let autosaveQueued = false;
+  let autosaveLastFingerprint = "";
   const collapseRowsByDefault = props.actionValue === "update_assessment";
   const checkMode = props.annualCheckMode
     ? "annual"
@@ -125,6 +134,100 @@ export default function RiskAssessmentForm(props: Props) {
     risks.value = risks.value.filter((risk) => risk.id !== id);
   }
 
+  function moveRiskRow(id: string, direction: -1 | 1) {
+    const current = risks.value;
+    const index = current.findIndex((risk) => risk.id === id);
+    if (index < 0) return;
+
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= current.length) return;
+
+    const reordered = [...current];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(nextIndex, 0, moved);
+    risks.value = reordered;
+
+    if (props.actionValue === "update_assessment") {
+      void runAutosave();
+    }
+  }
+
+  function reorderRiskRows(fromId: string, toId: string) {
+    if (!fromId || !toId || fromId === toId) return;
+
+    const current = [...risks.value];
+    const fromIndex = current.findIndex((risk) => risk.id === fromId);
+    const toIndex = current.findIndex((risk) => risk.id === toId);
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+    const [moved] = current.splice(fromIndex, 1);
+    current.splice(toIndex, 0, moved);
+    risks.value = current;
+
+    if (props.actionValue === "update_assessment") {
+      void runAutosave();
+    }
+  }
+
+  function buildAutosaveFingerprint(): string {
+    return JSON.stringify({
+      name: name.value.trim(),
+      risks: sanitizeForSubmission(risks.value),
+    });
+  }
+
+  async function runAutosave() {
+    if (props.actionValue !== "update_assessment" || !props.assessmentId) {
+      return;
+    }
+
+    const fingerprint = buildAutosaveFingerprint();
+    if (fingerprint === autosaveLastFingerprint) {
+      return;
+    }
+
+    if (autosaveInFlight) {
+      autosaveQueued = true;
+      return;
+    }
+
+    autosaveInFlight = true;
+    autosaveStatus.value = "saving";
+    autosaveMessage.value = "Saving draft...";
+
+    try {
+      const form = new FormData();
+      form.set("_csrf", props.csrfToken);
+      form.set("action", "autosave_assessment");
+      form.set("assessmentId", props.assessmentId);
+      form.set("name", name.value);
+      form.set("riskRows", JSON.stringify(sanitizeForSubmission(risks.value)));
+
+      const response = await fetch(globalThis.location.pathname, {
+        method: "POST",
+        body: form,
+        credentials: "same-origin",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Autosave failed (${response.status})`);
+      }
+
+      autosaveLastFingerprint = fingerprint;
+      autosaveStatus.value = "saved";
+      autosaveMessage.value = "Draft saved";
+    } catch {
+      autosaveStatus.value = "error";
+      autosaveMessage.value = "Autosave failed. Continue editing and save manually.";
+    } finally {
+      autosaveInFlight = false;
+      if (autosaveQueued) {
+        autosaveQueued = false;
+        void runAutosave();
+      }
+    }
+  }
+
   return (
     <form method="POST" class="space-y-4">
       <input type="hidden" name="_csrf" value={props.csrfToken} />
@@ -155,48 +258,121 @@ export default function RiskAssessmentForm(props: Props) {
           value={name.value}
           onInput={(event) =>
             name.value = (event.currentTarget as HTMLInputElement).value}
+          onBlur={() => {
+            void runAutosave();
+          }}
           class={inputClass}
           placeholder="e.g. Summer Camp Cooking Activity"
         />
       </div>
 
+      {props.actionValue === "update_assessment" && autosaveStatus.value !== "idle" && (
+        <p
+          class={`text-xs ${
+            autosaveStatus.value === "error"
+              ? "text-red-600 dark:text-red-300"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          {autosaveMessage.value}
+        </p>
+      )}
+
       <div class="space-y-3">
         {risks.value.map((risk, index) => (
-          <details
+          <div
             key={risk.id}
-            class="rounded-lg border border-gray-200 dark:border-gray-700"
-            open={!collapseRowsByDefault}
-            onToggle={(event) => {
-              const details = event.currentTarget as HTMLDetailsElement;
-              if (!details.open) return;
-              details
-                .querySelectorAll("textarea[data-autosize='1']")
-                .forEach((textarea) =>
-                  resizeTextarea(textarea as HTMLTextAreaElement)
-                );
+            draggable
+            onDragStart={(event) => {
+              draggedRiskId.value = risk.id;
+              dragOverRiskId.value = risk.id;
+              event.dataTransfer?.setData("text/plain", risk.id);
+              if (event.dataTransfer) {
+                event.dataTransfer.effectAllowed = "move";
+              }
             }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              dragOverRiskId.value = risk.id;
+              if (event.dataTransfer) {
+                event.dataTransfer.dropEffect = "move";
+              }
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              const fromId = event.dataTransfer?.getData("text/plain") ||
+                draggedRiskId.value;
+              if (fromId) {
+                reorderRiskRows(fromId, risk.id);
+              }
+              draggedRiskId.value = null;
+              dragOverRiskId.value = null;
+            }}
+            onDragEnd={() => {
+              draggedRiskId.value = null;
+              dragOverRiskId.value = null;
+            }}
+            class={`rounded-lg border transition-colors ${
+              dragOverRiskId.value === risk.id
+                ? "border-blue-400 dark:border-blue-500"
+                : "border-gray-200 dark:border-gray-700"
+            }`}
           >
-            <summary class="px-4 py-3 cursor-pointer select-none font-semibold text-gray-900 dark:text-gray-100">
-              {`Risk ${index + 1}`}
-              {summarizeHazard(risk.hazards)
-                ? (
-                  <span class="ml-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-                    - {summarizeHazard(risk.hazards)}
-                  </span>
-                )
-                : null}
-            </summary>
+            <details
+              open={!collapseRowsByDefault}
+              onToggle={(event) => {
+                const details = event.currentTarget as HTMLDetailsElement;
+                if (!details.open) return;
+                details
+                  .querySelectorAll("textarea[data-autosize='1']")
+                  .forEach((textarea) =>
+                    resizeTextarea(textarea as HTMLTextAreaElement)
+                  );
+              }}
+            >
+              <summary class="px-4 py-3 cursor-pointer select-none font-semibold text-gray-900 dark:text-gray-100">
+                {`Risk ${index + 1}`}
+                {summarizeHazard(risk.hazards)
+                  ? (
+                    <span class="ml-2 text-sm font-medium text-gray-600 dark:text-gray-300">
+                      - {summarizeHazard(risk.hazards)}
+                    </span>
+                  )
+                  : null}
+              </summary>
 
-            <div class="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-              <div class="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => removeRiskRow(risk.id)}
-                  class="px-2.5 py-1.5 text-xs border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30"
-                >
-                  Remove
-                </button>
-              </div>
+              <div class="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                <div class="flex justify-between gap-2">
+                  <div class="flex gap-2">
+                    <span class="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-md">
+                      Drag to reorder
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => moveRiskRow(risk.id, -1)}
+                      disabled={index === 0}
+                      class="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Move Up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveRiskRow(risk.id, 1)}
+                      disabled={index === risks.value.length - 1}
+                      class="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Move Down
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeRiskRow(risk.id)}
+                    class="px-2.5 py-1.5 text-xs border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30"
+                  >
+                    Remove
+                  </button>
+                </div>
+ 
 
               <div>
                 <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
@@ -210,6 +386,9 @@ export default function RiskAssessmentForm(props: Props) {
                         (event.currentTarget as HTMLSelectElement)
                           .value as RiskLevel,
                     })}
+                  onBlur={() => {
+                    void runAutosave();
+                  }}
                   class={inputClass}
                 >
                   <option value="Low">Low</option>
@@ -233,6 +412,9 @@ export default function RiskAssessmentForm(props: Props) {
                   }}
                   ref={autosizeTextarea}
                   data-autosize="1"
+                  onBlur={() => {
+                    void runAutosave();
+                  }}
                   class={areaClass}
                   maxLength={1000}
                 />
@@ -253,6 +435,9 @@ export default function RiskAssessmentForm(props: Props) {
                   }}
                   ref={autosizeTextarea}
                   data-autosize="1"
+                  onBlur={() => {
+                    void runAutosave();
+                  }}
                   class={areaClass}
                   maxLength={1000}
                 />
@@ -273,6 +458,9 @@ export default function RiskAssessmentForm(props: Props) {
                   }}
                   ref={autosizeTextarea}
                   data-autosize="1"
+                  onBlur={() => {
+                    void runAutosave();
+                  }}
                   class={areaClass}
                   maxLength={1000}
                 />
@@ -293,6 +481,9 @@ export default function RiskAssessmentForm(props: Props) {
                   }}
                   ref={autosizeTextarea}
                   data-autosize="1"
+                  onBlur={() => {
+                    void runAutosave();
+                  }}
                   class={areaClass}
                   maxLength={1000}
                 />
@@ -314,12 +505,16 @@ export default function RiskAssessmentForm(props: Props) {
                   }}
                   ref={autosizeTextarea}
                   data-autosize="1"
+                  onBlur={() => {
+                    void runAutosave();
+                  }}
                   class={areaClass}
                   maxLength={1000}
                 />
               </div>
-            </div>
-          </details>
+              </div>
+            </details>
+          </div>
         ))}
       </div>
 
