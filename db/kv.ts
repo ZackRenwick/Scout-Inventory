@@ -12,6 +12,11 @@ import type {
   MaintenanceRecord,
 } from "../types/inventory.ts";
 import type { Meal, MealPayload } from "../types/meals.ts";
+import {
+  CORE_BADGE_TYPES,
+  type CoreBadgeStock,
+  type CoreBadgeType,
+} from "../types/badges.ts";
 import type { FirstAidKit } from "../types/firstAid.ts";
 import type { FirstAidCatalogItem } from "../types/firstAid.ts";
 import type { FirstAidCheckState } from "../types/firstAid.ts";
@@ -57,6 +62,7 @@ export async function initKv(): Promise<Deno.Kv> {
 //   ["inventory", "neckers", "total-made"]                → number
 //   ["inventory", "neckers", "adult-created"]             → number
 //   ["inventory", "neckers", "adult-total-made"]          → number
+//   ["inventory", "badges", <badgeType>]                   → number
 //
 // Secondary indexes (value = item id):
 //   ["inventory", "idx", "category", <category>, <id>]   → id
@@ -84,6 +90,10 @@ const KEYS = {
   riskAssessments: ["risk-assessments", "records"] as const,
   feedbackRequests: ["feedback", "requests"] as const,
 };
+
+function badgeKey(type: CoreBadgeType) {
+  return ["inventory", "badges", type] as const;
+}
 
 // Index key helpers
 const IDX = {
@@ -281,7 +291,9 @@ async function withCacheLoadTimeout<T>(
   let timeoutId: number | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
-      reject(new Error(`[cache] ${name} timed out after ${CACHE_LOAD_TIMEOUT_MS}ms`));
+      reject(
+        new Error(`[cache] ${name} timed out after ${CACHE_LOAD_TIMEOUT_MS}ms`),
+      );
     }, CACHE_LOAD_TIMEOUT_MS);
   });
 
@@ -1629,6 +1641,57 @@ function deserializeCheckOut(data: any): CheckOut {
       ? new Date(data.actualReturnDate)
       : undefined,
   };
+}
+
+// ===== CORE BADGE STOCK =====
+
+/** Returns current stock for every core badge type, defaulting missing values to zero. */
+export async function getCoreBadgeStock(): Promise<CoreBadgeStock> {
+  const db = await initKv();
+  const results = await Promise.all(
+    CORE_BADGE_TYPES.map((type) => db.get<number>(badgeKey(type))),
+  );
+  const stock = {} as CoreBadgeStock;
+  CORE_BADGE_TYPES.forEach((type, i) => {
+    stock[type] = results[i].value ?? 0;
+  });
+  return stock;
+}
+
+/** Adjusts a single badge type's stock by `delta` (clamped at zero), with optimistic-lock retries. */
+export async function adjustCoreBadgeStock(
+  type: CoreBadgeType,
+  delta: number,
+): Promise<CoreBadgeStock> {
+  const db = await initKv();
+  const key = badgeKey(type);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await db.get<number>(key);
+    const next = Math.max(0, (current.value ?? 0) + delta);
+    const result = await db.atomic().check(current).set(key, next).commit();
+    if (result.ok) break;
+  }
+  return await getCoreBadgeStock();
+}
+
+/** Adjusts all four badge types by the same `delta` in one atomic commit (badges are usually bought as a set). */
+export async function adjustCoreBadgeSet(
+  delta: number,
+): Promise<CoreBadgeStock> {
+  const db = await initKv();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await Promise.all(
+      CORE_BADGE_TYPES.map((type) => db.get<number>(badgeKey(type))),
+    );
+    let op = db.atomic();
+    CORE_BADGE_TYPES.forEach((type, i) => {
+      const next = Math.max(0, (current[i].value ?? 0) + delta);
+      op = op.check(current[i]).set(badgeKey(type), next);
+    });
+    const result = await op.commit();
+    if (result.ok) break;
+  }
+  return await getCoreBadgeStock();
 }
 
 // ===== CAMP PLAN SERIALIZATION =====

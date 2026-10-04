@@ -95,6 +95,9 @@ export default function MobileNav({ username, role }: MobileNavProps) {
         <a href="/camps" class="hover:text-purple-200 transition-colors">
           Camp Planning
         </a>
+        <a href="/badges" class="hover:text-purple-200 transition-colors">
+          Badges
+        </a>
         {role === "admin" && (
           <a href="/meals" class="hover:text-purple-200 transition-colors">
             Meal Planner
@@ -182,6 +185,12 @@ export default function MobileNav({ username, role }: MobileNavProps) {
             class="block px-6 py-3 hover:bg-purple-800 transition-colors"
           >
             🏕️ Camp Planning
+          </a>
+          <a
+            href="/badges"
+            class="block px-6 py-3 hover:bg-purple-800 transition-colors"
+          >
+            🎖️ Badges
           </a>
           {role === "admin" && (
             <a

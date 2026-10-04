@@ -24,6 +24,7 @@ import * as $admin_rebuild_indexes from "./routes/admin/rebuild-indexes.ts";
 import * as $admin_restore_backup from "./routes/admin/restore-backup.ts";
 import * as $admin_stocktake from "./routes/admin/stocktake.tsx";
 import * as $api_middleware from "./routes/api/_middleware.ts";
+import * as $api_badges from "./routes/api/badges.ts";
 import * as $api_camp_templates_id_ from "./routes/api/camp-templates/[id].ts";
 import * as $api_camp_templates_index from "./routes/api/camp-templates/index.ts";
 import * as $api_camps_id_ from "./routes/api/camps/[id].ts";
@@ -50,6 +51,7 @@ import * as $api_neckers from "./routes/api/neckers.ts";
 import * as $api_ping from "./routes/api/ping.ts";
 import * as $api_stats from "./routes/api/stats.ts";
 import * as $api_stocktake from "./routes/api/stocktake.ts";
+import * as $badges from "./routes/badges.tsx";
 import * as $camps_id_ from "./routes/camps/[id].tsx";
 import * as $camps_id_edit from "./routes/camps/[id]/edit.tsx";
 import * as $camps_id_print from "./routes/camps/[id]/print.tsx";
@@ -90,6 +92,7 @@ import * as $CampPlanForm from "./islands/CampPlanForm.tsx";
 import * as $CampPlanList from "./islands/CampPlanList.tsx";
 import * as $ComplianceBadge from "./islands/ComplianceBadge.tsx";
 import * as $ConfirmDeleteForm from "./islands/ConfirmDeleteForm.tsx";
+import * as $CoreBadgesDashboard from "./islands/CoreBadgesDashboard.tsx";
 import * as $Counter from "./islands/Counter.tsx";
 import * as $DbCleanup from "./islands/DbCleanup.tsx";
 import * as $DbClear from "./islands/DbClear.tsx";
@@ -151,6 +154,7 @@ const manifest = {
     "./routes/admin/restore-backup.ts": $admin_restore_backup,
     "./routes/admin/stocktake.tsx": $admin_stocktake,
     "./routes/api/_middleware.ts": $api_middleware,
+    "./routes/api/badges.ts": $api_badges,
     "./routes/api/camp-templates/[id].ts": $api_camp_templates_id_,
     "./routes/api/camp-templates/index.ts": $api_camp_templates_index,
     "./routes/api/camps/[id].ts": $api_camps_id_,
@@ -178,6 +182,7 @@ const manifest = {
     "./routes/api/ping.ts": $api_ping,
     "./routes/api/stats.ts": $api_stats,
     "./routes/api/stocktake.ts": $api_stocktake,
+    "./routes/badges.tsx": $badges,
     "./routes/camps/[id].tsx": $camps_id_,
     "./routes/camps/[id]/edit.tsx": $camps_id_edit,
     "./routes/camps/[id]/print.tsx": $camps_id_print,
@@ -220,6 +225,7 @@ const manifest = {
     "./islands/CampPlanList.tsx": $CampPlanList,
     "./islands/ComplianceBadge.tsx": $ComplianceBadge,
     "./islands/ConfirmDeleteForm.tsx": $ConfirmDeleteForm,
+    "./islands/CoreBadgesDashboard.tsx": $CoreBadgesDashboard,
     "./islands/Counter.tsx": $Counter,
     "./islands/DbCleanup.tsx": $DbCleanup,
     "./islands/DbClear.tsx": $DbClear,

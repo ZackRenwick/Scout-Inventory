@@ -19,3 +19,9 @@ tests/visual/report.html
 # macOS metadata
 .DS_Store
 **/.DS_Store
+
+# Stream Deck helper script runtime files
+.streamdeck-*.pid
+.streamdeck-*.log
+
+/scripts/streamdeck

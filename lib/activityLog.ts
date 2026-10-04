@@ -51,6 +51,8 @@ export type ActivityAction =
   | "neckers.stock_adjusted"
   | "neckers.created_reset"
   | "neckers.total_set"
+  | "badges.stock_adjusted"
+  | "badges.set_adjusted"
   | "stocktake.completed"
   | "easter_egg.found"
   | "db.cleared";
